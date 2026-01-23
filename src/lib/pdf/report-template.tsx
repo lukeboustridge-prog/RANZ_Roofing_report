@@ -244,6 +244,118 @@ const styles = StyleSheet.create({
     color: colors.mediumGray,
     marginTop: 2,
   },
+  // Enhanced compliance table styles
+  complianceTable: {
+    marginBottom: 15,
+  },
+  complianceTableHeader: {
+    flexDirection: "row",
+    backgroundColor: colors.blue,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  complianceHeaderCell: {
+    fontSize: 8,
+    fontWeight: "bold",
+    color: "white",
+  },
+  complianceTableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderGray,
+    paddingVertical: 5,
+    paddingHorizontal: 4,
+    minHeight: 28,
+  },
+  complianceTableRowAlt: {
+    backgroundColor: "#f9fafb",
+  },
+  complianceCellSection: {
+    width: "12%",
+    fontSize: 8,
+    fontWeight: "bold",
+    color: colors.mediumGray,
+  },
+  complianceCellItem: {
+    width: "25%",
+    fontSize: 8,
+    color: colors.darkBlue,
+    fontWeight: "bold",
+  },
+  complianceCellDescription: {
+    width: "48%",
+    fontSize: 8,
+    color: "#374151",
+  },
+  complianceCellStatus: {
+    width: "15%",
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
+  statusBadgeEnhanced: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    fontSize: 7,
+    fontWeight: "bold",
+    color: "white",
+    textAlign: "center",
+  },
+  sectionSummary: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderGray,
+  },
+  sectionSummaryText: {
+    fontSize: 8,
+    color: colors.mediumGray,
+  },
+  nonComplianceWarning: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: "#fef2f2",
+    borderLeftWidth: 5,
+    borderLeftColor: colors.fail,
+    borderRadius: 4,
+  },
+  nonComplianceWarningTitle: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  nonComplianceWarningIcon: {
+    width: 20,
+    height: 20,
+    backgroundColor: colors.fail,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  nonComplianceWarningIconText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  nonComplianceWarningTitleText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: colors.fail,
+  },
+  nonComplianceWarningContent: {
+    fontSize: 9,
+    color: "#991b1b",
+    lineHeight: 1.6,
+  },
+  complianceIntro: {
+    fontSize: 9,
+    color: colors.mediumGray,
+    marginBottom: 15,
+    lineHeight: 1.5,
+  },
 });
 
 function getSeverityColor(severity: string): string {
@@ -410,8 +522,8 @@ const CHECKLIST_DEFINITIONS: Record<string, { name: string; items: ChecklistItem
       { id: "e2_sealants", section: "E2/AS1 9.4", item: "Sealant Condition", description: "Sealants intact and properly applied", required: true },
     ],
   },
-  metal_roof_cop_v25_12: {
-    name: "Metal Roof COP v25.12",
+  metal_roof_cop: {
+    name: "Metal Roof and Wall Cladding Code of Practice v25.12",
     items: [
       { id: "cop_3_1", section: "Section 3.1", item: "Structure Support", description: "Adequate support for cladding", required: true },
       { id: "cop_3_2", section: "Section 3.2", item: "Fastening Patterns", description: "Correct fastening patterns and centres", required: true },
@@ -425,6 +537,10 @@ const CHECKLIST_DEFINITIONS: Record<string, { name: string; items: ChecklistItem
       { id: "cop_9_1", section: "Section 9.1", item: "Fastener Type", description: "Appropriate fastener type and material", required: true },
       { id: "cop_9_2", section: "Section 9.2", item: "Fastener Spacing", description: "Complies with wind zone requirements", required: true },
       { id: "cop_10_1", section: "Section 10.1", item: "Condensation Management", description: "Appropriate underlay and ventilation", required: true },
+      { id: "cop_11_1", section: "Section 11.1", item: "Penetration Flashings", description: "All penetrations properly flashed", required: true },
+      { id: "cop_12_1", section: "Section 12.1", item: "Ridge and Hip Details", description: "Ridge caps correctly installed", required: true },
+      { id: "cop_13_1", section: "Section 13.1", item: "Valley Details", description: "Valley gutters and flashings adequate", required: true },
+      { id: "cop_14_1", section: "Section 14.1", item: "Barge and Verge Details", description: "Edge details properly finished", required: true },
     ],
   },
   b2_durability: {
@@ -446,6 +562,91 @@ interface ReportPDFProps {
   report: ReportData;
 }
 
+// Helper component for compliance table section
+function ComplianceTableSection({
+  title,
+  sectionNumber,
+  checklistKey,
+  checklistDef,
+  results,
+}: {
+  title: string;
+  sectionNumber: string;
+  checklistKey: string;
+  checklistDef: { name: string; items: ChecklistItem[] };
+  results: Record<string, string> | undefined;
+}) {
+  if (!results || Object.keys(results).length === 0) return null;
+
+  // Calculate section stats
+  const stats = { pass: 0, fail: 0, partial: 0, na: 0, total: 0 };
+  checklistDef.items.forEach((item) => {
+    const status = results[item.id]?.toLowerCase();
+    if (status) {
+      stats.total++;
+      if (status === "pass") stats.pass++;
+      else if (status === "fail") stats.fail++;
+      else if (status === "partial") stats.partial++;
+      else if (status === "na") stats.na++;
+    }
+  });
+
+  if (stats.total === 0) return null;
+
+  return (
+    <View style={styles.complianceTable} wrap={false}>
+      <Text style={styles.subsectionTitle}>{sectionNumber} {title}</Text>
+
+      {/* Table Header */}
+      <View style={styles.complianceTableHeader}>
+        <Text style={[styles.complianceHeaderCell, { width: "12%" }]}>Ref</Text>
+        <Text style={[styles.complianceHeaderCell, { width: "25%" }]}>Item</Text>
+        <Text style={[styles.complianceHeaderCell, { width: "48%" }]}>Description</Text>
+        <Text style={[styles.complianceHeaderCell, { width: "15%", textAlign: "right" }]}>Status</Text>
+      </View>
+
+      {/* Table Rows */}
+      {checklistDef.items.map((item, index) => {
+        const status = results[item.id] || "";
+        if (!status) return null;
+
+        return (
+          <View
+            key={item.id}
+            style={[
+              styles.complianceTableRow,
+              index % 2 === 1 ? styles.complianceTableRowAlt : {},
+            ]}
+          >
+            <Text style={styles.complianceCellSection}>{item.section}</Text>
+            <Text style={styles.complianceCellItem}>{item.item}</Text>
+            <Text style={styles.complianceCellDescription}>{item.description}</Text>
+            <View style={styles.complianceCellStatus}>
+              <Text
+                style={[
+                  styles.statusBadgeEnhanced,
+                  { backgroundColor: getStatusColor(status) },
+                ]}
+              >
+                {status.toLowerCase() === "pass" ? "✓ PASS" :
+                 status.toLowerCase() === "fail" ? "✗ FAIL" :
+                 status.toLowerCase() === "partial" ? "⚠ PARTIAL" : "— N/A"}
+              </Text>
+            </View>
+          </View>
+        );
+      })}
+
+      {/* Section Summary */}
+      <View style={styles.sectionSummary}>
+        <Text style={styles.sectionSummaryText}>
+          {stats.total} items assessed: {stats.pass} compliant, {stats.fail + stats.partial} non-compliant, {stats.na} not applicable
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export function ReportPDF({ report }: ReportPDFProps) {
   // Calculate compliance statistics
   const calculateComplianceStats = () => {
@@ -457,12 +658,14 @@ export function ReportPDF({ report }: ReportPDFProps) {
 
     Object.values(report.complianceAssessment.checklistResults).forEach((checklist) => {
       Object.values(checklist).forEach((status) => {
-        stats.total++;
-        const normalizedStatus = status?.toLowerCase();
-        if (normalizedStatus === "pass") stats.pass++;
-        else if (normalizedStatus === "fail") stats.fail++;
-        else if (normalizedStatus === "partial") stats.partial++;
-        else if (normalizedStatus === "na") stats.na++;
+        if (status) {
+          stats.total++;
+          const normalizedStatus = status?.toLowerCase();
+          if (normalizedStatus === "pass") stats.pass++;
+          else if (normalizedStatus === "fail") stats.fail++;
+          else if (normalizedStatus === "partial") stats.partial++;
+          else if (normalizedStatus === "na") stats.na++;
+        }
       });
     });
 
@@ -471,6 +674,7 @@ export function ReportPDF({ report }: ReportPDFProps) {
 
   const complianceStats = calculateComplianceStats();
   const hasComplianceData = complianceStats.total > 0;
+  const hasNonCompliance = complianceStats.fail > 0 || complianceStats.partial > 0;
 
   return (
     <Document>
@@ -711,19 +915,27 @@ export function ReportPDF({ report }: ReportPDFProps) {
         <Page size="A4" style={styles.page}>
           <Text style={styles.sectionTitle}>7. BUILDING CODE COMPLIANCE ASSESSMENT</Text>
 
+          {/* Introduction */}
+          <Text style={styles.complianceIntro}>
+            This section documents the compliance status of the roofing system against applicable
+            New Zealand Building Code clauses and industry standards. Each item has been assessed
+            based on visual inspection and professional judgment in accordance with RANZ inspection
+            methodology.
+          </Text>
+
           {/* Summary Statistics */}
           <View style={styles.complianceStats}>
             <View style={styles.statBox}>
               <Text style={[styles.statNumber, { color: colors.pass }]}>
                 {complianceStats.pass}
               </Text>
-              <Text style={styles.statLabel}>Pass</Text>
+              <Text style={styles.statLabel}>Compliant</Text>
             </View>
             <View style={styles.statBox}>
               <Text style={[styles.statNumber, { color: colors.fail }]}>
                 {complianceStats.fail}
               </Text>
-              <Text style={styles.statLabel}>Fail</Text>
+              <Text style={styles.statLabel}>Non-Compliant</Text>
             </View>
             <View style={styles.statBox}>
               <Text style={[styles.statNumber, { color: colors.partial }]}>
@@ -741,103 +953,57 @@ export function ReportPDF({ report }: ReportPDFProps) {
               <Text style={[styles.statNumber, { color: colors.blue }]}>
                 {complianceStats.total}
               </Text>
-              <Text style={styles.statLabel}>Total Items</Text>
+              <Text style={styles.statLabel}>Total Assessed</Text>
             </View>
           </View>
 
           {/* E2/AS1 Section */}
-          {report.complianceAssessment?.checklistResults?.e2_as1 && (
-            <View style={styles.section}>
-              <Text style={styles.subsectionTitle}>
-                7.1 E2/AS1 4th Edition - External Moisture Assessment
-              </Text>
-              {CHECKLIST_DEFINITIONS.e2_as1.items.map((item) => {
-                const status = report.complianceAssessment?.checklistResults?.e2_as1?.[item.id] || "";
-                return (
-                  <View key={item.id} style={styles.complianceItem}>
-                    <Text style={styles.complianceSection}>{item.section}</Text>
-                    <Text style={styles.complianceDescription}>{item.item}</Text>
-                    <View style={styles.complianceStatus}>
-                      <Text
-                        style={[
-                          styles.statusBadge,
-                          { backgroundColor: getStatusColor(status) },
-                        ]}
-                      >
-                        {getStatusLabel(status)}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          )}
+          <ComplianceTableSection
+            title="E2/AS1 4th Edition - External Moisture Assessment"
+            sectionNumber="7.1"
+            checklistKey="e2_as1"
+            checklistDef={CHECKLIST_DEFINITIONS.e2_as1}
+            results={report.complianceAssessment?.checklistResults?.e2_as1}
+          />
 
           {/* Metal Roof COP Section */}
-          {report.complianceAssessment?.checklistResults?.metal_roof_cop_v25_12 && (
-            <View style={styles.section}>
-              <Text style={styles.subsectionTitle}>
-                7.2 Metal Roof and Wall Cladding COP v25.12 Assessment
-              </Text>
-              {CHECKLIST_DEFINITIONS.metal_roof_cop_v25_12.items.map((item) => {
-                const status = report.complianceAssessment?.checklistResults?.metal_roof_cop_v25_12?.[item.id] || "";
-                return (
-                  <View key={item.id} style={styles.complianceItem}>
-                    <Text style={styles.complianceSection}>{item.section}</Text>
-                    <Text style={styles.complianceDescription}>{item.item}</Text>
-                    <View style={styles.complianceStatus}>
-                      <Text
-                        style={[
-                          styles.statusBadge,
-                          { backgroundColor: getStatusColor(status) },
-                        ]}
-                      >
-                        {getStatusLabel(status)}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          )}
+          <ComplianceTableSection
+            title="Metal Roof and Wall Cladding Code of Practice v25.12"
+            sectionNumber="7.2"
+            checklistKey="metal_roof_cop"
+            checklistDef={CHECKLIST_DEFINITIONS.metal_roof_cop}
+            results={report.complianceAssessment?.checklistResults?.metal_roof_cop}
+          />
 
           {/* B2 Durability Section */}
-          {report.complianceAssessment?.checklistResults?.b2_durability && (
-            <View style={styles.section}>
-              <Text style={styles.subsectionTitle}>
-                7.3 B2 Durability Assessment
-              </Text>
-              {CHECKLIST_DEFINITIONS.b2_durability.items.map((item) => {
-                const status = report.complianceAssessment?.checklistResults?.b2_durability?.[item.id] || "";
-                return (
-                  <View key={item.id} style={styles.complianceItem}>
-                    <Text style={styles.complianceSection}>{item.section}</Text>
-                    <Text style={styles.complianceDescription}>{item.item}</Text>
-                    <View style={styles.complianceStatus}>
-                      <Text
-                        style={[
-                          styles.statusBadge,
-                          { backgroundColor: getStatusColor(status) },
-                        ]}
-                      >
-                        {getStatusLabel(status)}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          )}
+          <ComplianceTableSection
+            title="B2 Durability Assessment"
+            sectionNumber="7.3"
+            checklistKey="b2_durability"
+            checklistDef={CHECKLIST_DEFINITIONS.b2_durability}
+            results={report.complianceAssessment?.checklistResults?.b2_durability}
+          />
 
-          {/* Non-Compliance Summary */}
-          {report.complianceAssessment?.nonComplianceSummary && (
-            <View style={styles.complianceSummary}>
-              <Text style={styles.complianceSummaryTitle}>
-                7.4 Non-Compliance Summary
+          {/* Non-Compliance Warning Box */}
+          {(hasNonCompliance || report.complianceAssessment?.nonComplianceSummary) && (
+            <View style={styles.nonComplianceWarning} wrap={false}>
+              <View style={styles.nonComplianceWarningTitle}>
+                <View style={styles.nonComplianceWarningIcon}>
+                  <Text style={styles.nonComplianceWarningIconText}>!</Text>
+                </View>
+                <Text style={styles.nonComplianceWarningTitleText}>
+                  7.4 Non-Compliance Summary - IMPORTANT
+                </Text>
+              </View>
+              <Text style={styles.nonComplianceWarningContent}>
+                {report.complianceAssessment?.nonComplianceSummary ||
+                  `This inspection identified ${complianceStats.fail} non-compliant item(s) and ${complianceStats.partial} partially compliant item(s) that require attention. Non-compliant items may affect the building's compliance with the New Zealand Building Code and should be addressed by a licensed building practitioner.`}
               </Text>
-              <Text style={styles.complianceSummaryText}>
-                {report.complianceAssessment.nonComplianceSummary}
-              </Text>
+              {complianceStats.fail > 0 && (
+                <Text style={[styles.nonComplianceWarningContent, { marginTop: 10, fontWeight: "bold" }]}>
+                  Items marked as FAIL require immediate remediation to achieve Building Code compliance.
+                </Text>
+              )}
             </View>
           )}
 
