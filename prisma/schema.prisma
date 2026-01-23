@@ -6,36 +6,42 @@ datasource db {
   provider = "postgresql"
 }
 
-// User & Authentication
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
 model User {
-  id              String     @id @default(cuid())
-  clerkId         String     @unique
-  email           String     @unique
-  name            String
-  phone           String?
-  role            UserRole   @default(INSPECTOR)
-  status          UserStatus @default(ACTIVE)
+  id      String     @id @default(cuid())
+  clerkId String     @unique
+  email   String     @unique
+  name    String
+  phone   String?
+  role    UserRole   @default(INSPECTOR)
+  status  UserStatus @default(ACTIVE)
 
   // Business details
-  company         String?
-  address         String?    @db.Text
+  company String?
+  address String? @db.Text
 
   // Inspector credentials
-  qualifications  String?    @db.Text
+  qualifications  String?  @db.Text
   lbpNumber       String?
   yearsExperience Int?
   specialisations String[]
+  cvUrl           String?
 
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  reports         Report[]
+  reports     Report[]
+  assignments Assignment[]
 }
 
 enum UserRole {
   INSPECTOR
   REVIEWER
   ADMIN
+  SUPER_ADMIN
 }
 
 enum UserStatus {
@@ -44,66 +50,92 @@ enum UserStatus {
   PENDING_APPROVAL
 }
 
-// Inspection Reports
+// ============================================
+// INSPECTION REPORTS
+// ============================================
+
 model Report {
-  id                String       @id @default(cuid())
-  reportNumber      String       @unique // RANZ-2025-001234
-  status            ReportStatus @default(DRAFT)
+  id           String       @id @default(cuid())
+  reportNumber String       @unique // RANZ-2025-001234
+  status       ReportStatus @default(DRAFT)
 
   // Property Details
-  propertyAddress   String
-  propertyCity      String
-  propertyRegion    String
-  propertyPostcode  String
-  propertyType      PropertyType
-  buildingAge       Int?
-  gpsLat            Float?
-  gpsLng            Float?
+  propertyAddress  String
+  propertyCity     String
+  propertyRegion   String
+  propertyPostcode String
+  propertyType     PropertyType
+  buildingAge      Int?
+  gpsLat           Float?
+  gpsLng           Float?
 
   // Inspection Details
   inspectionDate    DateTime
   inspectionType    InspectionType
   weatherConditions String?
+  temperature       Float?
   accessMethod      String?
-  limitations       String?      @db.Text
+  limitations       String?        @db.Text
 
   // Client Information
-  clientName        String
-  clientEmail       String?
-  clientPhone       String?
+  clientName    String
+  clientEmail   String?
+  clientPhone   String?
+  clientCompany String?
+  engagingParty String?
+
+  // Building Consent
+  consentNumber        String?
+  consentDate          DateTime?
+  codeOfComplianceDate DateTime?
 
   // Report Content (JSON for flexibility)
-  scopeOfWorks      Json?
-  methodology       Json?
-  findings          Json?
-  conclusions       Json?
-  recommendations   Json?
+  scopeOfWorks    Json?
+  methodology     Json?
+  equipment       Json?
+  findings        Json?
+  analysis        Json?
+  conclusions     Json?
+  recommendations Json?
+
+  // Compliance Assessment (direct JSON fields)
+  e2Compliance  Json?
+  b2Compliance  Json?
+  copCompliance Json?
 
   // Sign-off
-  declarationSigned Boolean      @default(false)
+  declarationSigned Boolean   @default(false)
   signedAt          DateTime?
+  signatureUrl      String?
 
   // PDF
-  pdfUrl            String?
-  pdfGeneratedAt    DateTime?
+  pdfUrl         String?
+  pdfGeneratedAt DateTime?
+  pdfVersion     Int       @default(1)
 
   // Timestamps
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  submittedAt       DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  submittedAt DateTime?
+  approvedAt  DateTime?
 
   // Relations
-  inspectorId       String
-  inspector         User         @relation(fields: [inspectorId], references: [id])
+  inspectorId String
+  inspector   User    @relation(fields: [inspectorId], references: [id])
+  reviewerId  String?
 
   photos               Photo[]
+  videos               Video[]
+  documents            Document[]
   defects              Defect[]
   roofElements         RoofElement[]
   auditLog             AuditLog[]
   complianceAssessment ComplianceAssessment?
 
+  @@index([reportNumber])
   @@index([inspectorId])
   @@index([status])
+  @@index([inspectionDate])
   @@index([createdAt])
 }
 
@@ -111,8 +143,11 @@ enum ReportStatus {
   DRAFT
   IN_PROGRESS
   PENDING_REVIEW
+  UNDER_REVIEW
+  REVISION_REQUIRED
   APPROVED
   FINALISED
+  ARCHIVED
 }
 
 enum PropertyType {
@@ -132,29 +167,46 @@ enum InspectionType {
   DISPUTE_RESOLUTION
   PRE_PURCHASE
   MAINTENANCE_REVIEW
+  WARRANTY_CLAIM
 }
 
-// Roof Elements
-model RoofElement {
-  id              String          @id @default(cuid())
-  reportId        String
-  report          Report          @relation(fields: [reportId], references: [id], onDelete: Cascade)
+// ============================================
+// ROOF ELEMENTS
+// ============================================
 
-  elementType     ElementType
-  location        String
+model RoofElement {
+  id       String @id @default(cuid())
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  elementType ElementType
+  location    String
+
+  // Cladding Details
   claddingType    String?
+  claddingProfile String?
   material        String?
   manufacturer    String?
-  pitch           Float?
-  area            Float?
+  colour          String?
+
+  // Technical Specs
+  pitch    Float?
+  area     Float?
+  ageYears Int?
+
+  // Condition Rating
   conditionRating ConditionRating?
-  conditionNotes  String?         @db.Text
+  conditionNotes  String?          @db.Text
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  // Compliance
+  meetsCop Boolean?
+  meetsE2  Boolean?
 
-  defects         Defect[]
-  photos          Photo[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  defects Defect[]
+  photos  Photo[]
 
   @@index([reportId])
 }
@@ -170,8 +222,14 @@ enum ElementType {
   DOWNPIPE
   FLASHING_WALL
   FLASHING_PENETRATION
+  FLASHING_PARAPET
   SKYLIGHT
   VENT
+  ANTENNA_MOUNT
+  SOLAR_PANEL
+  UNDERLAY
+  INSULATION
+  ROOF_STRUCTURE
   OTHER
 }
 
@@ -183,37 +241,50 @@ enum ConditionRating {
   NOT_INSPECTED
 }
 
-// Defects
+// ============================================
+// DEFECTS
+// ============================================
+
 model Defect {
-  id              String         @id @default(cuid())
-  reportId        String
-  report          Report         @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  roofElementId   String?
-  roofElement     RoofElement?   @relation(fields: [roofElementId], references: [id])
+  id            String       @id @default(cuid())
+  reportId      String
+  report        Report       @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  roofElementId String?
+  roofElement   RoofElement? @relation(fields: [roofElementId], references: [id])
 
-  defectNumber    Int
-  title           String
-  description     String         @db.Text
-  location        String
+  defectNumber Int
+  title        String
+  description  String @db.Text
+  location     String
 
-  classification  DefectClass
-  severity        DefectSeverity
+  classification DefectClass
+  severity       DefectSeverity
 
   // Three-part structure (ISO compliant)
-  observation     String         @db.Text  // Factual
-  analysis        String?        @db.Text  // Technical interpretation
-  opinion         String?        @db.Text  // Professional judgment
+  observation String  @db.Text
+  analysis    String? @db.Text
+  opinion     String? @db.Text
 
-  codeReference   String?        // E2/AS1 Section X
-  copReference    String?        // COP v25.12 Section X
+  // Compliance References
+  codeReference String?
+  copReference  String?
 
-  recommendation  String?        @db.Text
-  priorityLevel   PriorityLevel?
+  // Causation
+  probableCause       String? @db.Text
+  contributingFactors String? @db.Text
 
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  // Recommendations
+  recommendation String?        @db.Text
+  priorityLevel  PriorityLevel?
+  estimatedCost  String?
 
-  photos          Photo[]
+  // Measurements
+  measurements Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos Photo[]
 
   @@index([reportId])
   @@index([roofElementId])
@@ -224,6 +295,7 @@ enum DefectClass {
   MINOR_DEFECT
   SAFETY_HAZARD
   MAINTENANCE_ITEM
+  WORKMANSHIP_ISSUE
 }
 
 enum DefectSeverity {
@@ -240,16 +312,20 @@ enum PriorityLevel {
   LONG_TERM
 }
 
-// Photos with evidence integrity
-model Photo {
-  id               String       @id @default(cuid())
-  reportId         String
-  report           Report       @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  defectId         String?
-  defect           Defect?      @relation(fields: [defectId], references: [id])
-  roofElementId    String?
-  roofElement      RoofElement? @relation(fields: [roofElementId], references: [id])
+// ============================================
+// MEDIA & EVIDENCE
+// ============================================
 
+model Photo {
+  id            String       @id @default(cuid())
+  reportId      String
+  report        Report       @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  defectId      String?
+  defect        Defect?      @relation(fields: [defectId], references: [id])
+  roofElementId String?
+  roofElement   RoofElement? @relation(fields: [roofElementId], references: [id])
+
+  // File Info
   filename         String
   originalFilename String
   mimeType         String
@@ -257,23 +333,36 @@ model Photo {
   url              String
   thumbnailUrl     String?
 
-  photoType        PhotoType
+  photoType PhotoType
 
-  // EXIF Metadata (critical for evidence)
-  capturedAt       DateTime?
-  gpsLat           Float?
-  gpsLng           Float?
-  cameraMake       String?
-  cameraModel      String?
+  // EXIF Metadata (Critical for evidence)
+  capturedAt   DateTime?
+  gpsLat       Float?
+  gpsLng       Float?
+  gpsAltitude  Float?
+  cameraMake   String?
+  cameraModel  String?
+  cameraSerial String?
+  exposureTime String?
+  fNumber      Float?
+  iso          Int?
+  focalLength  Float?
 
   // Evidence Integrity
-  originalHash     String       // SHA-256
-  hashVerified     Boolean      @default(false)
+  originalHash String
+  hashVerified Boolean @default(false)
+  isEdited     Boolean @default(false)
+  editedFrom   String?
 
-  caption          String?
-  sortOrder        Int          @default(0)
+  // Annotations
+  caption        String?
+  annotations    Json?
+  scaleReference String?
 
-  createdAt        DateTime     @default(now())
+  sortOrder Int @default(0)
+
+  createdAt  DateTime @default(now())
+  uploadedAt DateTime @default(now())
 
   @@index([reportId])
   @@index([defectId])
@@ -285,47 +374,181 @@ enum PhotoType {
   CONTEXT
   DETAIL
   SCALE_REFERENCE
+  INACCESSIBLE
+  EQUIPMENT
   GENERAL
 }
 
-// Audit Log
+model Video {
+  id       String @id @default(cuid())
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  // File Info
+  filename         String
+  originalFilename String
+  mimeType         String
+  fileSize         Int
+  duration         Int?
+  url              String
+  thumbnailUrl     String?
+
+  // Metadata
+  capturedAt DateTime?
+  gpsLat     Float?
+  gpsLng     Float?
+
+  // Evidence Integrity
+  originalHash String
+
+  // Description
+  title       String?
+  description String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+}
+
+model Document {
+  id       String @id @default(cuid())
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  documentType DocumentType
+  title        String
+  filename     String
+  mimeType     String
+  fileSize     Int
+  url          String
+
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+}
+
+enum DocumentType {
+  BUILDING_CONSENT
+  CODE_OF_COMPLIANCE
+  MANUFACTURER_SPEC
+  PREVIOUS_REPORT
+  CORRESPONDENCE
+  CALIBRATION_CERT
+  OTHER
+}
+
+// ============================================
+// AUDIT & COMPLIANCE
+// ============================================
+
 model AuditLog {
-  id          String   @id @default(cuid())
-  reportId    String
-  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
-  action      String
-  userId      String
-  details     Json?
+  action    AuditAction
+  userId    String
+  details   Json?
+  ipAddress String?
+  userAgent String?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([reportId])
   @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }
 
-// Report Templates
+enum AuditAction {
+  CREATED
+  UPDATED
+  PHOTO_ADDED
+  PHOTO_DELETED
+  VIDEO_ADDED
+  DEFECT_ADDED
+  DEFECT_UPDATED
+  STATUS_CHANGED
+  SUBMITTED
+  REVIEWED
+  APPROVED
+  PDF_GENERATED
+  DOWNLOADED
+  SHARED
+}
+
+// ============================================
+// ASSIGNMENTS & WORKFLOW
+// ============================================
+
+model Assignment {
+  id          String @id @default(cuid())
+  inspectorId String
+  inspector   User   @relation(fields: [inspectorId], references: [id])
+
+  // Client Request
+  clientName      String
+  clientEmail     String
+  clientPhone     String?
+  propertyAddress String
+
+  // Assignment Details
+  requestType InspectionType
+  urgency     AssignmentUrgency
+  notes       String?           @db.Text
+
+  status AssignmentStatus @default(PENDING)
+
+  scheduledDate DateTime?
+  completedDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([inspectorId])
+  @@index([status])
+}
+
+enum AssignmentStatus {
+  PENDING
+  ACCEPTED
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AssignmentUrgency {
+  STANDARD
+  PRIORITY
+  URGENT
+  EMERGENCY
+}
+
+// ============================================
+// TEMPLATES & CONFIGURATION
+// ============================================
+
 model ReportTemplate {
   id             String         @id @default(cuid())
   name           String         @unique
   description    String?
   inspectionType InspectionType
-  sections       Json           // Array of section slugs: ["property", "inspection", "elements", "defects", "compliance", "conclusions", "sign-off"]
-  checklists     Json?          // Mapping of checklist categories to their structure
+  sections       Json
+  checklists     Json?
   isDefault      Boolean        @default(false)
   isActive       Boolean        @default(true)
 
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-// Compliance Checklists (E2/AS1, Metal Roof COP, B2 Durability)
 model Checklist {
-  id        String   @id @default(cuid())
-  name      String   // e.g., "E2/AS1 4th Edition - External Moisture"
-  category  String   // "compliance" | "elements" | "observations"
-  standard  String?  // e.g., "E2/AS1", "Metal_Roof_COP_v25.12", "B2_Durability"
-  items     Json     // Array of checklist items: [{id, section, item, description, required, notes}]
+  id       String  @id @default(cuid())
+  name     String
+  category String
+  standard String?
+  items    Json
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -334,18 +557,16 @@ model Checklist {
   @@index([standard])
 }
 
-// Compliance Assessment for a Report
 model ComplianceAssessment {
-  id                   String   @id @default(cuid())
-  reportId             String   @unique
-  report               Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  reportId String @unique
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
-  // Results for each checklist: {e2_as1: {item_1: "pass", item_2: "fail", ...}, metal_roof_cop: {...}, b2_durability: {...}}
   checklistResults     Json
-  nonComplianceSummary String?  @db.Text
+  nonComplianceSummary String? @db.Text
 
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([reportId])
 }
