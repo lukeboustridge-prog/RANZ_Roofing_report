@@ -15,6 +15,7 @@ import {
   Calendar,
   User,
   Layers,
+  Edit,
 } from "lucide-react";
 import type { ReportStatus } from "@prisma/client";
 
@@ -109,6 +110,14 @@ export default async function ReportDetailPage({
           </p>
         </div>
         <div className="flex gap-2">
+          {report.status !== "FINALISED" && (
+            <Button variant="outline" asChild>
+              <Link href={`/reports/${report.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" asChild>
             <Link href={`/reports/${report.id}/pdf`}>
               <FileText className="mr-2 h-4 w-4" />
