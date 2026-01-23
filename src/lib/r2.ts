@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import fs from "fs/promises";
 import path from "path";
 
@@ -78,4 +79,29 @@ export function generatePhotoKey(reportId: string, filename: string): string {
 
 export function generateThumbnailKey(photoKey: string): string {
   return photoKey.replace("/photos/", "/thumbnails/");
+}
+
+/**
+ * Generate a presigned URL for direct upload from mobile devices
+ * @param key The R2 object key
+ * @param contentType The content type of the file
+ * @param expiresIn Expiration time in seconds (default: 1 hour)
+ */
+export async function getPresignedUploadUrl(
+  key: string,
+  contentType: string,
+  expiresIn: number = 3600
+): Promise<string> {
+  if (isLocalStorage) {
+    // For local development, return a direct upload endpoint
+    return `/api/photos/direct-upload?key=${encodeURIComponent(key)}`;
+  }
+
+  const command = new PutObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+  });
+
+  return getSignedUrl(r2!, command, { expiresIn });
 }
