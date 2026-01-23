@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+
+  /* RANZ Brand Colors */
+  --ranz-blue-50: #e8eef6;
+  --ranz-blue-100: #d1deed;
+  --ranz-blue-200: #a3bed9;
+  --ranz-blue-300: #7199c4;
+  --ranz-blue-400: #4a7ab0;
+  --ranz-blue-500: #2d5c8f;
+  --ranz-blue-600: #254b75;
+  --ranz-blue-700: #1c3a5c;
+  --ranz-blue-800: #142942;
+  --ranz-blue-900: #0c1929;
+
+  --ranz-orange-300: #ff9e40;
+  --ranz-orange-400: #ff6d00;
+  --ranz-orange-500: #e65100;
+
+  /* Status Colors */
+  --status-critical: #dc2626;
+  --status-high: #ea580c;
+  --status-medium: #ca8a04;
+  --status-low: #16a34a;
+
+  /* Condition Colors */
+  --condition-good: #16a34a;
+  --condition-fair: #ca8a04;
+  --condition-poor: #ea580c;
+  --condition-critical: #dc2626;
+
+  /* UI Colors */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #2d5c8f;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #e65100;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2d5c8f;
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* RANZ Colors */
+  --color-ranz-blue-50: var(--ranz-blue-50);
+  --color-ranz-blue-100: var(--ranz-blue-100);
+  --color-ranz-blue-200: var(--ranz-blue-200);
+  --color-ranz-blue-300: var(--ranz-blue-300);
+  --color-ranz-blue-400: var(--ranz-blue-400);
+  --color-ranz-blue-500: var(--ranz-blue-500);
+  --color-ranz-blue-600: var(--ranz-blue-600);
+  --color-ranz-blue-700: var(--ranz-blue-700);
+  --color-ranz-blue-800: var(--ranz-blue-800);
+  --color-ranz-blue-900: var(--ranz-blue-900);
+
+  --color-ranz-orange-300: var(--ranz-orange-300);
+  --color-ranz-orange-400: var(--ranz-orange-400);
+  --color-ranz-orange-500: var(--ranz-orange-500);
+
+  /* Status */
+  --color-status-critical: var(--status-critical);
+  --color-status-high: var(--status-high);
+  --color-status-medium: var(--status-medium);
+  --color-status-low: var(--status-low);
+
+  /* Condition */
+  --color-condition-good: var(--condition-good);
+  --color-condition-fair: var(--condition-fair);
+  --color-condition-poor: var(--condition-poor);
+  --color-condition-critical: var(--condition-critical);
+
+  /* UI */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #f8fafc;
+    --card: #1e293b;
+    --card-foreground: #f8fafc;
+    --popover: #1e293b;
+    --popover-foreground: #f8fafc;
+    --secondary: #334155;
+    --secondary-foreground: #f8fafc;
+    --muted: #334155;
+    --muted-foreground: #94a3b8;
+    --border: #334155;
+    --input: #334155;
+  }
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Utility classes for shadcn/ui compatibility */
+.border-border {
+  border-color: var(--border);
+}

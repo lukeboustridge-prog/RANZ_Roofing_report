@@ -1,0 +1,300 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User & Authentication
+model User {
+  id              String     @id @default(cuid())
+  clerkId         String     @unique
+  email           String     @unique
+  name            String
+  phone           String?
+  role            UserRole   @default(INSPECTOR)
+  status          UserStatus @default(ACTIVE)
+
+  // Inspector credentials
+  qualifications  String?    @db.Text
+  lbpNumber       String?
+  yearsExperience Int?
+  specialisations String[]
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  reports         Report[]
+}
+
+enum UserRole {
+  INSPECTOR
+  REVIEWER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_APPROVAL
+}
+
+// Inspection Reports
+model Report {
+  id                String       @id @default(cuid())
+  reportNumber      String       @unique // RANZ-2025-001234
+  status            ReportStatus @default(DRAFT)
+
+  // Property Details
+  propertyAddress   String
+  propertyCity      String
+  propertyRegion    String
+  propertyPostcode  String
+  propertyType      PropertyType
+  buildingAge       Int?
+  gpsLat            Float?
+  gpsLng            Float?
+
+  // Inspection Details
+  inspectionDate    DateTime
+  inspectionType    InspectionType
+  weatherConditions String?
+  accessMethod      String?
+  limitations       String?      @db.Text
+
+  // Client Information
+  clientName        String
+  clientEmail       String?
+  clientPhone       String?
+
+  // Report Content (JSON for flexibility)
+  scopeOfWorks      Json?
+  methodology       Json?
+  findings          Json?
+  conclusions       Json?
+  recommendations   Json?
+
+  // Sign-off
+  declarationSigned Boolean      @default(false)
+  signedAt          DateTime?
+
+  // PDF
+  pdfUrl            String?
+  pdfGeneratedAt    DateTime?
+
+  // Timestamps
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  submittedAt       DateTime?
+
+  // Relations
+  inspectorId       String
+  inspector         User         @relation(fields: [inspectorId], references: [id])
+
+  photos            Photo[]
+  defects           Defect[]
+  roofElements      RoofElement[]
+  auditLog          AuditLog[]
+
+  @@index([inspectorId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ReportStatus {
+  DRAFT
+  IN_PROGRESS
+  PENDING_REVIEW
+  APPROVED
+  FINALISED
+}
+
+enum PropertyType {
+  RESIDENTIAL_1
+  RESIDENTIAL_2
+  RESIDENTIAL_3
+  COMMERCIAL_LOW
+  COMMERCIAL_HIGH
+  INDUSTRIAL
+}
+
+enum InspectionType {
+  FULL_INSPECTION
+  VISUAL_ONLY
+  NON_INVASIVE
+  INVASIVE
+  DISPUTE_RESOLUTION
+  PRE_PURCHASE
+  MAINTENANCE_REVIEW
+}
+
+// Roof Elements
+model RoofElement {
+  id              String          @id @default(cuid())
+  reportId        String
+  report          Report          @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  elementType     ElementType
+  location        String
+  claddingType    String?
+  material        String?
+  manufacturer    String?
+  pitch           Float?
+  area            Float?
+  conditionRating ConditionRating?
+  conditionNotes  String?         @db.Text
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  defects         Defect[]
+  photos          Photo[]
+
+  @@index([reportId])
+}
+
+enum ElementType {
+  ROOF_CLADDING
+  RIDGE
+  VALLEY
+  HIP
+  BARGE
+  FASCIA
+  GUTTER
+  DOWNPIPE
+  FLASHING_WALL
+  FLASHING_PENETRATION
+  SKYLIGHT
+  VENT
+  OTHER
+}
+
+enum ConditionRating {
+  GOOD
+  FAIR
+  POOR
+  CRITICAL
+  NOT_INSPECTED
+}
+
+// Defects
+model Defect {
+  id              String         @id @default(cuid())
+  reportId        String
+  report          Report         @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  roofElementId   String?
+  roofElement     RoofElement?   @relation(fields: [roofElementId], references: [id])
+
+  defectNumber    Int
+  title           String
+  description     String         @db.Text
+  location        String
+
+  classification  DefectClass
+  severity        DefectSeverity
+
+  // Three-part structure (ISO compliant)
+  observation     String         @db.Text  // Factual
+  analysis        String?        @db.Text  // Technical interpretation
+  opinion         String?        @db.Text  // Professional judgment
+
+  codeReference   String?        // E2/AS1 Section X
+  copReference    String?        // COP v25.12 Section X
+
+  recommendation  String?        @db.Text
+  priorityLevel   PriorityLevel?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  photos          Photo[]
+
+  @@index([reportId])
+  @@index([roofElementId])
+}
+
+enum DefectClass {
+  MAJOR_DEFECT
+  MINOR_DEFECT
+  SAFETY_HAZARD
+  MAINTENANCE_ITEM
+}
+
+enum DefectSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum PriorityLevel {
+  IMMEDIATE
+  SHORT_TERM
+  MEDIUM_TERM
+  LONG_TERM
+}
+
+// Photos with evidence integrity
+model Photo {
+  id               String       @id @default(cuid())
+  reportId         String
+  report           Report       @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  defectId         String?
+  defect           Defect?      @relation(fields: [defectId], references: [id])
+  roofElementId    String?
+  roofElement      RoofElement? @relation(fields: [roofElementId], references: [id])
+
+  filename         String
+  originalFilename String
+  mimeType         String
+  fileSize         Int
+  url              String
+  thumbnailUrl     String?
+
+  photoType        PhotoType
+
+  // EXIF Metadata (critical for evidence)
+  capturedAt       DateTime?
+  gpsLat           Float?
+  gpsLng           Float?
+  cameraMake       String?
+  cameraModel      String?
+
+  // Evidence Integrity
+  originalHash     String       // SHA-256
+  hashVerified     Boolean      @default(false)
+
+  caption          String?
+  sortOrder        Int          @default(0)
+
+  createdAt        DateTime     @default(now())
+
+  @@index([reportId])
+  @@index([defectId])
+  @@index([roofElementId])
+}
+
+enum PhotoType {
+  OVERVIEW
+  CONTEXT
+  DETAIL
+  SCALE_REFERENCE
+  GENERAL
+}
+
+// Audit Log
+model AuditLog {
+  id          String   @id @default(cuid())
+  reportId    String
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  action      String
+  userId      String
+  details     Json?
+
+  createdAt   DateTime @default(now())
+
+  @@index([reportId])
+  @@index([userId])
+}
