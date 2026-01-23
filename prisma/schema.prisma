@@ -96,10 +96,11 @@ model Report {
   inspectorId       String
   inspector         User         @relation(fields: [inspectorId], references: [id])
 
-  photos            Photo[]
-  defects           Defect[]
-  roofElements      RoofElement[]
-  auditLog          AuditLog[]
+  photos               Photo[]
+  defects              Defect[]
+  roofElements         RoofElement[]
+  auditLog             AuditLog[]
+  complianceAssessment ComplianceAssessment?
 
   @@index([inspectorId])
   @@index([status])
@@ -301,4 +302,50 @@ model AuditLog {
 
   @@index([reportId])
   @@index([userId])
+}
+
+// Report Templates
+model ReportTemplate {
+  id             String         @id @default(cuid())
+  name           String         @unique
+  description    String?
+  inspectionType InspectionType
+  sections       Json           // Array of section slugs: ["property", "inspection", "elements", "defects", "compliance", "conclusions", "sign-off"]
+  checklists     Json?          // Mapping of checklist categories to their structure
+  isDefault      Boolean        @default(false)
+  isActive       Boolean        @default(true)
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+// Compliance Checklists (E2/AS1, Metal Roof COP, B2 Durability)
+model Checklist {
+  id        String   @id @default(cuid())
+  name      String   // e.g., "E2/AS1 4th Edition - External Moisture"
+  category  String   // "compliance" | "elements" | "observations"
+  standard  String?  // e.g., "E2/AS1", "Metal_Roof_COP_v25.12", "B2_Durability"
+  items     Json     // Array of checklist items: [{id, section, item, description, required, notes}]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([standard])
+}
+
+// Compliance Assessment for a Report
+model ComplianceAssessment {
+  id                   String   @id @default(cuid())
+  reportId             String   @unique
+  report               Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  // Results for each checklist: {e2_as1: {item_1: "pass", item_2: "fail", ...}, metal_roof_cop: {...}, b2_durability: {...}}
+  checklistResults     Json
+  nonComplianceSummary String?  @db.Text
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([reportId])
 }

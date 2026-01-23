@@ -16,6 +16,8 @@ import {
   User,
   Layers,
   Edit,
+  Shield,
+  Send,
 } from "lucide-react";
 import type { ReportStatus } from "@prisma/client";
 
@@ -124,6 +126,14 @@ export default async function ReportDetailPage({
               Preview PDF
             </Link>
           </Button>
+          {!["PENDING_REVIEW", "APPROVED", "FINALISED"].includes(report.status) && (
+            <Button asChild>
+              <Link href={`/reports/${report.id}/submit`}>
+                <Send className="mr-2 h-4 w-4" />
+                Submit
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -269,7 +279,7 @@ export default async function ReportDetailPage({
       </div>
 
       {/* Quick actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Button variant="outline" asChild className="h-auto py-4">
           <Link href={`/reports/${report.id}/elements`}>
             <div className="flex flex-col items-center gap-2">
@@ -307,6 +317,18 @@ export default async function ReportDetailPage({
         </Button>
 
         <Button variant="outline" asChild className="h-auto py-4">
+          <Link href={`/reports/${report.id}/compliance`}>
+            <div className="flex flex-col items-center gap-2">
+              <Shield className="h-6 w-6" />
+              <span>Compliance</span>
+              <span className="text-xs text-muted-foreground">
+                Code assessment
+              </span>
+            </div>
+          </Link>
+        </Button>
+
+        <Button variant="outline" asChild className="h-auto py-4">
           <Link href={`/reports/${report.id}/pdf`}>
             <div className="flex flex-col items-center gap-2">
               <FileText className="h-6 w-6" />
@@ -317,6 +339,20 @@ export default async function ReportDetailPage({
             </div>
           </Link>
         </Button>
+
+        {!["PENDING_REVIEW", "APPROVED", "FINALISED"].includes(report.status) && (
+          <Button asChild className="h-auto py-4 bg-[var(--ranz-blue-600)] hover:bg-[var(--ranz-blue-700)]">
+            <Link href={`/reports/${report.id}/submit`}>
+              <div className="flex flex-col items-center gap-2">
+                <Send className="h-6 w-6" />
+                <span>Submit</span>
+                <span className="text-xs opacity-80">
+                  For review
+                </span>
+              </div>
+            </Link>
+          </Button>
+        )}
       </div>
     </div>
   );

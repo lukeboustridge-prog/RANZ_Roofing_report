@@ -20,6 +20,10 @@ const colors = {
   high: "#ea580c",
   medium: "#ca8a04",
   low: "#16a34a",
+  pass: "#16a34a",
+  fail: "#dc2626",
+  partial: "#ea580c",
+  na: "#9ca3af",
 };
 
 const styles = StyleSheet.create({
@@ -63,6 +67,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lightGray,
     padding: 8,
     marginBottom: 10,
+  },
+  subsectionTitle: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: colors.darkBlue,
+    marginBottom: 8,
+    marginTop: 15,
   },
   row: {
     flexDirection: "row",
@@ -163,6 +174,76 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lightGray,
     borderRadius: 4,
   },
+  // Compliance styles
+  complianceItem: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderGray,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  complianceSection: {
+    width: "15%",
+    fontSize: 9,
+    fontWeight: "bold",
+    color: colors.mediumGray,
+  },
+  complianceDescription: {
+    width: "65%",
+    fontSize: 9,
+    color: "#333333",
+  },
+  complianceStatus: {
+    width: "20%",
+    textAlign: "right",
+  },
+  statusBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+    fontSize: 8,
+    fontWeight: "bold",
+    color: "white",
+  },
+  complianceSummary: {
+    marginTop: 15,
+    padding: 12,
+    backgroundColor: "#fef3c7",
+    borderLeftWidth: 4,
+    borderLeftColor: colors.orange,
+    borderRadius: 4,
+  },
+  complianceSummaryTitle: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: colors.orange,
+    marginBottom: 8,
+  },
+  complianceSummaryText: {
+    fontSize: 9,
+    color: "#92400e",
+    lineHeight: 1.5,
+  },
+  complianceStats: {
+    flexDirection: "row",
+    marginBottom: 15,
+    padding: 10,
+    backgroundColor: colors.lightGray,
+    borderRadius: 4,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: "center",
+  },
+  statNumber: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  statLabel: {
+    fontSize: 8,
+    color: colors.mediumGray,
+    marginTop: 2,
+  },
 });
 
 function getSeverityColor(severity: string): string {
@@ -177,6 +258,36 @@ function getSeverityColor(severity: string): string {
       return colors.low;
     default:
       return colors.mediumGray;
+  }
+}
+
+function getStatusColor(status: string): string {
+  switch (status?.toLowerCase()) {
+    case "pass":
+      return colors.pass;
+    case "fail":
+      return colors.fail;
+    case "partial":
+      return colors.partial;
+    case "na":
+      return colors.na;
+    default:
+      return colors.mediumGray;
+  }
+}
+
+function getStatusLabel(status: string): string {
+  switch (status?.toLowerCase()) {
+    case "pass":
+      return "PASS";
+    case "fail":
+      return "FAIL";
+    case "partial":
+      return "PARTIAL";
+    case "na":
+      return "N/A";
+    default:
+      return "—";
   }
 }
 
@@ -212,6 +323,23 @@ function formatInspectionType(type: string): string {
     MAINTENANCE_REVIEW: "Maintenance Review",
   };
   return types[type] || type;
+}
+
+interface ChecklistItem {
+  id: string;
+  section: string;
+  item: string;
+  description: string;
+  required: boolean;
+}
+
+interface ComplianceAssessmentData {
+  checklistResults: {
+    [checklistKey: string]: {
+      [itemId: string]: string;
+    };
+  };
+  nonComplianceSummary: string | null;
 }
 
 interface ReportData {
@@ -261,13 +389,89 @@ interface ReportData {
     caption: string | null;
     photoType: string;
   }>;
+  complianceAssessment?: ComplianceAssessmentData | null;
 }
+
+// Checklist definitions for PDF rendering
+const CHECKLIST_DEFINITIONS: Record<string, { name: string; items: ChecklistItem[] }> = {
+  e2_as1: {
+    name: "E2/AS1 4th Edition - External Moisture",
+    items: [
+      { id: "e2_3_1", section: "E2.3.1", item: "Precipitation Shedding", description: "Roof effectively sheds water and snow", required: true },
+      { id: "e2_3_2", section: "E2.3.2", item: "Water Penetration Prevention", description: "No dampness or damage from water ingress", required: true },
+      { id: "e2_pitch", section: "E2/AS1 Table 1", item: "Roof Pitch Adequacy", description: "Pitch adequate for cladding type", required: true },
+      { id: "e2_flashing_junctions", section: "E2/AS1 9.1", item: "Flashing at Junctions", description: "Appropriate flashings at all junctions", required: true },
+      { id: "e2_flashing_penetrations", section: "E2/AS1 9.2", item: "Penetration Flashings", description: "Code-compliant penetration flashings", required: true },
+      { id: "e2_underlay", section: "E2/AS1 8.5", item: "Underlay Installation", description: "Underlay correctly installed with adequate laps", required: true },
+      { id: "e2_gutters", section: "E2/AS1 10.1", item: "Gutter and Drainage", description: "Gutters adequately sized and functional", required: true },
+      { id: "e2_clearances", section: "E2/AS1 6.1", item: "Ground Clearances", description: "Required clearances maintained", required: true },
+      { id: "e2_ventilation", section: "E2/AS1 8.6", item: "Roof Cavity Ventilation", description: "Adequate ventilation to prevent condensation", required: true },
+      { id: "e2_compatibility", section: "E2/AS1 4.1", item: "Material Compatibility", description: "Materials compatible and suitable for exposure", required: true },
+      { id: "e2_sealants", section: "E2/AS1 9.4", item: "Sealant Condition", description: "Sealants intact and properly applied", required: true },
+    ],
+  },
+  metal_roof_cop_v25_12: {
+    name: "Metal Roof COP v25.12",
+    items: [
+      { id: "cop_3_1", section: "Section 3.1", item: "Structure Support", description: "Adequate support for cladding", required: true },
+      { id: "cop_3_2", section: "Section 3.2", item: "Fastening Patterns", description: "Correct fastening patterns and centres", required: true },
+      { id: "cop_4_1", section: "Section 4.1", item: "Environmental Category", description: "Materials appropriate for exposure", required: true },
+      { id: "cop_4_2", section: "Section 4.2", item: "Material Expected Life", description: "Meets 15-year minimum durability", required: true },
+      { id: "cop_5_1", section: "Section 5.1", item: "Roof Drainage", description: "Effective drainage without overflow", required: true },
+      { id: "cop_7_1", section: "Section 7.1", item: "Minimum Roof Pitch", description: "Pitch meets profile requirements", required: true },
+      { id: "cop_7_2", section: "Section 7.2", item: "End Lap Requirements", description: "Minimum overlaps with sealant", required: true },
+      { id: "cop_7_3", section: "Section 7.3", item: "Side Lap Requirements", description: "Minimum one full rib overlap", required: true },
+      { id: "cop_8_1", section: "Section 8.1", item: "Flashing Design", description: "Flashings per COP details", required: true },
+      { id: "cop_9_1", section: "Section 9.1", item: "Fastener Type", description: "Appropriate fastener type and material", required: true },
+      { id: "cop_9_2", section: "Section 9.2", item: "Fastener Spacing", description: "Complies with wind zone requirements", required: true },
+      { id: "cop_10_1", section: "Section 10.1", item: "Condensation Management", description: "Appropriate underlay and ventilation", required: true },
+    ],
+  },
+  b2_durability: {
+    name: "B2 Durability Assessment",
+    items: [
+      { id: "b2_cladding_15", section: "B2.3.1(a)", item: "Roof Cladding Durability", description: "Minimum 15-year expectancy", required: true },
+      { id: "b2_flashing_15", section: "B2.3.1(a)", item: "Flashing Durability", description: "Minimum 15-year expectancy", required: true },
+      { id: "b2_fastener", section: "B2.3.1", item: "Fastener Durability", description: "No signs of corrosion or failure", required: true },
+      { id: "b2_sealant_5", section: "B2.3.1(b)", item: "Sealant Durability", description: "Minimum 5-year expectancy", required: true },
+      { id: "b2_coating", section: "B2.3.1(a)", item: "Coating Durability", description: "Adequate durability for age", required: true },
+      { id: "b2_structure_50", section: "B2.3.1(c)", item: "Structural Durability", description: "50-year expectancy for structure", required: true },
+      { id: "b2_condition_age", section: "B2 General", item: "Condition vs Expected Life", description: "Appropriate for building age", required: true },
+      { id: "b2_accelerated_wear", section: "B2 General", item: "Accelerated Wear Signs", description: "No premature failure evidence", required: true },
+    ],
+  },
+};
 
 interface ReportPDFProps {
   report: ReportData;
 }
 
 export function ReportPDF({ report }: ReportPDFProps) {
+  // Calculate compliance statistics
+  const calculateComplianceStats = () => {
+    if (!report.complianceAssessment?.checklistResults) {
+      return { pass: 0, fail: 0, partial: 0, na: 0, total: 0 };
+    }
+
+    const stats = { pass: 0, fail: 0, partial: 0, na: 0, total: 0 };
+
+    Object.values(report.complianceAssessment.checklistResults).forEach((checklist) => {
+      Object.values(checklist).forEach((status) => {
+        stats.total++;
+        const normalizedStatus = status?.toLowerCase();
+        if (normalizedStatus === "pass") stats.pass++;
+        else if (normalizedStatus === "fail") stats.fail++;
+        else if (normalizedStatus === "partial") stats.partial++;
+        else if (normalizedStatus === "na") stats.na++;
+      });
+    });
+
+    return stats;
+  };
+
+  const complianceStats = calculateComplianceStats();
+  const hasComplianceData = complianceStats.total > 0;
+
   return (
     <Document>
       {/* Cover Page */}
@@ -494,6 +698,148 @@ export function ReportPDF({ report }: ReportPDFProps) {
               )}
             </View>
           ))}
+
+          <View style={styles.footer}>
+            <Text>Report: {report.reportNumber}</Text>
+            <Text render={({ pageNumber }) => `Page ${pageNumber}`} />
+          </View>
+        </Page>
+      )}
+
+      {/* Compliance Assessment Page */}
+      {hasComplianceData && (
+        <Page size="A4" style={styles.page}>
+          <Text style={styles.sectionTitle}>7. BUILDING CODE COMPLIANCE ASSESSMENT</Text>
+
+          {/* Summary Statistics */}
+          <View style={styles.complianceStats}>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { color: colors.pass }]}>
+                {complianceStats.pass}
+              </Text>
+              <Text style={styles.statLabel}>Pass</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { color: colors.fail }]}>
+                {complianceStats.fail}
+              </Text>
+              <Text style={styles.statLabel}>Fail</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { color: colors.partial }]}>
+                {complianceStats.partial}
+              </Text>
+              <Text style={styles.statLabel}>Partial</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { color: colors.na }]}>
+                {complianceStats.na}
+              </Text>
+              <Text style={styles.statLabel}>N/A</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { color: colors.blue }]}>
+                {complianceStats.total}
+              </Text>
+              <Text style={styles.statLabel}>Total Items</Text>
+            </View>
+          </View>
+
+          {/* E2/AS1 Section */}
+          {report.complianceAssessment?.checklistResults?.e2_as1 && (
+            <View style={styles.section}>
+              <Text style={styles.subsectionTitle}>
+                7.1 E2/AS1 4th Edition - External Moisture Assessment
+              </Text>
+              {CHECKLIST_DEFINITIONS.e2_as1.items.map((item) => {
+                const status = report.complianceAssessment?.checklistResults?.e2_as1?.[item.id] || "";
+                return (
+                  <View key={item.id} style={styles.complianceItem}>
+                    <Text style={styles.complianceSection}>{item.section}</Text>
+                    <Text style={styles.complianceDescription}>{item.item}</Text>
+                    <View style={styles.complianceStatus}>
+                      <Text
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: getStatusColor(status) },
+                        ]}
+                      >
+                        {getStatusLabel(status)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {/* Metal Roof COP Section */}
+          {report.complianceAssessment?.checklistResults?.metal_roof_cop_v25_12 && (
+            <View style={styles.section}>
+              <Text style={styles.subsectionTitle}>
+                7.2 Metal Roof and Wall Cladding COP v25.12 Assessment
+              </Text>
+              {CHECKLIST_DEFINITIONS.metal_roof_cop_v25_12.items.map((item) => {
+                const status = report.complianceAssessment?.checklistResults?.metal_roof_cop_v25_12?.[item.id] || "";
+                return (
+                  <View key={item.id} style={styles.complianceItem}>
+                    <Text style={styles.complianceSection}>{item.section}</Text>
+                    <Text style={styles.complianceDescription}>{item.item}</Text>
+                    <View style={styles.complianceStatus}>
+                      <Text
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: getStatusColor(status) },
+                        ]}
+                      >
+                        {getStatusLabel(status)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {/* B2 Durability Section */}
+          {report.complianceAssessment?.checklistResults?.b2_durability && (
+            <View style={styles.section}>
+              <Text style={styles.subsectionTitle}>
+                7.3 B2 Durability Assessment
+              </Text>
+              {CHECKLIST_DEFINITIONS.b2_durability.items.map((item) => {
+                const status = report.complianceAssessment?.checklistResults?.b2_durability?.[item.id] || "";
+                return (
+                  <View key={item.id} style={styles.complianceItem}>
+                    <Text style={styles.complianceSection}>{item.section}</Text>
+                    <Text style={styles.complianceDescription}>{item.item}</Text>
+                    <View style={styles.complianceStatus}>
+                      <Text
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: getStatusColor(status) },
+                        ]}
+                      >
+                        {getStatusLabel(status)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {/* Non-Compliance Summary */}
+          {report.complianceAssessment?.nonComplianceSummary && (
+            <View style={styles.complianceSummary}>
+              <Text style={styles.complianceSummaryTitle}>
+                7.4 Non-Compliance Summary
+              </Text>
+              <Text style={styles.complianceSummaryText}>
+                {report.complianceAssessment.nonComplianceSummary}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.footer}>
             <Text>Report: {report.reportNumber}</Text>

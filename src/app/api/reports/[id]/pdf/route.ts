@@ -50,6 +50,7 @@ export async function GET(
         roofElements: {
           orderBy: { createdAt: "asc" },
         },
+        complianceAssessment: true,
       },
     });
 
@@ -62,8 +63,19 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Transform report data for PDF generation
+    const reportData = {
+      ...report,
+      complianceAssessment: report.complianceAssessment
+        ? {
+            checklistResults: report.complianceAssessment.checklistResults as Record<string, Record<string, string>>,
+            nonComplianceSummary: report.complianceAssessment.nonComplianceSummary,
+          }
+        : null,
+    };
+
     // Generate PDF
-    const pdfBuffer = await renderToBuffer(ReportPDF({ report }));
+    const pdfBuffer = await renderToBuffer(ReportPDF({ report: reportData }));
 
     // Update report with PDF generation timestamp
     await prisma.report.update({
