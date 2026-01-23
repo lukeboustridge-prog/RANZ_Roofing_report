@@ -1,20 +1,45 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import fs from "fs/promises";
+import path from "path";
 
-export const r2 = new S3Client({
-  region: "auto",
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-});
+const isLocalStorage = !process.env.R2_ACCOUNT_ID || process.env.R2_ACCOUNT_ID === "your-account-id";
+
+// Local storage directory for development
+const LOCAL_UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
+
+export const r2 = isLocalStorage
+  ? null
+  : new S3Client({
+      region: "auto",
+      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+      },
+    });
+
+async function ensureLocalDir(dir: string) {
+  try {
+    await fs.mkdir(dir, { recursive: true });
+  } catch {
+    // Directory might already exist
+  }
+}
 
 export async function uploadToR2(
   buffer: Buffer,
   key: string,
   contentType: string
 ): Promise<string> {
-  await r2.send(
+  if (isLocalStorage) {
+    // Local file storage for development
+    const filePath = path.join(LOCAL_UPLOAD_DIR, key);
+    await ensureLocalDir(path.dirname(filePath));
+    await fs.writeFile(filePath, buffer);
+    return `/uploads/${key}`;
+  }
+
+  await r2!.send(
     new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME,
       Key: key,
@@ -27,7 +52,17 @@ export async function uploadToR2(
 }
 
 export async function deleteFromR2(key: string): Promise<void> {
-  await r2.send(
+  if (isLocalStorage) {
+    const filePath = path.join(LOCAL_UPLOAD_DIR, key);
+    try {
+      await fs.unlink(filePath);
+    } catch {
+      // File might not exist
+    }
+    return;
+  }
+
+  await r2!.send(
     new DeleteObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME,
       Key: key,

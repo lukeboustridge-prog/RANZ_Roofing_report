@@ -16,6 +16,10 @@ model User {
   role            UserRole   @default(INSPECTOR)
   status          UserStatus @default(ACTIVE)
 
+  // Business details
+  company         String?
+  address         String?    @db.Text
+
   // Inspector credentials
   qualifications  String?    @db.Text
   lbpNumber       String?

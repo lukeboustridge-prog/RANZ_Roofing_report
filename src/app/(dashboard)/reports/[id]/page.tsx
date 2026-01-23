@@ -14,6 +14,7 @@ import {
   MapPin,
   Calendar,
   User,
+  Layers,
 } from "lucide-react";
 import type { ReportStatus } from "@prisma/client";
 
@@ -109,7 +110,7 @@ export default async function ReportDetailPage({
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href={`/reports/${report.id}/preview`}>
+            <Link href={`/reports/${report.id}/pdf`}>
               <FileText className="mr-2 h-4 w-4" />
               Preview PDF
             </Link>
@@ -259,14 +260,14 @@ export default async function ReportDetailPage({
       </div>
 
       {/* Quick actions */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Button variant="outline" asChild className="h-auto py-4">
-          <Link href={`/reports/${report.id}/photos`}>
+          <Link href={`/reports/${report.id}/elements`}>
             <div className="flex flex-col items-center gap-2">
-              <Camera className="h-6 w-6" />
-              <span>Manage Photos</span>
+              <Layers className="h-6 w-6" />
+              <span>Roof Elements</span>
               <span className="text-xs text-muted-foreground">
-                {report._count.photos} uploaded
+                {report.roofElements.length} documented
               </span>
             </div>
           </Link>
@@ -276,7 +277,7 @@ export default async function ReportDetailPage({
           <Link href={`/reports/${report.id}/defects`}>
             <div className="flex flex-col items-center gap-2">
               <AlertTriangle className="h-6 w-6" />
-              <span>Manage Defects</span>
+              <span>Defects</span>
               <span className="text-xs text-muted-foreground">
                 {report._count.defects} recorded
               </span>
@@ -285,7 +286,19 @@ export default async function ReportDetailPage({
         </Button>
 
         <Button variant="outline" asChild className="h-auto py-4">
-          <Link href={`/reports/${report.id}/preview`}>
+          <Link href={`/reports/${report.id}/photos`}>
+            <div className="flex flex-col items-center gap-2">
+              <Camera className="h-6 w-6" />
+              <span>Photos</span>
+              <span className="text-xs text-muted-foreground">
+                {report._count.photos} uploaded
+              </span>
+            </div>
+          </Link>
+        </Button>
+
+        <Button variant="outline" asChild className="h-auto py-4">
+          <Link href={`/reports/${report.id}/pdf`}>
             <div className="flex flex-col items-center gap-2">
               <FileText className="h-6 w-6" />
               <span>Generate PDF</span>

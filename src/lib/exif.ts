@@ -1,4 +1,3 @@
-import sharp from "sharp";
 import crypto from "crypto";
 
 export interface ExifData {
@@ -15,61 +14,43 @@ export interface ProcessedPhoto {
   thumbnail: Buffer;
 }
 
-function parseExifDate(dateString: string | undefined): Date | undefined {
-  if (!dateString) return undefined;
-  // EXIF date format: "YYYY:MM:DD HH:MM:SS"
-  const match = dateString.match(/(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
-  if (!match) return undefined;
-  const [, year, month, day, hour, minute, second] = match;
-  return new Date(
-    parseInt(year),
-    parseInt(month) - 1,
-    parseInt(day),
-    parseInt(hour),
-    parseInt(minute),
-    parseInt(second)
-  );
-}
-
-function convertGpsCoordinate(
-  coordinate: number[] | undefined,
-  ref: string | undefined
-): number | undefined {
-  if (!coordinate || !ref || coordinate.length < 3) return undefined;
-  const [degrees, minutes, seconds] = coordinate;
-  let decimal = degrees + minutes / 60 + seconds / 3600;
-  if (ref === "S" || ref === "W") {
-    decimal = -decimal;
-  }
-  return decimal;
-}
-
 export async function processPhoto(buffer: Buffer): Promise<ProcessedPhoto> {
   // Generate SHA-256 hash BEFORE any processing (for evidence integrity)
   const hash = crypto.createHash("sha256").update(buffer).digest("hex");
 
-  // Extract metadata
-  const metadata = await sharp(buffer).metadata();
-
-  // Parse EXIF data
+  // Try to use Sharp for thumbnail generation
+  let thumbnail: Buffer;
   const exif: ExifData = {};
 
-  if (metadata.exif) {
-    try {
-      // Sharp provides raw EXIF buffer, we need to parse it
-      // For now, extract what we can from sharp metadata
-      exif.cameraMake = metadata.exif ? "See EXIF" : undefined;
-      exif.cameraModel = metadata.exif ? "See EXIF" : undefined;
-    } catch (e) {
-      console.error("Error parsing EXIF:", e);
-    }
-  }
+  try {
+    const sharp = (await import("sharp")).default;
 
-  // Generate thumbnail (300x300, cover fit)
-  const thumbnail = await sharp(buffer)
-    .resize(300, 300, { fit: "cover" })
-    .jpeg({ quality: 80 })
-    .toBuffer();
+    // Extract metadata
+    const metadata = await sharp(buffer).metadata();
+
+    // Parse EXIF data if available
+    if (metadata.exif) {
+      try {
+        // Sharp provides limited EXIF access via metadata
+        // For full EXIF, we'd need exif-parser or similar
+        // Just note that EXIF exists for now
+        exif.cameraMake = metadata.exif ? undefined : undefined;
+        exif.cameraModel = undefined;
+      } catch (e) {
+        console.error("Error parsing EXIF:", e);
+      }
+    }
+
+    // Generate thumbnail (300x300, cover fit)
+    thumbnail = await sharp(buffer)
+      .resize(300, 300, { fit: "cover" })
+      .jpeg({ quality: 80 })
+      .toBuffer();
+  } catch (error) {
+    console.warn("Sharp not available or failed, using original image as thumbnail:", error);
+    // Fallback: use original image as thumbnail (not ideal but functional)
+    thumbnail = buffer;
+  }
 
   return { hash, exif, thumbnail };
 }
@@ -79,10 +60,16 @@ export async function generateThumbnail(
   width = 300,
   height = 300
 ): Promise<Buffer> {
-  return sharp(buffer)
-    .resize(width, height, { fit: "cover" })
-    .jpeg({ quality: 80 })
-    .toBuffer();
+  try {
+    const sharp = (await import("sharp")).default;
+    return sharp(buffer)
+      .resize(width, height, { fit: "cover" })
+      .jpeg({ quality: 80 })
+      .toBuffer();
+  } catch (error) {
+    console.warn("Sharp not available, returning original:", error);
+    return buffer;
+  }
 }
 
 export function generateHash(buffer: Buffer): string {
