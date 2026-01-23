@@ -13,8 +13,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { ComplianceToggle } from "@/components/form/ComplianceToggle";
 import {
   ArrowLeft,
   ArrowRight,
@@ -58,14 +59,6 @@ interface ItemNotes {
 
 type ComplianceStatus = "pass" | "fail" | "partial" | "na" | "";
 
-const STATUS_OPTIONS: { value: ComplianceStatus; label: string }[] = [
-  { value: "", label: "Select..." },
-  { value: "pass", label: "Pass" },
-  { value: "fail", label: "Fail" },
-  { value: "partial", label: "Partial" },
-  { value: "na", label: "N/A" },
-];
-
 const STATUS_ICONS: Record<ComplianceStatus, React.ReactNode> = {
   pass: <CheckCircle2 className="h-5 w-5 text-green-600" />,
   fail: <XCircle className="h-5 w-5 text-red-600" />,
@@ -99,6 +92,7 @@ export default function ComplianceAssessmentPage() {
   const [expandedChecklists, setExpandedChecklists] = useState<Set<string>>(
     new Set()
   );
+  const [activeTab, setActiveTab] = useState<string>("all");
 
   // Fetch checklists and existing assessment
   useEffect(() => {
@@ -331,18 +325,13 @@ export default function ComplianceAssessmentPage() {
       {/* Progress */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium">Completion Progress</span>
-            <span className="text-sm text-muted-foreground">
-              {completion}% complete
+            <span className="text-sm font-medium text-[var(--ranz-blue-600)]">
+              {completion}%
             </span>
           </div>
-          <div className="w-full bg-secondary rounded-full h-2">
-            <div
-              className="bg-[var(--ranz-blue-500)] h-2 rounded-full transition-all"
-              style={{ width: `${completion}%` }}
-            />
-          </div>
+          <Progress value={completion} className="h-2" />
           {incompleteItems.length > 0 && completion < 100 && (
             <p className="mt-2 text-sm text-muted-foreground">
               {incompleteItems.length} required items remaining
@@ -351,9 +340,38 @@ export default function ComplianceAssessmentPage() {
         </CardContent>
       </Card>
 
+      {/* Standard Tabs */}
+      {Object.keys(checklists).length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          <Button
+            variant={activeTab === "all" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveTab("all")}
+          >
+            All Standards
+          </Button>
+          {Array.from(new Set(Object.values(checklists).map((c) => c.standard || "Other"))).map(
+            (standard) => (
+              <Button
+                key={standard}
+                variant={activeTab === standard ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab(standard)}
+              >
+                {standard}
+              </Button>
+            )
+          )}
+        </div>
+      )}
+
       {/* Checklists */}
       <div className="space-y-6">
-        {Object.entries(checklists).map(([key, checklist]) => {
+        {Object.entries(checklists)
+          .filter(([, checklist]) =>
+            activeTab === "all" || (checklist.standard || "Other") === activeTab
+          )
+          .map(([key, checklist]) => {
           const isExpanded = expandedChecklists.has(key);
           const checklistResults = results[key] || {};
 
@@ -455,21 +473,12 @@ export default function ComplianceAssessmentPage() {
                             </p>
                           </div>
 
-                          <div className="flex flex-col gap-2 min-w-[140px]">
-                            <Select
-                              value={status}
-                              onChange={(e) =>
-                                updateItemStatus(key, item.id, e.target.value)
-                              }
-                              aria-label={`Compliance status for ${item.item}`}
-                            >
-                              {STATUS_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </Select>
-                          </div>
+                          <ComplianceToggle
+                            value={status || null}
+                            onChange={(newStatus) =>
+                              updateItemStatus(key, item.id, newStatus)
+                            }
+                          />
                         </div>
 
                         {/* Notes field for fail/partial items */}

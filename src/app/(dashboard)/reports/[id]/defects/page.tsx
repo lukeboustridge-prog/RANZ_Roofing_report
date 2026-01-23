@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { SeverityBadge } from "@/components/badges/SeverityBadge";
+import { ClassificationBadge } from "@/components/badges/ClassificationBadge";
 import {
   ArrowLeft,
   Plus,
@@ -18,7 +20,9 @@ import {
   Pencil,
   Trash2,
   X,
+  MapPin,
 } from "lucide-react";
+import type { DefectSeverity, DefectClass } from "@prisma/client";
 
 const DEFECT_CLASSES = [
   { value: "MAJOR_DEFECT", label: "Major Defect" },
@@ -199,10 +203,6 @@ export default function DefectsPage() {
     setError("");
   };
 
-  const getSeverityColor = (severity: string) => {
-    const found = DEFECT_SEVERITIES.find((s) => s.value === severity);
-    return found?.color || "bg-gray-500";
-  };
 
   if (loading) {
     return (
@@ -468,59 +468,54 @@ export default function DefectsPage() {
       ) : (
         <div className="space-y-4">
           {defects.map((defect) => (
-            <Card key={defect.id}>
-              <CardContent className="pt-6">
+            <Card key={defect.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-5 pb-5">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-muted-foreground">
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-muted-foreground shrink-0">
                         #{defect.defectNumber}
                       </span>
-                      <h3 className="text-lg font-semibold">{defect.title}</h3>
-                      <Badge
-                        className={`${getSeverityColor(defect.severity)} text-white`}
-                      >
-                        {defect.severity}
-                      </Badge>
-                      <Badge variant="outline">
-                        {defect.classification.replace(/_/g, " ")}
-                      </Badge>
+                      <h3 className="text-lg font-semibold truncate">{defect.title}</h3>
+                      <SeverityBadge severity={defect.severity as DefectSeverity} />
+                      <ClassificationBadge classification={defect.classification as DefectClass} />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Location: {defect.location}
-                    </p>
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      <span>{defect.location}</span>
+                    </div>
 
                     <div className="mt-4 space-y-3">
                       <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                           Observation
                         </p>
-                        <p className="text-sm">{defect.observation}</p>
+                        <p className="text-sm mt-0.5">{defect.observation}</p>
                       </div>
                       {defect.analysis && (
                         <div>
-                          <p className="text-xs font-medium text-muted-foreground uppercase">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                             Analysis
                           </p>
-                          <p className="text-sm">{defect.analysis}</p>
+                          <p className="text-sm mt-0.5">{defect.analysis}</p>
                         </div>
                       )}
                       {defect.opinion && (
                         <div>
-                          <p className="text-xs font-medium text-muted-foreground uppercase">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                             Opinion
                           </p>
-                          <p className="text-sm italic">{defect.opinion}</p>
+                          <p className="text-sm italic mt-0.5">{defect.opinion}</p>
                         </div>
                       )}
                       {defect.recommendation && (
                         <div>
-                          <p className="text-xs font-medium text-muted-foreground uppercase">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                             Recommendation
                           </p>
-                          <p className="text-sm">{defect.recommendation}</p>
+                          <p className="text-sm mt-0.5">{defect.recommendation}</p>
                           {defect.priorityLevel && (
-                            <Badge variant="outline" className="mt-1">
+                            <Badge variant="outline" className="mt-1.5">
                               {defect.priorityLevel.replace(/_/g, " ")}
                             </Badge>
                           )}
@@ -529,11 +524,12 @@ export default function DefectsPage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2 ml-4">
+                  <div className="flex gap-1 ml-4 shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleEdit(defect)}
+                      className="h-8 w-8"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -541,6 +537,7 @@ export default function DefectsPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDelete(defect.id)}
+                      className="h-8 w-8"
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>

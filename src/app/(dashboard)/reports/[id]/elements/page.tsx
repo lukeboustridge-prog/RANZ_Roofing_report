@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { ConditionBadge } from "@/components/badges/ConditionBadge";
 import {
   ArrowLeft,
   Plus,
@@ -18,7 +18,9 @@ import {
   Trash2,
   X,
   Layers,
+  MapPin,
 } from "lucide-react";
+import type { ConditionRating } from "@prisma/client";
 
 const ELEMENT_TYPES = [
   { value: "ROOF_CLADDING", label: "Roof Cladding" },
@@ -190,10 +192,6 @@ export default function ElementsPage() {
     setError("");
   };
 
-  const getConditionColor = (rating: string | null) => {
-    const found = CONDITION_RATINGS.find((r) => r.value === rating);
-    return found?.color || "bg-gray-500";
-  };
 
   if (loading) {
     return (
@@ -397,63 +395,64 @@ export default function ElementsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {elements.map((element) => (
-            <Card key={element.id}>
-              <CardContent className="pt-6">
+            <Card key={element.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-5 pb-5">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Layers className="h-4 w-4 text-muted-foreground shrink-0" />
                       <h3 className="font-semibold">
                         {element.elementType.replace(/_/g, " ")}
                       </h3>
                       {element.conditionRating && (
-                        <Badge
-                          className={`${getConditionColor(element.conditionRating)} text-white`}
-                        >
-                          {element.conditionRating.replace(/_/g, " ")}
-                        </Badge>
+                        <ConditionBadge condition={element.conditionRating as ConditionRating} />
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {element.location}
-                    </p>
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      <span>{element.location}</span>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mt-2">
                       {element.material && (
                         <div>
                           <span className="text-muted-foreground">Material:</span>{" "}
-                          {element.material}
+                          <span className="text-foreground">{element.material}</span>
                         </div>
                       )}
                       {element.claddingType && (
                         <div>
                           <span className="text-muted-foreground">Type:</span>{" "}
-                          {element.claddingType}
+                          <span className="text-foreground">{element.claddingType}</span>
                         </div>
                       )}
                       {element.pitch && (
                         <div>
                           <span className="text-muted-foreground">Pitch:</span>{" "}
-                          {element.pitch}°
+                          <span className="text-foreground">{element.pitch}&deg;</span>
                         </div>
                       )}
                       {element.area && (
                         <div>
                           <span className="text-muted-foreground">Area:</span>{" "}
-                          {element.area} m²
+                          <span className="text-foreground">{element.area} m&sup2;</span>
                         </div>
                       )}
                     </div>
 
                     {element.conditionNotes && (
-                      <p className="text-sm mt-2">{element.conditionNotes}</p>
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                        {element.conditionNotes}
+                      </p>
                     )}
                   </div>
 
-                  <div className="flex gap-1 ml-4">
+                  <div className="flex gap-1 ml-4 shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleEdit(element)}
+                      className="h-8 w-8"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -461,6 +460,7 @@ export default function ElementsPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDelete(element.id)}
+                      className="h-8 w-8"
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>

@@ -5,6 +5,9 @@ import prisma from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SeverityBadge } from "@/components/badges/SeverityBadge";
+import { ClassificationBadge } from "@/components/badges/ClassificationBadge";
+import { ConditionBadge } from "@/components/badges/ConditionBadge";
 import { formatDate } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -18,8 +21,10 @@ import {
   Edit,
   Shield,
   Send,
+  Plus,
+  ChevronRight,
 } from "lucide-react";
-import type { ReportStatus } from "@prisma/client";
+import type { ReportStatus, DefectSeverity, DefectClass, ConditionRating } from "@prisma/client";
 
 const statusBadgeVariants: Record<ReportStatus, "draft" | "inProgress" | "pendingReview" | "approved" | "finalised"> = {
   DRAFT: "draft",
@@ -57,8 +62,15 @@ async function getReport(reportId: string, userId: string) {
       },
       defects: {
         orderBy: { defectNumber: "asc" },
+        include: {
+          _count: {
+            select: { photos: true },
+          },
+        },
       },
-      roofElements: true,
+      roofElements: {
+        orderBy: { createdAt: "asc" },
+      },
       _count: {
         select: {
           photos: true,
@@ -353,6 +365,142 @@ export default async function ReportDetailPage({
             </Link>
           </Button>
         )}
+      </div>
+
+      {/* Defects and Elements sections */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Defects List */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              Defects ({report.defects.length})
+            </CardTitle>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/reports/${report.id}/defects`}>
+                <Plus className="mr-1 h-4 w-4" />
+                Add
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {report.defects.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <AlertTriangle className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                <p className="text-sm">No defects recorded yet</p>
+                <Button variant="link" size="sm" asChild className="mt-2">
+                  <Link href={`/reports/${report.id}/defects`}>Add defect</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {report.defects.slice(0, 4).map((defect) => (
+                  <Link
+                    key={defect.id}
+                    href={`/reports/${report.id}/defects`}
+                    className="block p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="text-xs text-muted-foreground">
+                            #{defect.defectNumber}
+                          </span>
+                          <span className="font-medium text-sm truncate">
+                            {defect.title}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <SeverityBadge severity={defect.severity as DefectSeverity} />
+                          <ClassificationBadge classification={defect.classification as DefectClass} />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1.5 line-clamp-1">
+                          {defect.location}
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                    </div>
+                  </Link>
+                ))}
+                {report.defects.length > 4 && (
+                  <Button variant="ghost" size="sm" asChild className="w-full">
+                    <Link href={`/reports/${report.id}/defects`}>
+                      View all {report.defects.length} defects
+                      <ChevronRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Roof Elements List */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Layers className="h-5 w-5 text-[var(--ranz-blue-500)]" />
+              Roof Elements ({report.roofElements.length})
+            </CardTitle>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/reports/${report.id}/elements`}>
+                <Plus className="mr-1 h-4 w-4" />
+                Add
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {report.roofElements.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Layers className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                <p className="text-sm">No elements documented yet</p>
+                <Button variant="link" size="sm" asChild className="mt-2">
+                  <Link href={`/reports/${report.id}/elements`}>Add element</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {report.roofElements.slice(0, 4).map((element) => (
+                  <Link
+                    key={element.id}
+                    href={`/reports/${report.id}/elements`}
+                    className="block p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="font-medium text-sm">
+                            {element.elementType.replace(/_/g, " ")}
+                          </span>
+                          {element.conditionRating && (
+                            <ConditionBadge condition={element.conditionRating as ConditionRating} />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {element.location}
+                        </p>
+                        {element.material && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {element.material}
+                          </p>
+                        )}
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                    </div>
+                  </Link>
+                ))}
+                {report.roofElements.length > 4 && (
+                  <Button variant="ghost" size="sm" asChild className="w-full">
+                    <Link href={`/reports/${report.id}/elements`}>
+                      View all {report.roofElements.length} elements
+                      <ChevronRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
