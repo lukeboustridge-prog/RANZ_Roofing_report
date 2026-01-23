@@ -1,6 +1,5 @@
 "use client";
 
-import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -14,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "New Report", href: "/reports/new", icon: Plus },
   { name: "Settings", href: "/settings", icon: Settings },
@@ -56,7 +55,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
 
           {/* Logo */}
           <div className="flex h-16 shrink-0 items-center px-6">
-            <Link href="/" className="flex items-center gap-2" onClick={onClose}>
+            <Link href="/dashboard" className="flex items-center gap-2" onClick={onClose}>
               <div className="h-8 w-8 rounded-md bg-[var(--ranz-blue-500)] flex items-center justify-center">
                 <span className="text-white font-bold text-sm">R</span>
               </div>
@@ -74,7 +73,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
                   {navigation.map((item) => {
                     const isActive =
                       pathname === item.href ||
-                      (item.href !== "/" && pathname.startsWith(item.href));
+                      (item.href !== "/dashboard" && pathname.startsWith(item.href));
                     return (
                       <li key={item.name}>
                         <Link

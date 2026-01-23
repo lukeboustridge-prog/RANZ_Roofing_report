@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "New Report", href: "/reports/new", icon: Plus },
   { name: "Settings", href: "/settings", icon: Settings },
@@ -25,7 +25,7 @@ export function Sidebar() {
       <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-border bg-card px-6 pb-4">
         {/* Logo */}
         <div className="flex h-16 shrink-0 items-center">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md bg-[var(--ranz-blue-500)] flex items-center justify-center">
               <span className="text-white font-bold text-sm">R</span>
             </div>
@@ -43,7 +43,7 @@ export function Sidebar() {
                 {navigation.map((item) => {
                   const isActive =
                     pathname === item.href ||
-                    (item.href !== "/" && pathname.startsWith(item.href));
+                    (item.href !== "/dashboard" && pathname.startsWith(item.href));
                   return (
                     <li key={item.name}>
                       <Link
