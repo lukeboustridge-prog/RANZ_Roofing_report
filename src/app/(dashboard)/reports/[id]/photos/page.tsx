@@ -20,6 +20,8 @@ import {
   MapPin,
   Clock,
   Pencil,
+  AlertTriangle,
+  Link as LinkIcon,
 } from "lucide-react";
 
 const PHOTO_TYPES = [
@@ -45,6 +47,14 @@ interface Photo {
   cameraModel: string | null;
   sortOrder: number;
   createdAt: string;
+  defectId: string | null;
+  roofElementId: string | null;
+}
+
+interface Defect {
+  id: string;
+  defectNumber: number;
+  title: string;
 }
 
 export default function PhotosPage() {
@@ -53,15 +63,30 @@ export default function PhotosPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [defects, setDefects] = useState<Defect[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [linking, setLinking] = useState(false);
   const [error, setError] = useState("");
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [uploadType, setUploadType] = useState("GENERAL");
 
   useEffect(() => {
     fetchPhotos();
+    fetchDefects();
   }, [reportId]);
+
+  const fetchDefects = async () => {
+    try {
+      const response = await fetch(`/api/defects?reportId=${reportId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDefects(data);
+      }
+    } catch {
+      // Ignore errors fetching defects
+    }
+  };
 
   const fetchPhotos = async () => {
     try {
@@ -135,6 +160,36 @@ export default function PhotosPage() {
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "Unknown";
     return new Date(dateStr).toLocaleString();
+  };
+
+  const handleLinkToDefect = async (photoId: string, defectId: string | null) => {
+    setLinking(true);
+    try {
+      const response = await fetch(`/api/photos/${photoId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ defectId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update photo");
+      }
+
+      const updatedPhoto = await response.json();
+      setPhotos(photos.map(p => p.id === photoId ? updatedPhoto : p));
+      if (selectedPhoto?.id === photoId) {
+        setSelectedPhoto(updatedPhoto);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to link photo");
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const getDefectForPhoto = (defectId: string | null) => {
+    if (!defectId) return null;
+    return defects.find(d => d.id === defectId);
   };
 
   if (loading) {
@@ -261,9 +316,17 @@ export default function PhotosPage() {
                     </div>
                   )}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {photo.photoType.replace("_", " ")}
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {photo.photoType.replace("_", " ")}
+                      </Badge>
+                      {photo.defectId && (
+                        <Badge variant="destructive" className="text-xs">
+                          <AlertTriangle className="h-3 w-3 mr-0.5" />
+                          Defect
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -360,6 +423,35 @@ export default function PhotosPage() {
                       <p className="font-medium">{selectedPhoto.caption}</p>
                     </div>
                   )}
+
+                  {/* Link to Defect */}
+                  <div className="pt-3 border-t">
+                    <Label htmlFor="linkDefect" className="text-muted-foreground">
+                      Linked to Defect
+                    </Label>
+                    <NativeSelect
+                      id="linkDefect"
+                      value={selectedPhoto.defectId || ""}
+                      onChange={(e) => handleLinkToDefect(selectedPhoto.id, e.target.value || null)}
+                      disabled={linking}
+                      className="mt-1"
+                    >
+                      <option value="">Not linked</option>
+                      {defects.map((defect) => (
+                        <option key={defect.id} value={defect.id}>
+                          #{defect.defectNumber} - {defect.title}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                    {defects.length === 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        No defects recorded yet.{" "}
+                        <Link href={`/reports/${reportId}/defects`} className="text-[var(--ranz-blue-500)] hover:underline">
+                          Add defects
+                        </Link>
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Actions */}

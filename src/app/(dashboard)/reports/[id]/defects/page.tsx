@@ -21,7 +21,10 @@ import {
   Trash2,
   X,
   MapPin,
+  Camera,
+  Image as ImageIcon,
 } from "lucide-react";
+import Image from "next/image";
 import type { DefectSeverity, DefectClass } from "@prisma/client";
 
 const DEFECT_CLASSES = [
@@ -45,6 +48,14 @@ const PRIORITY_LEVELS = [
   { value: "LONG_TERM", label: "Long Term (12+ months)" },
 ];
 
+interface Photo {
+  id: string;
+  url: string;
+  thumbnailUrl: string | null;
+  originalFilename: string;
+  defectId: string | null;
+}
+
 interface Defect {
   id: string;
   defectNumber: number;
@@ -60,6 +71,7 @@ interface Defect {
   copReference: string | null;
   recommendation: string | null;
   priorityLevel: string | null;
+  photos?: Photo[];
 }
 
 interface FormData {
@@ -98,6 +110,8 @@ export default function DefectsPage() {
   const reportId = params.id as string;
 
   const [defects, setDefects] = useState<Defect[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -107,7 +121,20 @@ export default function DefectsPage() {
 
   useEffect(() => {
     fetchDefects();
+    fetchPhotos();
   }, [reportId]);
+
+  const fetchPhotos = async () => {
+    try {
+      const response = await fetch(`/api/photos?reportId=${reportId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPhotos(data);
+      }
+    } catch {
+      // Ignore errors
+    }
+  };
 
   const fetchDefects = async () => {
     try {
@@ -151,15 +178,65 @@ export default function DefectsPage() {
         throw new Error(data.error || "Failed to save defect");
       }
 
+      const savedDefect = await response.json();
+
+      // Link selected photos to this defect
+      const defectId = savedDefect.id;
+
+      // First, unlink any photos that were previously linked but are now deselected
+      if (editingId) {
+        const previouslyLinked = photos.filter(p => p.defectId === editingId);
+        for (const photo of previouslyLinked) {
+          if (!selectedPhotoIds.includes(photo.id)) {
+            await fetch(`/api/photos/${photo.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ defectId: null }),
+            });
+          }
+        }
+      }
+
+      // Link newly selected photos
+      for (const photoId of selectedPhotoIds) {
+        const photo = photos.find(p => p.id === photoId);
+        if (photo && photo.defectId !== defectId) {
+          await fetch(`/api/photos/${photoId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ defectId }),
+          });
+        }
+      }
+
       await fetchDefects();
+      await fetchPhotos();
       setShowForm(false);
       setEditingId(null);
       setFormData(initialFormData);
+      setSelectedPhotoIds([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setSaving(false);
     }
+  };
+
+  const togglePhotoSelection = (photoId: string) => {
+    setSelectedPhotoIds(prev =>
+      prev.includes(photoId)
+        ? prev.filter(id => id !== photoId)
+        : [...prev, photoId]
+    );
+  };
+
+  const getAvailablePhotos = () => {
+    // Photos not linked to any defect, OR linked to the currently editing defect
+    return photos.filter(p => !p.defectId || p.defectId === editingId);
+  };
+
+  const getPhotosForDefect = (defectId: string) => {
+    return photos.filter(p => p.defectId === defectId);
   };
 
   const handleEdit = (defect: Defect) => {
@@ -177,6 +254,9 @@ export default function DefectsPage() {
       recommendation: defect.recommendation || "",
       priorityLevel: defect.priorityLevel || "MEDIUM_TERM",
     });
+    // Load currently linked photos
+    const linkedPhotos = photos.filter(p => p.defectId === defect.id);
+    setSelectedPhotoIds(linkedPhotos.map(p => p.id));
     setEditingId(defect.id);
     setShowForm(true);
   };
@@ -200,6 +280,7 @@ export default function DefectsPage() {
     setShowForm(false);
     setEditingId(null);
     setFormData(initialFormData);
+    setSelectedPhotoIds([]);
     setError("");
   };
 
@@ -434,6 +515,62 @@ export default function DefectsPage() {
                 />
               </div>
 
+              {/* Photo Selection */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Camera className="h-4 w-4" />
+                    Link Photos ({selectedPhotoIds.length} selected)
+                  </Label>
+                  <Link
+                    href={`/reports/${reportId}/photos`}
+                    className="text-sm text-[var(--ranz-blue-500)] hover:underline"
+                  >
+                    Manage Photos
+                  </Link>
+                </div>
+                {getAvailablePhotos().length === 0 ? (
+                  <div className="p-4 border rounded-lg text-center">
+                    <Camera className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      No photos available.{" "}
+                      <Link href={`/reports/${reportId}/photos`} className="text-[var(--ranz-blue-500)] hover:underline">
+                        Upload photos
+                      </Link>{" "}
+                      first.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                    {getAvailablePhotos().map((photo) => (
+                      <div
+                        key={photo.id}
+                        onClick={() => togglePhotoSelection(photo.id)}
+                        className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+                          selectedPhotoIds.includes(photo.id)
+                            ? "border-[var(--ranz-blue-500)] ring-2 ring-[var(--ranz-blue-500)]/20"
+                            : "border-transparent hover:border-muted-foreground/30"
+                        }`}
+                      >
+                        <Image
+                          src={photo.thumbnailUrl || photo.url}
+                          alt={photo.originalFilename}
+                          fill
+                          className="object-cover"
+                        />
+                        {selectedPhotoIds.includes(photo.id) && (
+                          <div className="absolute inset-0 bg-[var(--ranz-blue-500)]/20 flex items-center justify-center">
+                            <div className="w-6 h-6 rounded-full bg-[var(--ranz-blue-500)] flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">✓</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={cancelForm}>
                   Cancel
@@ -519,6 +656,38 @@ export default function DefectsPage() {
                               {defect.priorityLevel.replace(/_/g, " ")}
                             </Badge>
                           )}
+                        </div>
+                      )}
+
+                      {/* Linked Photos */}
+                      {getPhotosForDefect(defect.id).length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                            <ImageIcon className="h-3 w-3 inline mr-1" />
+                            Photos ({getPhotosForDefect(defect.id).length})
+                          </p>
+                          <div className="flex gap-2 flex-wrap">
+                            {getPhotosForDefect(defect.id).slice(0, 4).map((photo) => (
+                              <div
+                                key={photo.id}
+                                className="relative w-16 h-16 rounded overflow-hidden bg-muted"
+                              >
+                                <Image
+                                  src={photo.thumbnailUrl || photo.url}
+                                  alt=""
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            ))}
+                            {getPhotosForDefect(defect.id).length > 4 && (
+                              <div className="w-16 h-16 rounded bg-muted flex items-center justify-center">
+                                <span className="text-xs text-muted-foreground">
+                                  +{getPhotosForDefect(defect.id).length - 4}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
