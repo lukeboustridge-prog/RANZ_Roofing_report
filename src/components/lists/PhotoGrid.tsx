@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Plus, X, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,17 +34,33 @@ export function PhotoGrid({
   const remainingCount = photos.length - maxDisplay;
 
   return (
-    <div className={cn("grid grid-cols-2 gap-2", className)}>
-      {displayPhotos.map((photo) => (
+    <div
+      className={cn("grid grid-cols-2 gap-2", className)}
+      role="list"
+      aria-label={`Photo gallery with ${photos.length} photos`}
+    >
+      {displayPhotos.map((photo, index) => (
         <div
           key={photo.id}
-          className="relative aspect-square rounded-lg overflow-hidden bg-muted group cursor-pointer"
+          role="listitem"
+          className="relative aspect-square rounded-lg overflow-hidden bg-muted group cursor-pointer focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2"
           onClick={() => onPhotoClick?.(photo)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onPhotoClick?.(photo);
+            }
+          }}
+          tabIndex={0}
+          aria-label={photo.caption || `Photo ${index + 1}`}
         >
-          <img
+          <Image
             src={photo.thumbnailUrl || photo.url}
-            alt={photo.caption || "Photo"}
-            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+            alt={photo.caption || `Photo ${index + 1}`}
+            fill
+            sizes="(max-width: 768px) 50vw, 25vw"
+            className="object-cover transition-transform group-hover:scale-105"
+            loading={index < 4 ? "eager" : "lazy"}
           />
           {onRemoveClick && (
             <button
@@ -52,9 +69,10 @@ export function PhotoGrid({
                 e.stopPropagation();
                 onRemoveClick(photo.id);
               }}
-              className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+              className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity hover:bg-black/70"
+              aria-label={`Remove photo ${photo.caption || index + 1}`}
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           )}
           {photo.caption && (
@@ -83,17 +101,22 @@ export function PhotoGrid({
         <button
           type="button"
           onClick={onAddClick}
-          className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1.5 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+          className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1.5 text-muted-foreground hover:border-primary hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors"
+          aria-label="Add new photo"
         >
-          <Plus className="h-6 w-6" />
+          <Plus className="h-6 w-6" aria-hidden="true" />
           <span className="text-xs font-medium">Add Photo</span>
         </button>
       )}
 
       {/* Empty state */}
       {photos.length === 0 && !showAddButton && (
-        <div className="col-span-2 py-8 flex flex-col items-center justify-center text-muted-foreground">
-          <ImageIcon className="h-8 w-8 mb-2" />
+        <div
+          className="col-span-2 py-8 flex flex-col items-center justify-center text-muted-foreground"
+          role="status"
+          aria-label="No photos available"
+        >
+          <ImageIcon className="h-8 w-8 mb-2" aria-hidden="true" />
           <p className="text-sm">No photos</p>
         </div>
       )}

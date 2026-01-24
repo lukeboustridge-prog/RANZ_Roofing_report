@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/select";
+import { useAutosave, AutosaveIndicator } from "@/hooks/use-autosave";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 
 const PROPERTY_TYPES = [
@@ -85,6 +86,34 @@ export default function EditReportPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+
+  // Auto-save function
+  const handleAutosave = useCallback(async (data: FormData) => {
+    const response = await fetch(`/api/reports/${reportId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...data,
+        buildingAge: data.buildingAge ? parseInt(data.buildingAge) : null,
+        inspectionDate: new Date(data.inspectionDate).toISOString(),
+      }),
+    });
+
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.error || "Failed to save");
+    }
+  }, [reportId]);
+
+  // Initialize autosave
+  const autosave = useAutosave({
+    data: formData!,
+    onSave: handleAutosave,
+    debounce: 3000, // 3 seconds after last change
+    interval: 60000, // Also save every 60 seconds
+    enabled: initialDataLoaded && formData !== null && formData.status !== "FINALISED",
+  });
 
   useEffect(() => {
     fetchReport();
@@ -115,6 +144,8 @@ export default function EditReportPage() {
         clientPhone: data.clientPhone || "",
         status: data.status || "DRAFT",
       });
+      // Mark initial data as loaded after a short delay to prevent immediate autosave
+      setTimeout(() => setInitialDataLoaded(true), 500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -184,13 +215,20 @@ export default function EditReportPage() {
     <div className="max-w-3xl mx-auto space-y-8">
       {/* Header */}
       <div className="space-y-1">
-        <Link
-          href={`/reports/${reportId}`}
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Report
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link
+            href={`/reports/${reportId}`}
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Report
+          </Link>
+          <AutosaveIndicator
+            status={autosave.status}
+            lastSaved={autosave.lastSaved}
+            error={autosave.error}
+          />
+        </div>
         <h1 className="text-3xl font-bold tracking-tight">Edit Report</h1>
         <p className="text-muted-foreground">
           Update the report details and information.

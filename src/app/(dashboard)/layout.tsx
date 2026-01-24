@@ -24,7 +24,7 @@ export default function DashboardLayout({
       <div className="lg:pl-64">
         <Header onMenuClick={() => setMobileNavOpen(true)} />
 
-        <main className="py-8">
+        <main id="main-content" className="py-8" tabIndex={-1}>
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {children}
           </div>

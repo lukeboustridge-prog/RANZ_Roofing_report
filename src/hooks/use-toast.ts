@@ -10,7 +10,7 @@ type ToasterToast = {
   title?: string
   description?: string
   action?: React.ReactNode
-  variant?: "default" | "destructive"
+  variant?: "default" | "destructive" | "success" | "info"
 }
 
 const actionTypes = {

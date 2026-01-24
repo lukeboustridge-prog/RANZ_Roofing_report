@@ -1,21 +1,32 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { SkipLink } from "@/components/ui/skip-link";
+import { constructMetadata } from "@/lib/seo";
 import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "RANZ Roofing Reports",
-  description: "Professional roofing inspection reports for RANZ certified inspectors",
+export const metadata: Metadata = constructMetadata();
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c1929" },
+  ],
 };
 
 export default function RootLayout({
@@ -29,6 +40,7 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
+          <SkipLink />
           {children}
         </body>
       </html>

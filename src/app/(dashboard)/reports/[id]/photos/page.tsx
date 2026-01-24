@@ -19,6 +19,7 @@ import {
   X,
   MapPin,
   Clock,
+  Pencil,
 } from "lucide-react";
 
 const PHOTO_TYPES = [
@@ -362,21 +363,29 @@ export default function PhotosPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => window.open(selectedPhoto.url, "_blank")}
-                  >
-                    View Full Size
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => handleDelete(selectedPhoto.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="flex flex-col gap-2 pt-4 border-t">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => window.open(selectedPhoto.url, "_blank")}
+                    >
+                      View Full Size
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDelete(selectedPhoto.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Link href={`/reports/${reportId}/photos/${selectedPhoto.id}/annotate`}>
+                    <Button variant="secondary" className="w-full">
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Annotate Photo
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>

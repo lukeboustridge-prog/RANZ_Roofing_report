@@ -14,6 +14,8 @@ import {
   Clock,
   CheckCircle,
   ArrowRight,
+  ScrollText,
+  LayoutTemplate,
 } from "lucide-react";
 
 async function getAdminDashboardData(userId: string) {
@@ -174,7 +176,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -229,6 +231,46 @@ export default async function AdminDashboardPage() {
             <Button asChild variant="outline" className="w-full">
               <Link href="/admin/analytics">
                 View Analytics
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LayoutTemplate className="h-5 w-5 text-purple-500" />
+              Templates
+            </CardTitle>
+            <CardDescription>
+              Manage report templates
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/admin/templates">
+                Manage Templates
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ScrollText className="h-5 w-5 text-gray-500" />
+              Audit Logs
+            </CardTitle>
+            <CardDescription>
+              View system activity logs
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/admin/audit-logs">
+                View Logs
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
