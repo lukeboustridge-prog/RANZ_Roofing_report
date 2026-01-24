@@ -27,6 +27,7 @@ const createReportSchema = z.object({
     "DISPUTE_RESOLUTION",
     "PRE_PURCHASE",
     "MAINTENANCE_REVIEW",
+    "WARRANTY_CLAIM",
   ]),
   weatherConditions: z.string().optional(),
   accessMethod: z.string().optional(),

@@ -142,8 +142,9 @@ export async function POST(
       data: {
         reportId,
         userId: user.id,
-        action: "COMPLIANCE_ASSESSMENT_SAVED",
+        action: "UPDATED",
         details: {
+          type: "compliance_assessment",
           checklistCount: Object.keys(validatedData.checklistResults).length,
         },
       },

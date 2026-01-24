@@ -17,8 +17,14 @@ const elementTypeLabels: Record<ElementType, string> = {
   DOWNPIPE: "Downpipe",
   FLASHING_WALL: "Wall Flashing",
   FLASHING_PENETRATION: "Penetration Flashing",
+  FLASHING_PARAPET: "Parapet Flashing",
   SKYLIGHT: "Skylight",
   VENT: "Vent",
+  ANTENNA_MOUNT: "Antenna Mount",
+  SOLAR_PANEL: "Solar Panel",
+  UNDERLAY: "Underlay",
+  INSULATION: "Insulation",
+  ROOF_STRUCTURE: "Roof Structure",
   OTHER: "Other",
 };
 

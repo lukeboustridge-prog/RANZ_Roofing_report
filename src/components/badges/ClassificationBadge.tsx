@@ -19,6 +19,10 @@ const classificationConfig: Record<DefectClass, { label: string; className: stri
     label: "Maintenance Item",
     className: "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-50",
   },
+  WORKMANSHIP_ISSUE: {
+    label: "Workmanship Issue",
+    className: "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-50",
+  },
 };
 
 interface ClassificationBadgeProps {

@@ -189,8 +189,9 @@ export async function DELETE(
       data: {
         reportId: defect.reportId,
         userId: user.id,
-        action: "DEFECT_DELETED",
+        action: "DEFECT_UPDATED",
         details: {
+          operation: "deleted",
           defectNumber: defect.defectNumber,
           title: defect.title,
         },

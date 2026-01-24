@@ -28,6 +28,7 @@ const REQUIRED_CHECKLISTS: Record<InspectionType, string[]> = {
   DISPUTE_RESOLUTION: ["e2_as1", "metal_roof_cop", "b2_durability"],
   PRE_PURCHASE: ["e2_as1", "b2_durability"],
   MAINTENANCE_REVIEW: ["e2_as1"],
+  WARRANTY_CLAIM: ["e2_as1", "metal_roof_cop", "b2_durability"],
 };
 
 // Minimum photo requirements by inspection type
@@ -39,6 +40,7 @@ const MINIMUM_PHOTOS: Record<InspectionType, number> = {
   DISPUTE_RESOLUTION: 30,
   PRE_PURCHASE: 15,
   MAINTENANCE_REVIEW: 10,
+  WARRANTY_CLAIM: 25,
 };
 
 // Minimum roof elements by inspection type
@@ -50,6 +52,7 @@ const MINIMUM_ELEMENTS: Record<InspectionType, number> = {
   DISPUTE_RESOLUTION: 5,
   PRE_PURCHASE: 4,
   MAINTENANCE_REVIEW: 3,
+  WARRANTY_CLAIM: 5,
 };
 
 /**
@@ -139,7 +142,7 @@ export async function POST(
         data: {
           reportId: id,
           userId: user.id,
-          action: "REPORT_SUBMITTED",
+          action: "SUBMITTED",
           details: {
             completionPercentage: validation.completionPercentage,
             photosCount: validation.validationDetails.photos.count,

@@ -19,16 +19,22 @@ const statusBadgeVariants: Record<ReportStatus, "draft" | "inProgress" | "pendin
   DRAFT: "draft",
   IN_PROGRESS: "inProgress",
   PENDING_REVIEW: "pendingReview",
+  UNDER_REVIEW: "pendingReview",
+  REVISION_REQUIRED: "draft",
   APPROVED: "approved",
   FINALISED: "finalised",
+  ARCHIVED: "finalised",
 };
 
 const statusLabels: Record<ReportStatus, string> = {
   DRAFT: "Draft",
   IN_PROGRESS: "In Progress",
   PENDING_REVIEW: "Pending Review",
+  UNDER_REVIEW: "Under Review",
+  REVISION_REQUIRED: "Revision Required",
   APPROVED: "Approved",
   FINALISED: "Finalised",
+  ARCHIVED: "Archived",
 };
 
 async function getDashboardData(userId: string) {

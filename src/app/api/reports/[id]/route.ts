@@ -28,6 +28,7 @@ const updateReportSchema = z.object({
     "DISPUTE_RESOLUTION",
     "PRE_PURCHASE",
     "MAINTENANCE_REVIEW",
+    "WARRANTY_CLAIM",
   ]).optional(),
   weatherConditions: z.string().nullable().optional(),
   accessMethod: z.string().nullable().optional(),
@@ -44,8 +45,11 @@ const updateReportSchema = z.object({
     "DRAFT",
     "IN_PROGRESS",
     "PENDING_REVIEW",
+    "UNDER_REVIEW",
+    "REVISION_REQUIRED",
     "APPROVED",
     "FINALISED",
+    "ARCHIVED",
   ]).optional(),
 });
 

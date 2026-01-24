@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       data: {
         reportId: report.id,
         userId: user.id,
-        action: "PHOTO_UPLOADED",
+        action: "PHOTO_ADDED",
         details: {
           photoId: photo.id,
           filename: file.name,

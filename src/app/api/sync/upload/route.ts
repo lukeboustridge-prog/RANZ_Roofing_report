@@ -690,8 +690,9 @@ async function processReport(
       data: {
         reportId: reportData.id,
         userId: inspectorId,
-        action: existingReport ? "SYNC_UPDATED" : "SYNC_CREATED",
+        action: existingReport ? "UPDATED" : "CREATED",
         details: {
+          source: "mobile_sync",
           deviceId,
           clientUpdatedAt: reportData.clientUpdatedAt,
           hadConflict,

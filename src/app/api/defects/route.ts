@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       data: {
         reportId: report.id,
         userId: user.id,
-        action: "DEFECT_CREATED",
+        action: "DEFECT_ADDED",
         details: {
           defectId: defect.id,
           defectNumber,
