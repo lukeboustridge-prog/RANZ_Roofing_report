@@ -62,6 +62,12 @@ interface Defect {
   title: string;
 }
 
+interface RoofElement {
+  id: string;
+  elementType: string;
+  location: string;
+}
+
 export default function PhotosPage() {
   const params = useParams();
   const reportId = params.id as string;
@@ -69,6 +75,7 @@ export default function PhotosPage() {
 
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [defects, setDefects] = useState<Defect[]>([]);
+  const [roofElements, setRoofElements] = useState<RoofElement[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [linking, setLinking] = useState(false);
@@ -102,6 +109,7 @@ export default function PhotosPage() {
   useEffect(() => {
     fetchPhotos();
     fetchDefects();
+    fetchRoofElements();
   }, [reportId]);
 
   const fetchDefects = async () => {
@@ -113,6 +121,18 @@ export default function PhotosPage() {
       }
     } catch {
       // Ignore errors fetching defects
+    }
+  };
+
+  const fetchRoofElements = async () => {
+    try {
+      const response = await fetch(`/api/elements?reportId=${reportId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setRoofElements(data);
+      }
+    } catch {
+      // Ignore errors fetching elements
     }
   };
 
@@ -197,6 +217,31 @@ export default function PhotosPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ defectId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update photo");
+      }
+
+      const updatedPhoto = await response.json();
+      setPhotos(photos.map(p => p.id === photoId ? updatedPhoto : p));
+      if (selectedPhoto?.id === photoId) {
+        setSelectedPhoto(updatedPhoto);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to link photo");
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const handleLinkToElement = async (photoId: string, roofElementId: string | null) => {
+    setLinking(true);
+    try {
+      const response = await fetch(`/api/photos/${photoId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roofElementId }),
       });
 
       if (!response.ok) {
@@ -360,6 +405,12 @@ export default function PhotosPage() {
                           Defect
                         </Badge>
                       )}
+                      {photo.roofElementId && (
+                        <Badge variant="outline" className="text-xs bg-green-500/20 text-green-200 border-green-400/50">
+                          <LinkIcon className="h-3 w-3 mr-0.5" />
+                          Element
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -475,6 +526,7 @@ export default function PhotosPage() {
                   {/* Link to Defect */}
                   <div className="pt-3 border-t">
                     <Label htmlFor="linkDefect" className="text-muted-foreground">
+                      <LinkIcon className="h-3 w-3 inline mr-1" />
                       Linked to Defect
                     </Label>
                     <NativeSelect
@@ -496,6 +548,36 @@ export default function PhotosPage() {
                         No defects recorded yet.{" "}
                         <Link href={`/reports/${reportId}/defects`} className="text-[var(--ranz-blue-500)] hover:underline">
                           Add defects
+                        </Link>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Link to Roof Element */}
+                  <div className="pt-3 border-t">
+                    <Label htmlFor="linkElement" className="text-muted-foreground">
+                      <LinkIcon className="h-3 w-3 inline mr-1" />
+                      Linked to Roof Element
+                    </Label>
+                    <NativeSelect
+                      id="linkElement"
+                      value={selectedPhoto.roofElementId || ""}
+                      onChange={(e) => handleLinkToElement(selectedPhoto.id, e.target.value || null)}
+                      disabled={linking}
+                      className="mt-1"
+                    >
+                      <option value="">Not linked</option>
+                      {roofElements.map((element) => (
+                        <option key={element.id} value={element.id}>
+                          {element.elementType.replace(/_/g, " ")} - {element.location}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                    {roofElements.length === 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        No roof elements recorded yet.{" "}
+                        <Link href={`/reports/${reportId}/elements`} className="text-[var(--ranz-blue-500)] hover:underline">
+                          Add elements
                         </Link>
                       </p>
                     )}

@@ -32,6 +32,7 @@ const DEFECT_CLASSES = [
   { value: "MINOR_DEFECT", label: "Minor Defect" },
   { value: "SAFETY_HAZARD", label: "Safety Hazard" },
   { value: "MAINTENANCE_ITEM", label: "Maintenance Item" },
+  { value: "WORKMANSHIP_ISSUE", label: "Workmanship Issue" },
 ];
 
 const DEFECT_SEVERITIES = [
@@ -56,6 +57,12 @@ interface Photo {
   defectId: string | null;
 }
 
+interface RoofElement {
+  id: string;
+  elementType: string;
+  location: string;
+}
+
 interface Defect {
   id: string;
   defectNumber: number;
@@ -69,8 +76,13 @@ interface Defect {
   opinion: string | null;
   codeReference: string | null;
   copReference: string | null;
+  probableCause: string | null;
+  contributingFactors: string | null;
   recommendation: string | null;
   priorityLevel: string | null;
+  estimatedCost: string | null;
+  roofElementId: string | null;
+  roofElement?: RoofElement | null;
   photos?: Photo[];
 }
 
@@ -78,6 +90,7 @@ interface FormData {
   title: string;
   description: string;
   location: string;
+  roofElementId: string;
   classification: string;
   severity: string;
   observation: string;
@@ -85,14 +98,18 @@ interface FormData {
   opinion: string;
   codeReference: string;
   copReference: string;
+  probableCause: string;
+  contributingFactors: string;
   recommendation: string;
   priorityLevel: string;
+  estimatedCost: string;
 }
 
 const initialFormData: FormData = {
   title: "",
   description: "",
   location: "",
+  roofElementId: "",
   classification: "MINOR_DEFECT",
   severity: "MEDIUM",
   observation: "",
@@ -100,8 +117,11 @@ const initialFormData: FormData = {
   opinion: "",
   codeReference: "",
   copReference: "",
+  probableCause: "",
+  contributingFactors: "",
   recommendation: "",
   priorityLevel: "MEDIUM_TERM",
+  estimatedCost: "",
 };
 
 export default function DefectsPage() {
@@ -111,6 +131,7 @@ export default function DefectsPage() {
 
   const [defects, setDefects] = useState<Defect[]>([]);
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [roofElements, setRoofElements] = useState<RoofElement[]>([]);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -122,7 +143,20 @@ export default function DefectsPage() {
   useEffect(() => {
     fetchDefects();
     fetchPhotos();
+    fetchRoofElements();
   }, [reportId]);
+
+  const fetchRoofElements = async () => {
+    try {
+      const response = await fetch(`/api/elements?reportId=${reportId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setRoofElements(data);
+      }
+    } catch {
+      // Ignore errors
+    }
+  };
 
   const fetchPhotos = async () => {
     try {
@@ -169,6 +203,7 @@ export default function DefectsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
+          roofElementId: formData.roofElementId || null,
           reportId,
         }),
       });
@@ -244,6 +279,7 @@ export default function DefectsPage() {
       title: defect.title,
       description: defect.description,
       location: defect.location,
+      roofElementId: defect.roofElementId || "",
       classification: defect.classification,
       severity: defect.severity,
       observation: defect.observation,
@@ -251,8 +287,11 @@ export default function DefectsPage() {
       opinion: defect.opinion || "",
       codeReference: defect.codeReference || "",
       copReference: defect.copReference || "",
+      probableCause: defect.probableCause || "",
+      contributingFactors: defect.contributingFactors || "",
       recommendation: defect.recommendation || "",
       priorityLevel: defect.priorityLevel || "MEDIUM_TERM",
+      estimatedCost: defect.estimatedCost || "",
     });
     // Load currently linked photos
     const linkedPhotos = photos.filter(p => p.defectId === defect.id);
@@ -367,6 +406,21 @@ export default function DefectsPage() {
                     required
                   />
                 </div>
+                <div>
+                  <Label htmlFor="roofElementId">Related Roof Element</Label>
+                  <NativeSelect
+                    id="roofElementId"
+                    value={formData.roofElementId}
+                    onChange={(e) => updateField("roofElementId", e.target.value)}
+                  >
+                    <option value="">Not linked to element</option>
+                    {roofElements.map((element) => (
+                      <option key={element.id} value={element.id}>
+                        {element.elementType.replace(/_/g, " ")} - {element.location}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="classification">Classification *</Label>
@@ -449,6 +503,30 @@ export default function DefectsPage() {
                 </div>
               </div>
 
+              {/* Causation */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label htmlFor="probableCause">Probable Cause</Label>
+                  <Textarea
+                    id="probableCause"
+                    value={formData.probableCause}
+                    onChange={(e) => updateField("probableCause", e.target.value)}
+                    placeholder="What likely caused this defect..."
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="contributingFactors">Contributing Factors</Label>
+                  <Textarea
+                    id="contributingFactors"
+                    value={formData.contributingFactors}
+                    onChange={(e) => updateField("contributingFactors", e.target.value)}
+                    placeholder="Other factors that contributed..."
+                    rows={2}
+                  />
+                </div>
+              </div>
+
               {/* Code references */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
@@ -485,21 +563,32 @@ export default function DefectsPage() {
                     rows={2}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="priorityLevel">Priority</Label>
-                  <NativeSelect
-                    id="priorityLevel"
-                    value={formData.priorityLevel}
-                    onChange={(e) =>
-                      updateField("priorityLevel", e.target.value)
-                    }
-                  >
-                    {PRIORITY_LEVELS.map((p) => (
-                      <option key={p.value} value={p.value}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </NativeSelect>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="priorityLevel">Priority</Label>
+                    <NativeSelect
+                      id="priorityLevel"
+                      value={formData.priorityLevel}
+                      onChange={(e) =>
+                        updateField("priorityLevel", e.target.value)
+                      }
+                    >
+                      {PRIORITY_LEVELS.map((p) => (
+                        <option key={p.value} value={p.value}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </div>
+                  <div>
+                    <Label htmlFor="estimatedCost">Estimated Cost</Label>
+                    <Input
+                      id="estimatedCost"
+                      value={formData.estimatedCost}
+                      onChange={(e) => updateField("estimatedCost", e.target.value)}
+                      placeholder="e.g., $2,000 - $5,000"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -620,6 +709,12 @@ export default function DefectsPage() {
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <MapPin className="h-3.5 w-3.5 shrink-0" />
                       <span>{defect.location}</span>
+                      {defect.roofElement && (
+                        <>
+                          <span className="text-muted-foreground/50">•</span>
+                          <span>{defect.roofElement.elementType.replace(/_/g, " ")}</span>
+                        </>
+                      )}
                     </div>
 
                     <div className="mt-4 space-y-3">
@@ -645,17 +740,64 @@ export default function DefectsPage() {
                           <p className="text-sm italic mt-0.5">{defect.opinion}</p>
                         </div>
                       )}
+                      {(defect.probableCause || defect.contributingFactors) && (
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {defect.probableCause && (
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                Probable Cause
+                              </p>
+                              <p className="text-sm mt-0.5">{defect.probableCause}</p>
+                            </div>
+                          )}
+                          {defect.contributingFactors && (
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                Contributing Factors
+                              </p>
+                              <p className="text-sm mt-0.5">{defect.contributingFactors}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {(defect.codeReference || defect.copReference) && (
+                        <div className="flex gap-4 flex-wrap">
+                          {defect.codeReference && (
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                Code Reference
+                              </p>
+                              <p className="text-sm mt-0.5 font-mono">{defect.codeReference}</p>
+                            </div>
+                          )}
+                          {defect.copReference && (
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                COP Reference
+                              </p>
+                              <p className="text-sm mt-0.5 font-mono">{defect.copReference}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       {defect.recommendation && (
                         <div>
                           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                             Recommendation
                           </p>
                           <p className="text-sm mt-0.5">{defect.recommendation}</p>
-                          {defect.priorityLevel && (
-                            <Badge variant="outline" className="mt-1.5">
-                              {defect.priorityLevel.replace(/_/g, " ")}
-                            </Badge>
-                          )}
+                          <div className="flex gap-2 mt-1.5 flex-wrap">
+                            {defect.priorityLevel && (
+                              <Badge variant="outline">
+                                {defect.priorityLevel.replace(/_/g, " ")}
+                              </Badge>
+                            )}
+                            {defect.estimatedCost && (
+                              <Badge variant="outline" className="bg-muted">
+                                Est: {defect.estimatedCost}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       )}
 

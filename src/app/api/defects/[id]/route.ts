@@ -7,15 +7,20 @@ const updateDefectSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
   location: z.string().min(1).optional(),
-  classification: z.enum(["MAJOR_DEFECT", "MINOR_DEFECT", "SAFETY_HAZARD", "MAINTENANCE_ITEM"]).optional(),
+  roofElementId: z.string().nullable().optional(),
+  classification: z.enum(["MAJOR_DEFECT", "MINOR_DEFECT", "SAFETY_HAZARD", "MAINTENANCE_ITEM", "WORKMANSHIP_ISSUE"]).optional(),
   severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]).optional(),
   observation: z.string().min(1).optional(),
   analysis: z.string().optional().nullable(),
   opinion: z.string().optional().nullable(),
   codeReference: z.string().optional().nullable(),
   copReference: z.string().optional().nullable(),
+  probableCause: z.string().optional().nullable(),
+  contributingFactors: z.string().optional().nullable(),
   recommendation: z.string().optional().nullable(),
   priorityLevel: z.enum(["IMMEDIATE", "SHORT_TERM", "MEDIUM_TERM", "LONG_TERM"]).optional().nullable(),
+  estimatedCost: z.string().optional().nullable(),
+  measurements: z.record(z.string(), z.unknown()).optional().nullable(),
 });
 
 // GET /api/defects/[id] - Get single defect
@@ -105,9 +110,17 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = updateDefectSchema.parse(body);
 
+    // Build update data, handling null/undefined properly for Prisma
+    const updateData: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(validatedData)) {
+      if (value !== undefined) {
+        updateData[key] = value;
+      }
+    }
+
     const updatedDefect = await prisma.defect.update({
       where: { id },
-      data: validatedData,
+      data: updateData,
       include: {
         photos: true,
         roofElement: true,

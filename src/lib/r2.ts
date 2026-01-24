@@ -77,6 +77,12 @@ export function generatePhotoKey(reportId: string, filename: string): string {
   return `reports/${reportId}/photos/${timestamp}-${sanitizedFilename}`;
 }
 
+export function generateFileKey(reportId: string, filename: string, folder: string = "files"): string {
+  const timestamp = Date.now();
+  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, "_");
+  return `reports/${reportId}/${folder}/${timestamp}-${sanitizedFilename}`;
+}
+
 export function generateThumbnailKey(photoKey: string): string {
   return photoKey.replace("/photos/", "/thumbnails/");
 }

@@ -5,19 +5,23 @@ import { z } from "zod";
 
 const createDefectSchema = z.object({
   reportId: z.string().min(1),
-  roofElementId: z.string().optional(),
+  roofElementId: z.string().nullable().optional(),
   title: z.string().min(1),
   description: z.string().optional().default(""),
   location: z.string().min(1),
-  classification: z.enum(["MAJOR_DEFECT", "MINOR_DEFECT", "SAFETY_HAZARD", "MAINTENANCE_ITEM"]),
+  classification: z.enum(["MAJOR_DEFECT", "MINOR_DEFECT", "SAFETY_HAZARD", "MAINTENANCE_ITEM", "WORKMANSHIP_ISSUE"]),
   severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),
   observation: z.string().min(1),
   analysis: z.string().optional(),
   opinion: z.string().optional(),
   codeReference: z.string().optional(),
   copReference: z.string().optional(),
+  probableCause: z.string().optional(),
+  contributingFactors: z.string().optional(),
   recommendation: z.string().optional(),
   priorityLevel: z.enum(["IMMEDIATE", "SHORT_TERM", "MEDIUM_TERM", "LONG_TERM"]).optional(),
+  estimatedCost: z.string().optional(),
+  measurements: z.record(z.string(), z.unknown()).optional(),
 });
 
 // POST /api/defects - Create defect
@@ -74,8 +78,12 @@ export async function POST(request: NextRequest) {
         opinion: validatedData.opinion || null,
         codeReference: validatedData.codeReference || null,
         copReference: validatedData.copReference || null,
+        probableCause: validatedData.probableCause || null,
+        contributingFactors: validatedData.contributingFactors || null,
         recommendation: validatedData.recommendation || null,
         priorityLevel: validatedData.priorityLevel || null,
+        estimatedCost: validatedData.estimatedCost || null,
+        measurements: validatedData.measurements as object | undefined,
       },
       include: {
         photos: true,

@@ -23,6 +23,8 @@ import {
   Send,
   Plus,
   ChevronRight,
+  Video,
+  FolderOpen,
 } from "lucide-react";
 import type { ReportStatus, DefectSeverity, DefectClass, ConditionRating } from "@prisma/client";
 
@@ -81,6 +83,8 @@ async function getReport(reportId: string, userId: string) {
         select: {
           photos: true,
           defects: true,
+          videos: true,
+          documents: true,
         },
       },
     },
@@ -297,7 +301,7 @@ export default async function ReportDetailPage({
       </div>
 
       {/* Quick actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         <Button variant="outline" asChild className="h-auto py-4">
           <Link href={`/reports/${report.id}/elements`}>
             <div className="flex flex-col items-center gap-2">
@@ -329,6 +333,30 @@ export default async function ReportDetailPage({
               <span>Photos</span>
               <span className="text-xs text-muted-foreground">
                 {report._count.photos} uploaded
+              </span>
+            </div>
+          </Link>
+        </Button>
+
+        <Button variant="outline" asChild className="h-auto py-4">
+          <Link href={`/reports/${report.id}/videos`}>
+            <div className="flex flex-col items-center gap-2">
+              <Video className="h-6 w-6" />
+              <span>Videos</span>
+              <span className="text-xs text-muted-foreground">
+                {report._count.videos} uploaded
+              </span>
+            </div>
+          </Link>
+        </Button>
+
+        <Button variant="outline" asChild className="h-auto py-4">
+          <Link href={`/reports/${report.id}/documents`}>
+            <div className="flex flex-col items-center gap-2">
+              <FolderOpen className="h-6 w-6" />
+              <span>Documents</span>
+              <span className="text-xs text-muted-foreground">
+                {report._count.documents} uploaded
               </span>
             </div>
           </Link>
