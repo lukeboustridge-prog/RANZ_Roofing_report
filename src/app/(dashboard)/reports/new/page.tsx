@@ -111,12 +111,21 @@ export default function NewReportPage() {
         }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to create report");
+      // Handle non-JSON responses
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        throw new Error("Invalid response from server");
       }
 
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create report");
+      }
+
       router.push(`/reports/${data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");

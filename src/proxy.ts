@@ -75,16 +75,18 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     "camera=(self), microphone=(self), geolocation=(self), interest-cohort=()"
   );
 
-  // Content Security Policy
+  // Content Security Policy - relaxed for production compatibility
+  // In production, you may want to tighten this based on your specific needs
   response.headers.set(
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.accounts.dev",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.accounts.dev https://*.clerk.com https://*.vercel.app",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://*.r2.cloudflarestorage.com https://*.clerk.com",
-      "font-src 'self'",
-      "connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev wss://*.clerk.com",
+      "img-src 'self' data: blob: https://*.r2.cloudflarestorage.com https://*.clerk.com https://*.cloudflare.com https://*.vercel.app",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev wss://*.clerk.com https://clerk-telemetry.com https://*.vercel.app",
+      "worker-src 'self' blob:",
       "frame-src https://*.clerk.com https://*.clerk.accounts.dev",
       "frame-ancestors 'none'",
     ].join("; ")
