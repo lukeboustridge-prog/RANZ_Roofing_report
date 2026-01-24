@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { SignaturePad, type SignaturePadRef } from "@/components/signature";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -22,6 +26,8 @@ import {
   MapPin,
   Calendar,
   AlertOctagon,
+  PenTool,
+  RefreshCw,
 } from "lucide-react";
 
 interface ValidationDetails {
@@ -50,21 +56,51 @@ interface ValidationResponse {
   message?: string;
 }
 
+interface SignatureStatus {
+  declarationSigned: boolean;
+  signedAt: string | null;
+  signatureUrl: string | null;
+}
+
 export default function SubmitReportPage() {
   const params = useParams();
   const router = useRouter();
   const reportId = params.id as string;
+  const signaturePadRef = useRef<SignaturePadRef>(null);
 
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [currentStatus, setCurrentStatus] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [savingSignature, setSavingSignature] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  // Declaration and signature state
+  const [signatureStatus, setSignatureStatus] = useState<SignatureStatus | null>(null);
+  const [declarationChecked, setDeclarationChecked] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+
   useEffect(() => {
     fetchValidation();
+    fetchSignatureStatus();
   }, [reportId]);
+
+  const fetchSignatureStatus = async () => {
+    try {
+      const response = await fetch(`/api/reports/${reportId}/signature`);
+      if (response.ok) {
+        const data = await response.json();
+        setSignatureStatus(data);
+        if (data.declarationSigned) {
+          setDeclarationChecked(true);
+          setHasSignature(true);
+        }
+      }
+    } catch {
+      // Ignore errors - signature is optional until submission
+    }
+  };
 
   const fetchValidation = async () => {
     try {
@@ -87,7 +123,74 @@ export default function SubmitReportPage() {
     }
   };
 
+  const saveSignature = async () => {
+    const signatureDataUrl = signaturePadRef.current?.toDataURL();
+
+    if (!signatureDataUrl) {
+      setError("Please sign above before continuing");
+      return false;
+    }
+
+    if (!declarationChecked) {
+      setError("Please accept the declaration before signing");
+      return false;
+    }
+
+    setSavingSignature(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/reports/${reportId}/signature`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          signatureDataUrl,
+          declarationAccepted: declarationChecked,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to save signature");
+      }
+
+      const data = await response.json();
+      setSignatureStatus({
+        declarationSigned: true,
+        signedAt: data.signedAt,
+        signatureUrl: data.signatureUrl,
+      });
+      setHasSignature(true);
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save signature");
+      return false;
+    } finally {
+      setSavingSignature(false);
+    }
+  };
+
+  const clearSignature = async () => {
+    try {
+      await fetch(`/api/reports/${reportId}/signature`, {
+        method: "DELETE",
+      });
+      setSignatureStatus(null);
+      setHasSignature(false);
+      setDeclarationChecked(false);
+      signaturePadRef.current?.clear();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to clear signature");
+    }
+  };
+
   const handleSubmit = async () => {
+    // Check if signature is already saved or needs to be saved
+    if (!signatureStatus?.declarationSigned) {
+      const saved = await saveSignature();
+      if (!saved) return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
@@ -491,6 +594,142 @@ export default function SubmitReportPage() {
             </Alert>
           )}
 
+          {/* Declaration and Signature */}
+          {!isAlreadySubmitted && validation.isValid && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PenTool className="h-5 w-5" />
+                  Declaration & Signature
+                </CardTitle>
+                <CardDescription>
+                  Please read and accept the declaration, then sign below to certify this report.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Declaration Text */}
+                <div className="p-4 bg-muted rounded-lg space-y-4 text-sm">
+                  <p className="font-semibold">Inspector Declaration</p>
+                  <p>
+                    I, the undersigned inspector, hereby declare that:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                    <li>
+                      The inspection was conducted in accordance with the scope defined in this report
+                      and to the best of my professional ability.
+                    </li>
+                    <li>
+                      All observations, findings, and opinions expressed in this report are based on
+                      the conditions observed at the time of inspection.
+                    </li>
+                    <li>
+                      I have no personal or financial interest in the property or its sale/purchase
+                      that could constitute a conflict of interest.
+                    </li>
+                    <li>
+                      The photographs and evidence included in this report have not been altered or
+                      manipulated beyond standard optimization.
+                    </li>
+                    <li>
+                      I understand that this report may be relied upon for legal, insurance, or
+                      dispute resolution purposes.
+                    </li>
+                  </ul>
+                  <p className="text-xs text-muted-foreground italic">
+                    This declaration is made in accordance with the High Court Rules Schedule 4
+                    requirements for expert witnesses.
+                  </p>
+                </div>
+
+                {/* Declaration Checkbox */}
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="declaration"
+                    checked={declarationChecked}
+                    onCheckedChange={(checked) => setDeclarationChecked(checked === true)}
+                    disabled={signatureStatus?.declarationSigned}
+                  />
+                  <Label
+                    htmlFor="declaration"
+                    className="text-sm font-medium leading-relaxed cursor-pointer"
+                  >
+                    I have read and accept the above declaration. I certify that all information
+                    in this report is true and accurate to the best of my knowledge and professional
+                    judgment.
+                  </Label>
+                </div>
+
+                {/* Signature Section */}
+                {signatureStatus?.declarationSigned ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-green-600">
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span className="font-medium">Report Signed</span>
+                    </div>
+                    {signatureStatus.signatureUrl && (
+                      <div className="relative w-full max-w-md h-32 border rounded-lg overflow-hidden bg-white">
+                        <Image
+                          src={signatureStatus.signatureUrl}
+                          alt="Signature"
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      Signed on: {signatureStatus.signedAt
+                        ? new Date(signatureStatus.signedAt).toLocaleString()
+                        : "Unknown"}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearSignature}
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Re-sign
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Your Signature</Label>
+                    <SignaturePad
+                      ref={signaturePadRef}
+                      width={500}
+                      height={200}
+                      disabled={!declarationChecked}
+                      onSign={() => setHasSignature(true)}
+                    />
+                    {!declarationChecked && (
+                      <p className="text-sm text-muted-foreground">
+                        Please accept the declaration above to enable signing.
+                      </p>
+                    )}
+                    {declarationChecked && hasSignature && (
+                      <Button
+                        onClick={saveSignature}
+                        disabled={savingSignature}
+                        variant="outline"
+                      >
+                        {savingSignature ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            Save Signature
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Submit Button */}
           {!isAlreadySubmitted && (
             <Card>
@@ -499,15 +738,21 @@ export default function SubmitReportPage() {
                   <div>
                     <CardTitle className="text-lg">Ready to Submit?</CardTitle>
                     <CardDescription>
-                      {validation.isValid
-                        ? "All validation checks passed. Your report is ready for submission."
-                        : "Please resolve all errors before submitting."}
+                      {!validation.isValid
+                        ? "Please resolve all errors before submitting."
+                        : !signatureStatus?.declarationSigned && !hasSignature
+                        ? "Please sign the declaration above before submitting."
+                        : "All validation checks passed. Your report is ready for submission."}
                     </CardDescription>
                   </div>
                   <Button
                     size="lg"
                     onClick={handleSubmit}
-                    disabled={!validation.isValid || submitting}
+                    disabled={
+                      !validation.isValid ||
+                      submitting ||
+                      (!signatureStatus?.declarationSigned && (!declarationChecked || !hasSignature))
+                    }
                   >
                     {submitting ? (
                       <>
