@@ -7,7 +7,7 @@ const createDefectSchema = z.object({
   reportId: z.string().min(1),
   roofElementId: z.string().optional(),
   title: z.string().min(1),
-  description: z.string().min(1),
+  description: z.string().optional().default(""),
   location: z.string().min(1),
   classification: z.enum(["MAJOR_DEFECT", "MINOR_DEFECT", "SAFETY_HAZARD", "MAINTENANCE_ITEM"]),
   severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),

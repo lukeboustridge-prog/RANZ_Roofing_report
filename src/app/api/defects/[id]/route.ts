@@ -5,7 +5,7 @@ import { z } from "zod";
 
 const updateDefectSchema = z.object({
   title: z.string().min(1).optional(),
-  description: z.string().min(1).optional(),
+  description: z.string().optional(),
   location: z.string().min(1).optional(),
   classification: z.enum(["MAJOR_DEFECT", "MINOR_DEFECT", "SAFETY_HAZARD", "MAINTENANCE_ITEM"]).optional(),
   severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]).optional(),
