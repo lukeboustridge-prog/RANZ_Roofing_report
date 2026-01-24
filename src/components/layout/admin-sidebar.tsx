@@ -5,24 +5,25 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
+  Users,
   FileText,
+  BarChart3,
   Settings,
-  Plus,
+  ArrowLeft,
   Shield,
+  ClipboardCheck,
 } from "lucide-react";
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Reports", href: "/reports", icon: FileText },
-  { name: "New Report", href: "/reports/new", icon: Plus },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Admin Dashboard", href: "/admin", icon: LayoutDashboard },
+  { name: "Review Queue", href: "/admin/reviews", icon: ClipboardCheck },
+  { name: "All Reports", href: "/admin/reports", icon: FileText },
+  { name: "Users", href: "/admin/users", icon: Users },
+  { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-const adminNavigation = [
-  { name: "Admin Portal", href: "/admin", icon: Shield },
-];
-
-export function Sidebar() {
+export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
@@ -30,12 +31,12 @@ export function Sidebar() {
       <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-border bg-card px-6 pb-4">
         {/* Logo */}
         <div className="flex h-16 shrink-0 items-center">
-          <Link href="/dashboard" className="flex items-center gap-2">
+          <Link href="/admin" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md bg-[var(--ranz-blue-500)] flex items-center justify-center">
-              <span className="text-white font-bold text-sm">R</span>
+              <Shield className="h-4 w-4 text-white" />
             </div>
             <span className="text-lg font-semibold text-foreground">
-              RANZ Reports
+              RANZ Admin
             </span>
           </Link>
         </div>
@@ -48,7 +49,7 @@ export function Sidebar() {
                 {navigation.map((item) => {
                   const isActive =
                     pathname === item.href ||
-                    (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                    (item.href !== "/admin" && pathname.startsWith(item.href));
                   return (
                     <li key={item.name}>
                       <Link
@@ -76,39 +77,15 @@ export function Sidebar() {
               </ul>
             </li>
 
-            {/* Admin Section - TODO: Conditionally show based on user role */}
-            <li>
-              <div className="text-xs font-semibold leading-6 text-muted-foreground">
-                Administration
-              </div>
-              <ul role="list" className="-mx-2 mt-2 space-y-1">
-                {adminNavigation.map((item) => {
-                  const isActive = pathname.startsWith(item.href);
-                  return (
-                    <li key={item.name}>
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          "group flex gap-x-3 rounded-md p-2 text-sm font-medium leading-6",
-                          isActive
-                            ? "bg-[var(--ranz-blue-50)] text-[var(--ranz-blue-600)]"
-                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                        )}
-                      >
-                        <item.icon
-                          className={cn(
-                            "h-5 w-5 shrink-0",
-                            isActive
-                              ? "text-[var(--ranz-blue-600)]"
-                              : "text-muted-foreground group-hover:text-foreground"
-                          )}
-                        />
-                        {item.name}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
+            {/* Back to Dashboard */}
+            <li className="mt-auto">
+              <Link
+                href="/dashboard"
+                className="group flex gap-x-3 rounded-md p-2 text-sm font-medium leading-6 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                <ArrowLeft className="h-5 w-5 shrink-0" />
+                Back to Dashboard
+              </Link>
             </li>
           </ul>
         </nav>

@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
@@ -182,7 +182,7 @@ export default function PhotosPage() {
           <div className="flex items-end gap-4">
             <div className="flex-1">
               <Label htmlFor="photoType">Photo Type</Label>
-              <Select
+              <NativeSelect
                 id="photoType"
                 value={uploadType}
                 onChange={(e) => setUploadType(e.target.value)}
@@ -192,7 +192,7 @@ export default function PhotosPage() {
                     {type.label}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </div>
             <div>
               <input

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/select";
 import { ConditionBadge } from "@/components/badges/ConditionBadge";
 import {
   ArrowLeft,
@@ -255,7 +255,7 @@ export default function ElementsPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="elementType">Element Type *</Label>
-                  <Select
+                  <NativeSelect
                     id="elementType"
                     value={formData.elementType}
                     onChange={(e) => updateField("elementType", e.target.value)}
@@ -265,7 +265,7 @@ export default function ElementsPage() {
                         {type.label}
                       </option>
                     ))}
-                  </Select>
+                  </NativeSelect>
                 </div>
                 <div>
                   <Label htmlFor="location">Location *</Label>
@@ -334,7 +334,7 @@ export default function ElementsPage() {
                 </div>
                 <div>
                   <Label htmlFor="conditionRating">Condition Rating</Label>
-                  <Select
+                  <NativeSelect
                     id="conditionRating"
                     value={formData.conditionRating}
                     onChange={(e) =>
@@ -346,7 +346,7 @@ export default function ElementsPage() {
                         {rating.label}
                       </option>
                     ))}
-                  </Select>
+                  </NativeSelect>
                 </div>
               </div>
 

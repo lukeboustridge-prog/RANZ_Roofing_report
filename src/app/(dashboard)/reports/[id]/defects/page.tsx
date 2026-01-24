@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { SeverityBadge } from "@/components/badges/SeverityBadge";
 import { ClassificationBadge } from "@/components/badges/ClassificationBadge";
@@ -289,7 +289,7 @@ export default function DefectsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="classification">Classification *</Label>
-                    <Select
+                    <NativeSelect
                       id="classification"
                       value={formData.classification}
                       onChange={(e) =>
@@ -301,11 +301,11 @@ export default function DefectsPage() {
                           {c.label}
                         </option>
                       ))}
-                    </Select>
+                    </NativeSelect>
                   </div>
                   <div>
                     <Label htmlFor="severity">Severity *</Label>
-                    <Select
+                    <NativeSelect
                       id="severity"
                       value={formData.severity}
                       onChange={(e) => updateField("severity", e.target.value)}
@@ -315,7 +315,7 @@ export default function DefectsPage() {
                           {s.label}
                         </option>
                       ))}
-                    </Select>
+                    </NativeSelect>
                   </div>
                 </div>
               </div>
@@ -406,7 +406,7 @@ export default function DefectsPage() {
                 </div>
                 <div>
                   <Label htmlFor="priorityLevel">Priority</Label>
-                  <Select
+                  <NativeSelect
                     id="priorityLevel"
                     value={formData.priorityLevel}
                     onChange={(e) =>
@@ -418,7 +418,7 @@ export default function DefectsPage() {
                         {p.label}
                       </option>
                     ))}
-                  </Select>
+                  </NativeSelect>
                 </div>
               </div>
 

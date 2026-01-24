@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 const PROPERTY_TYPES = [
@@ -232,7 +232,7 @@ export default function NewReportPage() {
 
             <div>
               <Label htmlFor="propertyRegion">Region *</Label>
-              <Select
+              <NativeSelect
                 id="propertyRegion"
                 value={formData.propertyRegion}
                 onChange={(e) => updateField("propertyRegion", e.target.value)}
@@ -243,13 +243,13 @@ export default function NewReportPage() {
                     {region}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="propertyType">Property Type *</Label>
-                <Select
+                <NativeSelect
                   id="propertyType"
                   value={formData.propertyType}
                   onChange={(e) => updateField("propertyType", e.target.value)}
@@ -259,7 +259,7 @@ export default function NewReportPage() {
                       {type.label}
                     </option>
                   ))}
-                </Select>
+                </NativeSelect>
               </div>
               <div>
                 <Label htmlFor="buildingAge">Building Age (years)</Label>
@@ -298,7 +298,7 @@ export default function NewReportPage() {
               </div>
               <div>
                 <Label htmlFor="inspectionType">Inspection Type *</Label>
-                <Select
+                <NativeSelect
                   id="inspectionType"
                   value={formData.inspectionType}
                   onChange={(e) => updateField("inspectionType", e.target.value)}
@@ -308,7 +308,7 @@ export default function NewReportPage() {
                       {type.label}
                     </option>
                   ))}
-                </Select>
+                </NativeSelect>
               </div>
             </div>
 

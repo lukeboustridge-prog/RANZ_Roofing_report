@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/select";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 
 const PROPERTY_TYPES = [
@@ -224,7 +224,7 @@ export default function EditReportPage() {
           <CardContent>
             <div>
               <Label htmlFor="status">Status</Label>
-              <Select
+              <NativeSelect
                 id="status"
                 value={formData.status}
                 onChange={(e) => updateField("status", e.target.value)}
@@ -235,7 +235,7 @@ export default function EditReportPage() {
                     {option.label}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </div>
           </CardContent>
         </Card>
@@ -285,7 +285,7 @@ export default function EditReportPage() {
 
             <div>
               <Label htmlFor="propertyRegion">Region *</Label>
-              <Select
+              <NativeSelect
                 id="propertyRegion"
                 value={formData.propertyRegion}
                 onChange={(e) => updateField("propertyRegion", e.target.value)}
@@ -297,13 +297,13 @@ export default function EditReportPage() {
                     {region}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="propertyType">Property Type *</Label>
-                <Select
+                <NativeSelect
                   id="propertyType"
                   value={formData.propertyType}
                   onChange={(e) => updateField("propertyType", e.target.value)}
@@ -314,7 +314,7 @@ export default function EditReportPage() {
                       {type.label}
                     </option>
                   ))}
-                </Select>
+                </NativeSelect>
               </div>
               <div>
                 <Label htmlFor="buildingAge">Building Age (years)</Label>
@@ -353,7 +353,7 @@ export default function EditReportPage() {
               </div>
               <div>
                 <Label htmlFor="inspectionType">Inspection Type *</Label>
-                <Select
+                <NativeSelect
                   id="inspectionType"
                   value={formData.inspectionType}
                   onChange={(e) => updateField("inspectionType", e.target.value)}
@@ -364,7 +364,7 @@ export default function EditReportPage() {
                       {type.label}
                     </option>
                   ))}
-                </Select>
+                </NativeSelect>
               </div>
             </div>
 
