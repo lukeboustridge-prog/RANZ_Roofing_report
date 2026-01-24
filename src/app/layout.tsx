@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { UserProvider } from "@/contexts/user-context";
 import { SkipLink } from "@/components/ui/skip-link";
 import { constructMetadata } from "@/lib/seo";
 import "./globals.css";
@@ -41,7 +42,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <SkipLink />
-          {children}
+          <UserProvider>{children}</UserProvider>
         </body>
       </html>
     </ClerkProvider>

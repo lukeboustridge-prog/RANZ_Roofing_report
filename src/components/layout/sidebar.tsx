@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useCurrentUser } from "@/contexts/user-context";
 import {
   LayoutDashboard,
   FileText,
@@ -24,6 +25,7 @@ const adminNavigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { isReviewer, isLoading } = useCurrentUser();
 
   return (
     <aside className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
@@ -76,40 +78,42 @@ export function Sidebar() {
               </ul>
             </li>
 
-            {/* Admin Section - TODO: Conditionally show based on user role */}
-            <li>
-              <div className="text-xs font-semibold leading-6 text-muted-foreground">
-                Administration
-              </div>
-              <ul role="list" className="-mx-2 mt-2 space-y-1">
-                {adminNavigation.map((item) => {
-                  const isActive = pathname.startsWith(item.href);
-                  return (
-                    <li key={item.name}>
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          "group flex gap-x-3 rounded-md p-2 text-sm font-medium leading-6",
-                          isActive
-                            ? "bg-[var(--ranz-blue-50)] text-[var(--ranz-blue-600)]"
-                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                        )}
-                      >
-                        <item.icon
+            {/* Admin Section - Only show for reviewers, admins, and super admins */}
+            {!isLoading && isReviewer && (
+              <li>
+                <div className="text-xs font-semibold leading-6 text-muted-foreground">
+                  Administration
+                </div>
+                <ul role="list" className="-mx-2 mt-2 space-y-1">
+                  {adminNavigation.map((item) => {
+                    const isActive = pathname.startsWith(item.href);
+                    return (
+                      <li key={item.name}>
+                        <Link
+                          href={item.href}
                           className={cn(
-                            "h-5 w-5 shrink-0",
+                            "group flex gap-x-3 rounded-md p-2 text-sm font-medium leading-6",
                             isActive
-                              ? "text-[var(--ranz-blue-600)]"
-                              : "text-muted-foreground group-hover:text-foreground"
+                              ? "bg-[var(--ranz-blue-50)] text-[var(--ranz-blue-600)]"
+                              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                           )}
-                        />
-                        {item.name}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </li>
+                        >
+                          <item.icon
+                            className={cn(
+                              "h-5 w-5 shrink-0",
+                              isActive
+                                ? "text-[var(--ranz-blue-600)]"
+                                : "text-muted-foreground group-hover:text-foreground"
+                            )}
+                          />
+                          {item.name}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </li>
+            )}
           </ul>
         </nav>
       </div>
