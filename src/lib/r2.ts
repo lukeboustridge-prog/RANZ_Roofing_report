@@ -81,6 +81,10 @@ export function generateThumbnailKey(photoKey: string): string {
   return photoKey.replace("/photos/", "/thumbnails/");
 }
 
+export function generateAnnotatedKey(photoKey: string): string {
+  return photoKey.replace("/photos/", "/annotated/");
+}
+
 /**
  * Generate a presigned URL for direct upload from mobile devices
  * @param key The R2 object key

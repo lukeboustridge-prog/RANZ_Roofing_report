@@ -22,6 +22,9 @@ import {
   Pencil,
   AlertTriangle,
   Link as LinkIcon,
+  Maximize2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const PHOTO_TYPES = [
@@ -38,6 +41,8 @@ interface Photo {
   originalFilename: string;
   url: string;
   thumbnailUrl: string | null;
+  annotatedUrl: string | null;
+  isEdited: boolean;
   photoType: string;
   caption: string | null;
   capturedAt: string | null;
@@ -70,6 +75,29 @@ export default function PhotosPage() {
   const [error, setError] = useState("");
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [uploadType, setUploadType] = useState("GENERAL");
+  const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
+
+  // Get the display URL for a photo (annotated version if available)
+  const getDisplayUrl = (photo: Photo) => {
+    return photo.annotatedUrl || photo.url;
+  };
+
+  // Get thumbnail or display URL for grid
+  const getGridUrl = (photo: Photo) => {
+    return photo.thumbnailUrl || photo.annotatedUrl || photo.url;
+  };
+
+  // Navigate to next/previous photo in lightbox
+  const navigateLightbox = (direction: "prev" | "next") => {
+    if (!lightboxPhoto) return;
+    const currentIndex = photos.findIndex(p => p.id === lightboxPhoto.id);
+    if (currentIndex === -1) return;
+
+    const newIndex = direction === "prev"
+      ? (currentIndex - 1 + photos.length) % photos.length
+      : (currentIndex + 1) % photos.length;
+    setLightboxPhoto(photos[newIndex]);
+  };
 
   useEffect(() => {
     fetchPhotos();
@@ -303,9 +331,9 @@ export default function PhotosPage() {
                       : "border-transparent hover:border-muted-foreground/20"
                   }`}
                 >
-                  {photo.thumbnailUrl || photo.url ? (
+                  {getGridUrl(photo) ? (
                     <Image
-                      src={photo.thumbnailUrl || photo.url}
+                      src={getGridUrl(photo)}
                       alt={photo.caption || photo.originalFilename}
                       fill
                       className="object-cover"
@@ -316,10 +344,16 @@ export default function PhotosPage() {
                     </div>
                   )}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-wrap">
                       <Badge variant="secondary" className="text-xs">
                         {photo.photoType.replace("_", " ")}
                       </Badge>
+                      {photo.isEdited && (
+                        <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-200 border-blue-400/50">
+                          <Pencil className="h-3 w-3 mr-0.5" />
+                          Annotated
+                        </Badge>
+                      )}
                       {photo.defectId && (
                         <Badge variant="destructive" className="text-xs">
                           <AlertTriangle className="h-3 w-3 mr-0.5" />
@@ -352,20 +386,34 @@ export default function PhotosPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Preview */}
-                <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
-                  {selectedPhoto.url ? (
-                    <Image
-                      src={selectedPhoto.url}
-                      alt={selectedPhoto.caption || selectedPhoto.originalFilename}
-                      fill
-                      className="object-contain"
-                    />
+                <div
+                  className="relative aspect-video rounded-lg overflow-hidden bg-muted cursor-pointer group"
+                  onClick={() => setLightboxPhoto(selectedPhoto)}
+                >
+                  {getDisplayUrl(selectedPhoto) ? (
+                    <>
+                      <Image
+                        src={getDisplayUrl(selectedPhoto)}
+                        alt={selectedPhoto.caption || selectedPhoto.originalFilename}
+                        fill
+                        className="object-contain"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <Maximize2 className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Camera className="h-12 w-12 text-muted-foreground" />
                     </div>
                   )}
                 </div>
+                {selectedPhoto.isEdited && (
+                  <p className="text-xs text-blue-600 flex items-center gap-1">
+                    <Pencil className="h-3 w-3" />
+                    This photo has been annotated
+                  </p>
+                )}
 
                 {/* Metadata */}
                 <div className="space-y-3 text-sm">
@@ -460,9 +508,10 @@ export default function PhotosPage() {
                     <Button
                       variant="outline"
                       className="flex-1"
-                      onClick={() => window.open(selectedPhoto.url, "_blank")}
+                      onClick={() => setLightboxPhoto(selectedPhoto)}
                     >
-                      View Full Size
+                      <Maximize2 className="mr-2 h-4 w-4" />
+                      View Larger
                     </Button>
                     <Button
                       variant="destructive"
@@ -475,7 +524,7 @@ export default function PhotosPage() {
                   <Link href={`/reports/${reportId}/photos/${selectedPhoto.id}/annotate`}>
                     <Button variant="secondary" className="w-full">
                       <Pencil className="mr-2 h-4 w-4" />
-                      Annotate Photo
+                      {selectedPhoto.isEdited ? "Edit Annotations" : "Annotate Photo"}
                     </Button>
                   </Link>
                 </div>
@@ -493,6 +542,78 @@ export default function PhotosPage() {
           )}
         </div>
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxPhoto && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          {/* Close button */}
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+            onClick={() => setLightboxPhoto(null)}
+          >
+            <X className="h-8 w-8" />
+          </button>
+
+          {/* Navigation buttons */}
+          {photos.length > 1 && (
+            <>
+              <button
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateLightbox("prev");
+                }}
+              >
+                <ChevronLeft className="h-10 w-10" />
+              </button>
+              <button
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateLightbox("next");
+                }}
+              >
+                <ChevronRight className="h-10 w-10" />
+              </button>
+            </>
+          )}
+
+          {/* Image */}
+          <div
+            className="relative max-w-[90vw] max-h-[90vh] w-full h-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={getDisplayUrl(lightboxPhoto)}
+              alt={lightboxPhoto.caption || lightboxPhoto.originalFilename}
+              fill
+              className="object-contain"
+              sizes="90vw"
+              priority
+            />
+          </div>
+
+          {/* Photo info */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg text-white text-sm flex items-center gap-3">
+            <span className="font-medium">{lightboxPhoto.originalFilename}</span>
+            <Badge variant="secondary" className="text-xs">
+              {lightboxPhoto.photoType.replace("_", " ")}
+            </Badge>
+            {lightboxPhoto.isEdited && (
+              <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-200 border-blue-400/50">
+                <Pencil className="h-3 w-3 mr-0.5" />
+                Annotated
+              </Badge>
+            )}
+            <span className="text-white/60">
+              {photos.findIndex(p => p.id === lightboxPhoto.id) + 1} / {photos.length}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

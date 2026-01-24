@@ -357,6 +357,7 @@ model Photo {
   // Annotations
   caption        String?
   annotations    Json?
+  annotatedUrl   String?   // URL of the rendered annotated image
   scaleReference String?
 
   sortOrder Int @default(0)

@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { uploadToR2, generateAnnotatedKey } from "@/lib/r2";
 
 // POST /api/photos/[id]/annotate - Save annotations for a photo
 export async function POST(
@@ -24,14 +25,14 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { annotations } = body;
+    const { annotations, dataUrl } = body;
 
     // Find the photo
     const photo = await prisma.photo.findUnique({
       where: { id: photoId },
       include: {
         report: {
-          select: { inspectorId: true },
+          select: { inspectorId: true, id: true },
         },
       },
     });
@@ -45,11 +46,36 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    let annotatedUrl = photo.annotatedUrl;
+
+    // Upload the annotated image if dataUrl is provided
+    if (dataUrl && dataUrl.startsWith("data:image/")) {
+      try {
+        // Extract base64 data and content type
+        const matches = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+        if (matches) {
+          const contentType = matches[1];
+          const base64Data = matches[2];
+          const buffer = Buffer.from(base64Data, "base64");
+
+          // Generate key for annotated image
+          const annotatedKey = generateAnnotatedKey(photo.filename);
+
+          // Upload to R2
+          annotatedUrl = await uploadToR2(buffer, annotatedKey, contentType);
+        }
+      } catch (uploadError) {
+        console.error("Error uploading annotated image:", uploadError);
+        // Continue without saving annotated image URL
+      }
+    }
+
     // Update photo with annotations
     const updatedPhoto = await prisma.photo.update({
       where: { id: photoId },
       data: {
         annotations: annotations,
+        annotatedUrl: annotatedUrl,
         isEdited: true,
         editedFrom: photo.editedFrom || photo.id,
       },
