@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,6 +11,10 @@ import {
   Loader2,
   FileText,
   AlertCircle,
+  Eye,
+  ExternalLink,
+  X,
+  Maximize2,
 } from "lucide-react";
 
 export default function PDFPage() {
@@ -18,22 +22,28 @@ export default function PDFPage() {
   const reportId = params.id as string;
 
   const [generating, setGenerating] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const [error, setError] = useState("");
+
+  const generatePdfBlob = useCallback(async () => {
+    const response = await fetch(`/api/reports/${reportId}/pdf`);
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || "Failed to generate PDF");
+    }
+
+    return await response.blob();
+  }, [reportId]);
 
   const handleGenerate = async () => {
     setGenerating(true);
     setError("");
 
     try {
-      const response = await fetch(`/api/reports/${reportId}/pdf`);
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to generate PDF");
-      }
-
-      // Get the PDF blob
-      const blob = await response.blob();
+      const blob = await generatePdfBlob();
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -48,6 +58,52 @@ export default function PDFPage() {
       setError(err instanceof Error ? err.message : "Failed to generate PDF");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handlePreview = async () => {
+    setPreviewing(true);
+    setError("");
+
+    try {
+      const blob = await generatePdfBlob();
+
+      // Clean up old preview URL if exists
+      if (previewUrl) {
+        window.URL.revokeObjectURL(previewUrl);
+      }
+
+      // Create blob URL for preview
+      const url = window.URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setShowPreview(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate preview");
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  const handlePreviewNewTab = async () => {
+    setPreviewing(true);
+    setError("");
+
+    try {
+      const blob = await generatePdfBlob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate preview");
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  const closePreview = () => {
+    setShowPreview(false);
+    if (previewUrl) {
+      window.URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
     }
   };
 
@@ -98,24 +154,56 @@ export default function PDFPage() {
               </ul>
             </div>
 
-            <Button
-              onClick={handleGenerate}
-              disabled={generating}
-              className="w-full"
-              size="lg"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Generating PDF...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-5 w-5" />
-                  Generate & Download PDF
-                </>
-              )}
-            </Button>
+            <div className="space-y-3">
+              <Button
+                onClick={handleGenerate}
+                disabled={generating || previewing}
+                className="w-full"
+                size="lg"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Generating PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-5 w-5" />
+                    Generate & Download PDF
+                  </>
+                )}
+              </Button>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handlePreview}
+                  disabled={generating || previewing}
+                  className="flex-1"
+                >
+                  {previewing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="mr-2 h-4 w-4" />
+                      Preview
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handlePreviewNewTab}
+                  disabled={generating || previewing}
+                  className="flex-1"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Open in New Tab
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -164,6 +252,57 @@ export default function PDFPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Inline PDF Preview */}
+      {showPreview && previewUrl && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                PDF Preview
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open(previewUrl, "_blank")}
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={closePreview}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <CardDescription>
+              Preview of the generated PDF report
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="border rounded-lg overflow-hidden bg-gray-100">
+              <iframe
+                src={previewUrl}
+                className="w-full h-[600px]"
+                title="PDF Preview"
+              />
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onClick={closePreview}>
+                Close Preview
+              </Button>
+              <Button onClick={handleGenerate} disabled={generating}>
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

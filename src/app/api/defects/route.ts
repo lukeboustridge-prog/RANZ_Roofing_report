@@ -1,27 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { z } from "zod";
+import { ZodError, z } from "zod";
+import { CreateDefectSchema, formatZodError } from "@/lib/validations";
 
-const createDefectSchema = z.object({
-  reportId: z.string().min(1),
-  roofElementId: z.string().nullable().optional(),
-  title: z.string().min(1),
-  description: z.string().optional().default(""),
-  location: z.string().min(1),
-  classification: z.enum(["MAJOR_DEFECT", "MINOR_DEFECT", "SAFETY_HAZARD", "MAINTENANCE_ITEM", "WORKMANSHIP_ISSUE"]),
-  severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),
-  observation: z.string().min(1),
-  analysis: z.string().optional(),
-  opinion: z.string().optional(),
-  codeReference: z.string().optional(),
-  copReference: z.string().optional(),
-  probableCause: z.string().optional(),
-  contributingFactors: z.string().optional(),
-  recommendation: z.string().optional(),
-  priorityLevel: z.enum(["IMMEDIATE", "SHORT_TERM", "MEDIUM_TERM", "LONG_TERM"]).optional(),
-  estimatedCost: z.string().optional(),
-  measurements: z.record(z.string(), z.unknown()).optional(),
+// Extended schema that includes reportId (not in the base schema)
+const createDefectWithReportSchema = CreateDefectSchema.extend({
+  reportId: z.string().min(1, "Report ID is required"),
 });
 
 // POST /api/defects - Create defect
@@ -42,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validatedData = createDefectSchema.parse(body);
+    const validatedData = createDefectWithReportSchema.parse(body);
 
     // Verify report exists and belongs to user
     const report = await prisma.report.findFirst({
@@ -111,11 +96,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating defect:", error);
 
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation failed", details: error.issues },
-        { status: 400 }
-      );
+    if (error instanceof ZodError) {
+      return NextResponse.json(formatZodError(error), { status: 400 });
     }
 
     return NextResponse.json(

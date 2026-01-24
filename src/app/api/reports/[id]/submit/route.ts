@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import type { InspectionType } from "@prisma/client";
+import { sendReportSubmittedNotification } from "@/lib/email";
 
 interface ValidationResult {
   isValid: boolean;
@@ -151,6 +152,31 @@ export async function POST(
           },
         },
       });
+
+      // Send email notifications to reviewers (non-blocking)
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reports.ranzroofing.co.nz";
+      const reviewers = await prisma.user.findMany({
+        where: {
+          role: { in: ["REVIEWER", "ADMIN", "SUPER_ADMIN"] },
+          status: "ACTIVE",
+        },
+        select: { email: true },
+      });
+
+      const reportInfo = {
+        reportNumber: report.reportNumber,
+        propertyAddress: report.propertyAddress,
+        inspectorName: report.inspector?.name || user.name,
+        inspectorEmail: user.email,
+        reportUrl: `${baseUrl}/reports/${report.id}`,
+      };
+
+      // Send to all active reviewers
+      for (const reviewer of reviewers) {
+        sendReportSubmittedNotification(reviewer.email, reportInfo).catch((err) => {
+          console.error(`[Submit] Failed to notify reviewer ${reviewer.email}:`, err);
+        });
+      }
 
       return NextResponse.json({
         success: true,

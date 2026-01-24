@@ -3,12 +3,17 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { ReportPDF } from "@/lib/pdf/report-template";
+import { rateLimit, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
 
 // GET /api/reports/[id]/pdf - Generate PDF
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Apply strict rate limiting for PDF generation (expensive operation)
+  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.pdf);
+  if (rateLimitResult) return rateLimitResult;
+
   try {
     const { userId } = await auth();
     const { id } = await params;
@@ -49,6 +54,12 @@ export async function GET(
         },
         roofElements: {
           orderBy: { createdAt: "asc" },
+          include: {
+            photos: {
+              orderBy: { sortOrder: "asc" },
+              take: 5,
+            },
+          },
         },
         complianceAssessment: true,
       },
@@ -77,7 +88,21 @@ export async function GET(
     // Transform report data for PDF generation
     const reportData = {
       ...report,
+      // Transform JSON fields to strings for PDF template
+      scopeOfWorks: report.scopeOfWorks ? String(report.scopeOfWorks) : null,
+      methodology: report.methodology ? String(report.methodology) : null,
+      equipment: Array.isArray(report.equipment) ? report.equipment as string[] : null,
+      conclusions: report.conclusions ? String(report.conclusions) : null,
       expertDeclaration: report.expertDeclaration as ExpertDeclarationData | null,
+      // Transform roofElements to include photos properly
+      roofElements: report.roofElements.map(element => ({
+        ...element,
+        photos: element.photos.map(photo => ({
+          url: photo.url,
+          caption: photo.caption,
+          photoType: photo.photoType,
+        })),
+      })),
       complianceAssessment: report.complianceAssessment
         ? {
             checklistResults: report.complianceAssessment.checklistResults as Record<string, Record<string, string>>,

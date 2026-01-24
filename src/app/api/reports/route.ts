@@ -2,40 +2,9 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { generateReportNumber } from "@/lib/report-number";
-import { z } from "zod";
-
-const createReportSchema = z.object({
-  propertyAddress: z.string().min(1),
-  propertyCity: z.string().min(1),
-  propertyRegion: z.string().min(1),
-  propertyPostcode: z.string().min(1),
-  propertyType: z.enum([
-    "RESIDENTIAL_1",
-    "RESIDENTIAL_2",
-    "RESIDENTIAL_3",
-    "COMMERCIAL_LOW",
-    "COMMERCIAL_HIGH",
-    "INDUSTRIAL",
-  ]),
-  buildingAge: z.number().nullable().optional(),
-  inspectionDate: z.string().transform((s) => new Date(s)),
-  inspectionType: z.enum([
-    "FULL_INSPECTION",
-    "VISUAL_ONLY",
-    "NON_INVASIVE",
-    "INVASIVE",
-    "DISPUTE_RESOLUTION",
-    "PRE_PURCHASE",
-    "MAINTENANCE_REVIEW",
-    "WARRANTY_CLAIM",
-  ]),
-  weatherConditions: z.string().optional(),
-  accessMethod: z.string().optional(),
-  limitations: z.string().optional(),
-  clientName: z.string().min(1),
-  clientEmail: z.string().email().optional().or(z.literal("")),
-  clientPhone: z.string().optional(),
-});
+import { ZodError } from "zod";
+import { CreateReportSchema, formatZodError } from "@/lib/validations";
+import { rateLimit, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
 
 // GET /api/reports - List reports
 export async function GET() {
@@ -79,6 +48,10 @@ export async function GET() {
 
 // POST /api/reports - Create report
 export async function POST(request: NextRequest) {
+  // Apply rate limiting - standard limit for report creation
+  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.standard);
+  if (rateLimitResult) return rateLimitResult;
+
   try {
     const { userId } = await auth();
 
@@ -95,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validatedData = createReportSchema.parse(body);
+    const validatedData = CreateReportSchema.parse(body);
 
     const reportNumber = await generateReportNumber();
 
@@ -135,11 +108,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating report:", error);
 
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation failed", details: error.issues },
-        { status: 400 }
-      );
+    if (error instanceof ZodError) {
+      return NextResponse.json(formatZodError(error), { status: 400 });
     }
 
     return NextResponse.json(

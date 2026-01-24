@@ -18,6 +18,9 @@ import {
   Star,
   Loader2,
   X,
+  Download,
+  Layers,
+  CheckSquare,
 } from "lucide-react";
 
 const INSPECTION_TYPES = [
@@ -47,9 +50,11 @@ export default function TemplatesPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [saving, setSaving] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -154,6 +159,44 @@ export default function TemplatesPage() {
     return INSPECTION_TYPES.find((t) => t.value === type)?.label || type;
   };
 
+  const getSectionCount = (sections: unknown) => {
+    if (Array.isArray(sections)) return sections.length;
+    if (sections && typeof sections === "object") return Object.keys(sections).length;
+    return 0;
+  };
+
+  const getChecklistCount = (checklists: unknown) => {
+    if (Array.isArray(checklists)) return checklists.length;
+    return 0;
+  };
+
+  const handleSeedTemplates = async () => {
+    if (!confirm("This will create or update default templates. Continue?")) return;
+
+    setSeeding(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch("/api/admin/templates/seed", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to seed templates");
+      }
+
+      const data = await response.json();
+      setSuccess(data.message);
+      await fetchTemplates();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -179,15 +222,36 @@ export default function TemplatesPage() {
             Manage report templates for different inspection types.
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Template
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleSeedTemplates} disabled={seeding}>
+            {seeding ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Seeding...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Seed Default Templates
+              </>
+            )}
+          </Button>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Template
+          </Button>
+        </div>
       </div>
 
       {error && (
         <div className="p-4 bg-destructive/10 text-destructive rounded-md">
           {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="p-4 bg-green-50 text-green-700 border border-green-200 rounded-md">
+          {success}
         </div>
       )}
 
@@ -322,11 +386,23 @@ export default function TemplatesPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="outline">{getTypeLabel(template.inspectionType)}</Badge>
                     {!template.isActive && (
                       <Badge variant="secondary">Inactive</Badge>
                     )}
+                  </div>
+
+                  {/* Sections and Checklists Info */}
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Layers className="h-3.5 w-3.5" />
+                      {getSectionCount(template.sections)} sections
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <CheckSquare className="h-3.5 w-3.5" />
+                      {getChecklistCount(template.checklists)} checklists
+                    </span>
                   </div>
 
                   <div className="text-sm text-muted-foreground">

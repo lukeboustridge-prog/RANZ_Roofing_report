@@ -485,6 +485,29 @@ interface ExpertDeclarationData {
   evidenceIntegrity: boolean;
 }
 
+interface RoofElementData {
+  id: string;
+  elementType: string;
+  location: string;
+  claddingType: string | null;
+  claddingProfile: string | null;
+  material: string | null;
+  manufacturer: string | null;
+  colour: string | null;
+  pitch: number | null;
+  area: number | null;
+  ageYears: number | null;
+  conditionRating: string | null;
+  conditionNotes: string | null;
+  meetsCop: boolean | null;
+  meetsE2: boolean | null;
+  photos: Array<{
+    url: string;
+    caption: string | null;
+    photoType: string;
+  }>;
+}
+
 interface ReportData {
   reportNumber: string;
   propertyAddress: string;
@@ -501,6 +524,11 @@ interface ReportData {
   clientName: string;
   clientEmail: string | null;
   clientPhone: string | null;
+  // Report content fields
+  scopeOfWorks: string | null;
+  methodology: string | null;
+  equipment: string[] | null;
+  conclusions: string | null;
   // Declaration fields
   declarationSigned: boolean;
   signedAt: Date | string | null;
@@ -515,6 +543,7 @@ interface ReportData {
     lbpNumber: string | null;
     yearsExperience: number | null;
   };
+  roofElements: RoofElementData[];
   defects: Array<{
     defectNumber: number;
     title: string;
@@ -854,6 +883,449 @@ export function ReportPDF({ report }: ReportPDFProps) {
         </View>
       </Page>
 
+      {/* Executive Summary Page */}
+      <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.title, { fontSize: 18 }]}>EXECUTIVE SUMMARY</Text>
+            <Text style={styles.subtitle}>Report: {report.reportNumber}</Text>
+          </View>
+          <View style={styles.headerText}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.blue }}>
+              RANZ
+            </Text>
+          </View>
+        </View>
+
+        {/* Property Quick Reference */}
+        <View style={{ marginBottom: 15, padding: 12, backgroundColor: colors.lightGray, borderRadius: 4 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+            <View style={{ width: "48%" }}>
+              <Text style={{ fontSize: 8, color: colors.mediumGray }}>Property</Text>
+              <Text style={{ fontSize: 10, fontWeight: "bold" }}>{report.propertyAddress}</Text>
+              <Text style={{ fontSize: 9 }}>{report.propertyCity}, {report.propertyRegion}</Text>
+            </View>
+            <View style={{ width: "48%" }}>
+              <Text style={{ fontSize: 8, color: colors.mediumGray }}>Inspection Date</Text>
+              <Text style={{ fontSize: 10, fontWeight: "bold" }}>{formatDate(report.inspectionDate)}</Text>
+              <Text style={{ fontSize: 9 }}>{formatInspectionType(report.inspectionType)}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Key Findings */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { fontSize: 12 }]}>Key Findings</Text>
+
+          {/* Defect Summary Statistics */}
+          <View style={{ flexDirection: "row", marginBottom: 15 }}>
+            <View style={{ flex: 1, alignItems: "center", padding: 10, backgroundColor: colors.critical, borderRadius: 4, marginRight: 5 }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white" }}>
+                {report.defects.filter(d => d.severity === "CRITICAL").length}
+              </Text>
+              <Text style={{ fontSize: 8, color: "white" }}>Critical</Text>
+            </View>
+            <View style={{ flex: 1, alignItems: "center", padding: 10, backgroundColor: colors.high, borderRadius: 4, marginRight: 5 }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white" }}>
+                {report.defects.filter(d => d.severity === "HIGH").length}
+              </Text>
+              <Text style={{ fontSize: 8, color: "white" }}>High</Text>
+            </View>
+            <View style={{ flex: 1, alignItems: "center", padding: 10, backgroundColor: colors.medium, borderRadius: 4, marginRight: 5 }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white" }}>
+                {report.defects.filter(d => d.severity === "MEDIUM").length}
+              </Text>
+              <Text style={{ fontSize: 8, color: "white" }}>Medium</Text>
+            </View>
+            <View style={{ flex: 1, alignItems: "center", padding: 10, backgroundColor: colors.low, borderRadius: 4 }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white" }}>
+                {report.defects.filter(d => d.severity === "LOW").length}
+              </Text>
+              <Text style={{ fontSize: 8, color: "white" }}>Low</Text>
+            </View>
+          </View>
+
+          {/* Major Defects List */}
+          {report.defects.filter(d => d.severity === "CRITICAL" || d.severity === "HIGH").length > 0 && (
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontSize: 10, fontWeight: "bold", color: colors.critical, marginBottom: 5 }}>
+                Major Defects Requiring Attention:
+              </Text>
+              {report.defects
+                .filter(d => d.severity === "CRITICAL" || d.severity === "HIGH")
+                .slice(0, 5)
+                .map((defect, idx) => (
+                  <View key={idx} style={{ flexDirection: "row", paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+                    <Text style={{ width: "8%", fontSize: 9, fontWeight: "bold", color: getSeverityColor(defect.severity) }}>
+                      #{defect.defectNumber}
+                    </Text>
+                    <Text style={{ width: "62%", fontSize: 9 }}>{defect.title}</Text>
+                    <Text style={{ width: "30%", fontSize: 8, color: colors.mediumGray }}>{defect.location}</Text>
+                  </View>
+                ))}
+            </View>
+          )}
+        </View>
+
+        {/* Overall Condition Assessment */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { fontSize: 12 }]}>Overall Condition Assessment</Text>
+          <View style={{ padding: 10, backgroundColor: colors.lightGray, borderRadius: 4 }}>
+            {report.roofElements && report.roofElements.length > 0 ? (
+              <View>
+                <Text style={{ fontSize: 9, lineHeight: 1.5 }}>
+                  This inspection assessed {report.roofElements.length} roof element(s) and identified{" "}
+                  {report.defects.length} defect(s).
+                  {report.defects.filter(d => d.severity === "CRITICAL").length > 0 &&
+                    ` ${report.defects.filter(d => d.severity === "CRITICAL").length} critical issue(s) require immediate attention.`}
+                  {hasComplianceData && hasNonCompliance &&
+                    ` Building code compliance assessment identified ${complianceStats.fail} non-compliant and ${complianceStats.partial} partially compliant items.`}
+                </Text>
+              </View>
+            ) : (
+              <Text style={{ fontSize: 9, lineHeight: 1.5 }}>
+                This inspection identified {report.defects.length} defect(s).
+                {report.defects.filter(d => d.severity === "CRITICAL").length > 0 &&
+                  ` ${report.defects.filter(d => d.severity === "CRITICAL").length} critical issue(s) require immediate attention.`}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* Critical Recommendations */}
+        {report.defects.filter(d => d.priorityLevel === "IMMEDIATE" || d.severity === "CRITICAL").length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { fontSize: 12 }]}>Critical Recommendations</Text>
+            <View style={{ padding: 12, backgroundColor: "#fef2f2", borderLeftWidth: 4, borderLeftColor: colors.critical, borderRadius: 4 }}>
+              {report.defects
+                .filter(d => d.priorityLevel === "IMMEDIATE" || d.severity === "CRITICAL")
+                .slice(0, 4)
+                .map((defect, idx) => (
+                  <View key={idx} style={{ marginBottom: idx < 3 ? 8 : 0 }}>
+                    <Text style={{ fontSize: 9, fontWeight: "bold", color: colors.critical }}>
+                      {idx + 1}. Defect #{defect.defectNumber}: {defect.title}
+                    </Text>
+                    {defect.recommendation && (
+                      <Text style={{ fontSize: 8, color: "#991b1b", marginLeft: 12, marginTop: 2 }}>
+                        {defect.recommendation.substring(0, 150)}{defect.recommendation.length > 150 ? "..." : ""}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+            </View>
+          </View>
+        )}
+
+        {/* Conclusions Preview */}
+        {report.conclusions && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { fontSize: 12 }]}>Professional Opinion Summary</Text>
+            <Text style={{ fontSize: 9, lineHeight: 1.5, fontStyle: "italic" }}>
+              {typeof report.conclusions === "string"
+                ? report.conclusions.substring(0, 400) + (report.conclusions.length > 400 ? "..." : "")
+                : "See detailed conclusions in Section 9."}
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.footer}>
+          <Text>Report: {report.reportNumber}</Text>
+          <Text style={styles.pageNumber}>Executive Summary</Text>
+        </View>
+      </Page>
+
+      {/* Table of Contents Page */}
+      <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.title, { fontSize: 18 }]}>TABLE OF CONTENTS</Text>
+            <Text style={styles.subtitle}>Report: {report.reportNumber}</Text>
+          </View>
+          <View style={styles.headerText}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.blue }}>
+              RANZ
+            </Text>
+          </View>
+        </View>
+
+        <View style={{ marginTop: 10 }}>
+          {/* Main Sections */}
+          <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold" }}>Cover Page & Property Details</Text>
+          </View>
+          <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold" }}>Executive Summary</Text>
+          </View>
+          {report.declarationSigned && (
+            <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+              <Text style={{ fontSize: 10, fontWeight: "bold" }}>Expert Witness Declaration</Text>
+              <Text style={{ fontSize: 8, color: colors.mediumGray, marginLeft: 10 }}>High Court Rules Schedule 4 Compliance</Text>
+            </View>
+          )}
+          <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold" }}>Glossary of Terms</Text>
+          </View>
+
+          {/* Numbered Sections */}
+          <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold" }}>1. Introduction & Scope</Text>
+            <View style={{ marginLeft: 15, marginTop: 3 }}>
+              <Text style={{ fontSize: 8, color: colors.mediumGray }}>1.1 Purpose of Engagement</Text>
+              <Text style={{ fontSize: 8, color: colors.mediumGray }}>1.2 Scope Definition</Text>
+              <Text style={{ fontSize: 8, color: colors.mediumGray }}>1.3 Limitations Statement</Text>
+              <Text style={{ fontSize: 8, color: colors.mediumGray }}>1.4 Standards & Codes Referenced</Text>
+            </View>
+          </View>
+          <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold" }}>2. Inspector Credentials</Text>
+          </View>
+          <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold" }}>3. Methodology</Text>
+            <View style={{ marginLeft: 15, marginTop: 3 }}>
+              <Text style={{ fontSize: 8, color: colors.mediumGray }}>3.1 Inspection Process</Text>
+              <Text style={{ fontSize: 8, color: colors.mediumGray }}>3.2 Equipment Used</Text>
+              <Text style={{ fontSize: 8, color: colors.mediumGray }}>3.3 Weather Conditions</Text>
+            </View>
+          </View>
+          <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold" }}>4. Property Description</Text>
+          </View>
+          {report.roofElements && report.roofElements.length > 0 && (
+            <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+              <Text style={{ fontSize: 10, fontWeight: "bold" }}>5. Factual Observations</Text>
+              <Text style={{ fontSize: 8, color: colors.mediumGray, marginLeft: 15, marginTop: 3 }}>
+                {report.roofElements.length} roof element(s) documented
+              </Text>
+            </View>
+          )}
+          {report.defects.length > 0 && (
+            <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+              <Text style={{ fontSize: 10, fontWeight: "bold" }}>6. Defects Register</Text>
+              <Text style={{ fontSize: 8, color: colors.mediumGray, marginLeft: 15, marginTop: 3 }}>
+                {report.defects.length} defect(s) identified
+              </Text>
+            </View>
+          )}
+          {hasComplianceData && (
+            <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+              <Text style={{ fontSize: 10, fontWeight: "bold" }}>7. Building Code Compliance Assessment</Text>
+              <View style={{ marginLeft: 15, marginTop: 3 }}>
+                <Text style={{ fontSize: 8, color: colors.mediumGray }}>7.1 E2/AS1 External Moisture</Text>
+                <Text style={{ fontSize: 8, color: colors.mediumGray }}>7.2 Metal Roof COP Compliance</Text>
+                <Text style={{ fontSize: 8, color: colors.mediumGray }}>7.3 B2 Durability Assessment</Text>
+                <Text style={{ fontSize: 8, color: colors.mediumGray }}>7.4 Non-Compliance Summary</Text>
+              </View>
+            </View>
+          )}
+          <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold" }}>8. Analysis & Discussion</Text>
+          </View>
+          <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold" }}>9. Opinions & Conclusions</Text>
+          </View>
+          <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold" }}>10. Recommendations</Text>
+          </View>
+
+          {/* Appendices */}
+          <View style={{ marginTop: 15, paddingTop: 10, borderTopWidth: 2, borderTopColor: colors.blue }}>
+            <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.blue, marginBottom: 8 }}>APPENDICES</Text>
+            <View style={{ marginBottom: 3, paddingVertical: 4 }}>
+              <Text style={{ fontSize: 9 }}>Appendix A: Photograph Index ({report.photos.length} photographs)</Text>
+            </View>
+            <View style={{ marginBottom: 3, paddingVertical: 4 }}>
+              <Text style={{ fontSize: 9 }}>Appendix B: Site Plan / Defect Location Map</Text>
+            </View>
+            <View style={{ marginBottom: 3, paddingVertical: 4 }}>
+              <Text style={{ fontSize: 9 }}>Appendix C: Chain of Custody Documentation</Text>
+            </View>
+            <View style={{ marginBottom: 3, paddingVertical: 4 }}>
+              <Text style={{ fontSize: 9 }}>Appendix D: Equipment Calibration Certificates</Text>
+            </View>
+            <View style={{ marginBottom: 3, paddingVertical: 4 }}>
+              <Text style={{ fontSize: 9 }}>Appendix E: Inspector CV</Text>
+            </View>
+            <View style={{ marginBottom: 3, paddingVertical: 4 }}>
+              <Text style={{ fontSize: 9 }}>Appendix F: Standards & References</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <Text>Report: {report.reportNumber}</Text>
+          <Text style={styles.pageNumber}>Table of Contents</Text>
+        </View>
+      </Page>
+
+      {/* Glossary Page */}
+      <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.title, { fontSize: 18 }]}>GLOSSARY OF TERMS</Text>
+            <Text style={styles.subtitle}>Technical Definitions</Text>
+          </View>
+          <View style={styles.headerText}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.blue }}>
+              RANZ
+            </Text>
+          </View>
+        </View>
+
+        <Text style={{ fontSize: 9, color: colors.mediumGray, marginBottom: 15, lineHeight: 1.5 }}>
+          The following technical terms are used throughout this report. Definitions are provided
+          to assist non-technical readers in understanding the findings and recommendations.
+        </Text>
+
+        {/* Building Code Terms */}
+        <View style={styles.section}>
+          <Text style={[styles.subsectionTitle, { fontSize: 11 }]}>Building Code & Standards</Text>
+
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>E2</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Building Code Clause for External Moisture - ensures buildings prevent water penetration
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>B2</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Building Code Clause for Durability - specifies minimum expected material lifespans
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>E2/AS1</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Acceptable Solution for E2 compliance - provides prescriptive methods for weathertightness
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>COP</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Code of Practice - industry standard documents providing best practice guidance
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>LBP</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Licensed Building Practitioner - legally authorised to carry out restricted building work
+            </Text>
+          </View>
+        </View>
+
+        {/* Roofing Terms */}
+        <View style={styles.section}>
+          <Text style={[styles.subsectionTitle, { fontSize: 11 }]}>Roofing Terminology</Text>
+
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Flashing</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Sheet metal or other material used to weatherproof junctions and penetrations
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Ridge</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              The horizontal line at the top of a roof where two slopes meet
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Valley</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              The internal angle formed where two roof slopes meet, channeling water to gutters
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Pitch</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              The angle or slope of the roof surface, typically measured in degrees
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Underlay</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Membrane beneath the roof cladding providing secondary moisture protection
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Fascia</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Board running along the roof edge to which gutters are typically attached
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Barge</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              The board covering the gable end of a roof
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Penetration</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Any opening through the roof surface (vents, pipes, skylights, etc.)
+            </Text>
+          </View>
+        </View>
+
+        {/* Defect Classification Terms */}
+        <View style={styles.section}>
+          <Text style={[styles.subsectionTitle, { fontSize: 11 }]}>Defect Classifications</Text>
+
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Major Defect</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Defect with potential structural or serviceability impact requiring prompt remediation
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Minor Defect</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Non-structural deviation from acceptable standards requiring attention
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Safety Hazard</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Condition posing risk to occupants or users of the building
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Maintenance Item</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Normal wear and tear requiring routine maintenance attention
+            </Text>
+          </View>
+        </View>
+
+        {/* Evidence Terms */}
+        <View style={styles.section}>
+          <Text style={[styles.subsectionTitle, { fontSize: 11 }]}>Evidence & Documentation</Text>
+
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>EXIF Data</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Metadata embedded in photos including capture date, GPS location, and camera settings
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>SHA-256 Hash</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Cryptographic fingerprint used to verify file integrity and detect modifications
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.label, { width: "25%", fontSize: 9 }]}>Chain of Custody</Text>
+            <Text style={[styles.value, { width: "75%", fontSize: 9 }]}>
+              Documentation tracking evidence from capture through to presentation
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <Text>Report: {report.reportNumber}</Text>
+          <Text style={styles.pageNumber}>Glossary of Terms</Text>
+        </View>
+      </Page>
+
       {/* Expert Witness Declaration Page - High Court Rules Schedule 4 */}
       {report.declarationSigned && (
         <Page size="A4" style={styles.page}>
@@ -1032,10 +1504,142 @@ export function ReportPDF({ report }: ReportPDFProps) {
         </Page>
       )}
 
+      {/* Section 5: Factual Observations - Roof Elements */}
+      {report.roofElements && report.roofElements.length > 0 && (
+        <Page size="A4" style={styles.page}>
+          <Text style={styles.sectionTitle}>5. FACTUAL OBSERVATIONS - ROOF ELEMENTS</Text>
+
+          <Text style={{ fontSize: 9, color: colors.mediumGray, marginBottom: 15, lineHeight: 1.5 }}>
+            The following roof elements were inspected and documented. Each element has been assessed
+            for condition, compliance with relevant codes, and any defects identified.
+          </Text>
+
+          {report.roofElements.map((element, index) => (
+            <View key={element.id} style={[styles.defectCard, { marginBottom: 12 }]} wrap={false}>
+              <View style={styles.defectHeader}>
+                <Text style={styles.defectTitle}>
+                  5.{index + 1} {element.elementType.replace(/_/g, " ")} - {element.location}
+                </Text>
+                {element.conditionRating && (
+                  <Text
+                    style={[
+                      styles.severityBadge,
+                      {
+                        backgroundColor:
+                          element.conditionRating === "GOOD" ? colors.low :
+                          element.conditionRating === "FAIR" ? colors.medium :
+                          element.conditionRating === "POOR" ? colors.high : colors.critical
+                      },
+                    ]}
+                  >
+                    {element.conditionRating}
+                  </Text>
+                )}
+              </View>
+
+              {/* Element Details Grid */}
+              <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 8 }}>
+                {element.claddingType && (
+                  <View style={{ width: "50%", marginBottom: 4 }}>
+                    <Text style={styles.defectLabel}>Cladding Type</Text>
+                    <Text style={styles.defectText}>{element.claddingType}</Text>
+                  </View>
+                )}
+                {element.material && (
+                  <View style={{ width: "50%", marginBottom: 4 }}>
+                    <Text style={styles.defectLabel}>Material</Text>
+                    <Text style={styles.defectText}>{element.material}</Text>
+                  </View>
+                )}
+                {element.manufacturer && (
+                  <View style={{ width: "50%", marginBottom: 4 }}>
+                    <Text style={styles.defectLabel}>Manufacturer</Text>
+                    <Text style={styles.defectText}>{element.manufacturer}</Text>
+                  </View>
+                )}
+                {element.claddingProfile && (
+                  <View style={{ width: "50%", marginBottom: 4 }}>
+                    <Text style={styles.defectLabel}>Profile</Text>
+                    <Text style={styles.defectText}>{element.claddingProfile}</Text>
+                  </View>
+                )}
+                {element.pitch && (
+                  <View style={{ width: "50%", marginBottom: 4 }}>
+                    <Text style={styles.defectLabel}>Pitch</Text>
+                    <Text style={styles.defectText}>{element.pitch}°</Text>
+                  </View>
+                )}
+                {element.area && (
+                  <View style={{ width: "50%", marginBottom: 4 }}>
+                    <Text style={styles.defectLabel}>Area</Text>
+                    <Text style={styles.defectText}>{element.area} m²</Text>
+                  </View>
+                )}
+                {element.ageYears && (
+                  <View style={{ width: "50%", marginBottom: 4 }}>
+                    <Text style={styles.defectLabel}>Estimated Age</Text>
+                    <Text style={styles.defectText}>{element.ageYears} years</Text>
+                  </View>
+                )}
+                {element.colour && (
+                  <View style={{ width: "50%", marginBottom: 4 }}>
+                    <Text style={styles.defectLabel}>Colour</Text>
+                    <Text style={styles.defectText}>{element.colour}</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Condition Notes */}
+              {element.conditionNotes && (
+                <View style={styles.defectContent}>
+                  <Text style={styles.defectLabel}>Condition Notes</Text>
+                  <Text style={styles.defectText}>{element.conditionNotes}</Text>
+                </View>
+              )}
+
+              {/* Compliance Status */}
+              <View style={{ flexDirection: "row", marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.borderGray }}>
+                <View style={{ width: "50%" }}>
+                  <Text style={styles.defectLabel}>E2 Compliance</Text>
+                  <Text style={[styles.defectText, { color: element.meetsE2 === true ? colors.pass : element.meetsE2 === false ? colors.fail : colors.mediumGray }]}>
+                    {element.meetsE2 === true ? "Compliant" : element.meetsE2 === false ? "Non-compliant" : "Not assessed"}
+                  </Text>
+                </View>
+                <View style={{ width: "50%" }}>
+                  <Text style={styles.defectLabel}>COP Compliance</Text>
+                  <Text style={[styles.defectText, { color: element.meetsCop === true ? colors.pass : element.meetsCop === false ? colors.fail : colors.mediumGray }]}>
+                    {element.meetsCop === true ? "Compliant" : element.meetsCop === false ? "Non-compliant" : "Not assessed"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Element Photos */}
+              {element.photos && element.photos.length > 0 && (
+                <View style={styles.photoGrid}>
+                  {element.photos.slice(0, 3).map((photo, photoIndex) => (
+                    <View key={photoIndex}>
+                      <Image src={photo.url} style={styles.photo} />
+                      {photo.caption && (
+                        <Text style={styles.photoCaption}>{photo.caption}</Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          ))}
+
+          <View style={styles.footer}>
+            <Text>Report: {report.reportNumber}</Text>
+            <Text render={({ pageNumber }) => `Page ${pageNumber}`} />
+          </View>
+        </Page>
+      )}
+
       {/* Defects Pages */}
       {report.defects.length > 0 && (
         <Page size="A4" style={styles.page}>
-          <Text style={styles.sectionTitle}>Defects Identified</Text>
+          <Text style={styles.sectionTitle}>6. DEFECTS REGISTER</Text>
 
           {report.defects.map((defect, index) => (
             <View key={index} style={styles.defectCard} wrap={false}>
@@ -1237,6 +1841,135 @@ export function ReportPDF({ report }: ReportPDFProps) {
         </Page>
       )}
 
+      {/* Section 10: Recommendations Summary */}
+      {report.defects.length > 0 && (
+        <Page size="A4" style={styles.page}>
+          <Text style={styles.sectionTitle}>10. RECOMMENDATIONS SUMMARY</Text>
+
+          <Text style={{ fontSize: 9, color: colors.mediumGray, marginBottom: 15, lineHeight: 1.5 }}>
+            The following recommendations are prioritized by urgency. Immediate and short-term actions
+            should be addressed promptly to prevent further deterioration or safety issues.
+          </Text>
+
+          {/* Immediate Actions */}
+          {report.defects.filter(d => d.priorityLevel === "IMMEDIATE").length > 0 && (
+            <View style={[styles.section, { marginBottom: 15 }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+                <View style={{ width: 20, height: 20, backgroundColor: colors.critical, borderRadius: 10, justifyContent: "center", alignItems: "center", marginRight: 8 }}>
+                  <Text style={{ color: "white", fontSize: 12, fontWeight: "bold" }}>!</Text>
+                </View>
+                <Text style={{ fontSize: 12, fontWeight: "bold", color: colors.critical }}>
+                  10.1 Immediate Actions (Safety/Urgent)
+                </Text>
+              </View>
+              <View style={{ backgroundColor: "#fef2f2", padding: 10, borderRadius: 4, borderLeftWidth: 4, borderLeftColor: colors.critical }}>
+                {report.defects
+                  .filter(d => d.priorityLevel === "IMMEDIATE")
+                  .map((defect, idx) => (
+                    <View key={idx} style={{ marginBottom: idx < report.defects.filter(d => d.priorityLevel === "IMMEDIATE").length - 1 ? 10 : 0 }}>
+                      <Text style={{ fontSize: 9, fontWeight: "bold", color: "#991b1b" }}>
+                        Defect #{defect.defectNumber}: {defect.title}
+                      </Text>
+                      <Text style={{ fontSize: 8, color: "#7f1d1d", marginTop: 2 }}>
+                        Location: {defect.location}
+                      </Text>
+                      {defect.recommendation && (
+                        <Text style={{ fontSize: 8, color: "#991b1b", marginTop: 3 }}>
+                          → {defect.recommendation}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+              </View>
+            </View>
+          )}
+
+          {/* Short-term Actions */}
+          {report.defects.filter(d => d.priorityLevel === "SHORT_TERM" || (d.severity === "HIGH" && d.priorityLevel !== "IMMEDIATE")).length > 0 && (
+            <View style={[styles.section, { marginBottom: 15 }]}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.high, marginBottom: 8 }}>
+                10.2 Short-term Actions (1-3 months)
+              </Text>
+              <View style={{ backgroundColor: "#fff7ed", padding: 10, borderRadius: 4, borderLeftWidth: 4, borderLeftColor: colors.high }}>
+                {report.defects
+                  .filter(d => d.priorityLevel === "SHORT_TERM" || (d.severity === "HIGH" && d.priorityLevel !== "IMMEDIATE"))
+                  .map((defect, idx) => (
+                    <View key={idx} style={{ marginBottom: 8 }}>
+                      <Text style={{ fontSize: 9, fontWeight: "bold", color: "#9a3412" }}>
+                        Defect #{defect.defectNumber}: {defect.title}
+                      </Text>
+                      {defect.recommendation && (
+                        <Text style={{ fontSize: 8, color: "#c2410c", marginTop: 2 }}>
+                          → {defect.recommendation}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+              </View>
+            </View>
+          )}
+
+          {/* Medium-term Actions */}
+          {report.defects.filter(d => d.priorityLevel === "MEDIUM_TERM" || d.severity === "MEDIUM").length > 0 && (
+            <View style={[styles.section, { marginBottom: 15 }]}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.medium, marginBottom: 8 }}>
+                10.3 Medium-term Actions (3-12 months)
+              </Text>
+              <View style={{ padding: 10, borderWidth: 1, borderColor: colors.medium, borderRadius: 4 }}>
+                {report.defects
+                  .filter(d => d.priorityLevel === "MEDIUM_TERM" || d.severity === "MEDIUM")
+                  .slice(0, 8)
+                  .map((defect, idx) => (
+                    <View key={idx} style={{ marginBottom: 6 }}>
+                      <Text style={{ fontSize: 9 }}>
+                        <Text style={{ fontWeight: "bold" }}>#{defect.defectNumber}</Text> - {defect.title}
+                        {defect.recommendation && `: ${defect.recommendation.substring(0, 80)}${defect.recommendation.length > 80 ? "..." : ""}`}
+                      </Text>
+                    </View>
+                  ))}
+              </View>
+            </View>
+          )}
+
+          {/* Long-term / Maintenance Actions */}
+          {report.defects.filter(d => d.priorityLevel === "LONG_TERM" || d.severity === "LOW").length > 0 && (
+            <View style={[styles.section, { marginBottom: 15 }]}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.low, marginBottom: 8 }}>
+                10.4 Long-term / Maintenance Items (12+ months)
+              </Text>
+              <View style={{ padding: 10, backgroundColor: colors.lightGray, borderRadius: 4 }}>
+                {report.defects
+                  .filter(d => d.priorityLevel === "LONG_TERM" || d.severity === "LOW")
+                  .slice(0, 6)
+                  .map((defect, idx) => (
+                    <Text key={idx} style={{ fontSize: 8, marginBottom: 4 }}>
+                      • Defect #{defect.defectNumber}: {defect.title}
+                    </Text>
+                  ))}
+              </View>
+            </View>
+          )}
+
+          {/* Specialist Referrals Note */}
+          <View style={{ marginTop: 15, padding: 12, backgroundColor: colors.lightGray, borderRadius: 4 }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold", marginBottom: 5 }}>
+              10.5 Specialist Referrals
+            </Text>
+            <Text style={{ fontSize: 8, lineHeight: 1.5 }}>
+              For items requiring specialist assessment or repair, engagement of appropriately qualified
+              Licensed Building Practitioners (LBPs) is recommended. Major structural concerns should be
+              referred to a Chartered Professional Engineer. Consent requirements should be verified with
+              the local Building Consent Authority prior to commencing work.
+            </Text>
+          </View>
+
+          <View style={styles.footer}>
+            <Text>Report: {report.reportNumber}</Text>
+            <Text render={({ pageNumber }) => `Page ${pageNumber}`} />
+          </View>
+        </Page>
+      )}
+
       {/* Overview Photos Page */}
       {report.photos.filter((p) => p.photoType === "OVERVIEW").length > 0 && (
         <Page size="A4" style={styles.page}>
@@ -1315,6 +2048,202 @@ export function ReportPDF({ report }: ReportPDFProps) {
 
         <View style={styles.footer}>
           <Text>Report: {report.reportNumber}</Text>
+          <Text render={({ pageNumber }) => `Page ${pageNumber}`} />
+        </View>
+      </Page>
+
+      {/* Appendix A: Photograph Index */}
+      {report.photos && report.photos.length > 0 && (
+        <Page size="A4" style={styles.page}>
+          <View style={styles.header}>
+            <View>
+              <Text style={[styles.title, { fontSize: 16 }]}>APPENDIX A: PHOTOGRAPH INDEX</Text>
+              <Text style={styles.subtitle}>{report.photos.length} Photographs</Text>
+            </View>
+            <View style={styles.headerText}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.blue }}>
+                RANZ
+              </Text>
+            </View>
+          </View>
+
+          <Text style={{ fontSize: 9, color: colors.mediumGray, marginBottom: 15, lineHeight: 1.5 }}>
+            All photographs taken during the inspection are indexed below with capture details.
+            Original files are preserved with full EXIF metadata for evidentiary purposes.
+          </Text>
+
+          {/* Photo Type Legend */}
+          <View style={{ flexDirection: "row", marginBottom: 15, padding: 8, backgroundColor: colors.lightGray, borderRadius: 4 }}>
+            <Text style={{ fontSize: 7, marginRight: 15 }}><Text style={{ fontWeight: "bold" }}>OV</Text> = Overview</Text>
+            <Text style={{ fontSize: 7, marginRight: 15 }}><Text style={{ fontWeight: "bold" }}>CT</Text> = Context</Text>
+            <Text style={{ fontSize: 7, marginRight: 15 }}><Text style={{ fontWeight: "bold" }}>DT</Text> = Detail</Text>
+            <Text style={{ fontSize: 7, marginRight: 15 }}><Text style={{ fontWeight: "bold" }}>SC</Text> = Scale Reference</Text>
+            <Text style={{ fontSize: 7 }}><Text style={{ fontWeight: "bold" }}>GN</Text> = General</Text>
+          </View>
+
+          {/* Photo Index Table */}
+          <View style={{ marginBottom: 10 }}>
+            {/* Table Header */}
+            <View style={{ flexDirection: "row", backgroundColor: colors.blue, padding: 6 }}>
+              <Text style={{ width: "6%", fontSize: 7, fontWeight: "bold", color: "#fff" }}>#</Text>
+              <Text style={{ width: "20%", fontSize: 7, fontWeight: "bold", color: "#fff" }}>Filename</Text>
+              <Text style={{ width: "8%", fontSize: 7, fontWeight: "bold", color: "#fff" }}>Type</Text>
+              <Text style={{ width: "36%", fontSize: 7, fontWeight: "bold", color: "#fff" }}>Caption / Description</Text>
+              <Text style={{ width: "18%", fontSize: 7, fontWeight: "bold", color: "#fff" }}>Captured</Text>
+              <Text style={{ width: "12%", fontSize: 7, fontWeight: "bold", color: "#fff" }}>GPS</Text>
+            </View>
+
+            {/* Photo Rows */}
+            {report.photos.slice(0, 40).map((photo, index) => {
+              const typeCode =
+                photo.photoType === "OVERVIEW" ? "OV" :
+                photo.photoType === "CONTEXT" ? "CT" :
+                photo.photoType === "DETAIL" ? "DT" :
+                photo.photoType === "SCALE_REFERENCE" ? "SC" : "GN";
+
+              return (
+                <View
+                  key={index}
+                  style={{
+                    flexDirection: "row",
+                    padding: 4,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.borderGray,
+                    backgroundColor: index % 2 === 0 ? "#fff" : colors.lightGray
+                  }}
+                >
+                  <Text style={{ width: "6%", fontSize: 7 }}>{index + 1}</Text>
+                  <Text style={{ width: "20%", fontSize: 7 }}>
+                    {photo.filename ? photo.filename.substring(0, 18) : `Photo_${index + 1}.jpg`}
+                  </Text>
+                  <Text style={{ width: "8%", fontSize: 7, fontWeight: "bold" }}>{typeCode}</Text>
+                  <Text style={{ width: "36%", fontSize: 7 }}>
+                    {photo.caption ? photo.caption.substring(0, 40) + (photo.caption.length > 40 ? "..." : "") : "—"}
+                  </Text>
+                  <Text style={{ width: "18%", fontSize: 7 }}>
+                    {photo.capturedAt ? formatDate(photo.capturedAt) : "N/A"}
+                  </Text>
+                  <Text style={{ width: "12%", fontSize: 7 }}>
+                    {photo.gpsLat && photo.gpsLng
+                      ? `${photo.gpsLat.toFixed(4)}, ${photo.gpsLng.toFixed(4)}`
+                      : "—"}
+                  </Text>
+                </View>
+              );
+            })}
+
+            {report.photos.length > 40 && (
+              <View style={{ padding: 8, backgroundColor: colors.lightGray }}>
+                <Text style={{ fontSize: 8, fontStyle: "italic" }}>
+                  + {report.photos.length - 40} additional photographs. Full index available in digital records.
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Photo Statistics */}
+          <View style={{ marginTop: 15, padding: 10, borderWidth: 1, borderColor: colors.borderGray, borderRadius: 4 }}>
+            <Text style={{ fontSize: 9, fontWeight: "bold", marginBottom: 8 }}>Photograph Statistics</Text>
+            <View style={{ flexDirection: "row" }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 8, color: colors.mediumGray }}>Total Photos:</Text>
+                <Text style={{ fontSize: 10, fontWeight: "bold" }}>{report.photos.length}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 8, color: colors.mediumGray }}>With GPS:</Text>
+                <Text style={{ fontSize: 10, fontWeight: "bold" }}>
+                  {report.photos.filter(p => p.gpsLat && p.gpsLng).length}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 8, color: colors.mediumGray }}>With Timestamp:</Text>
+                <Text style={{ fontSize: 10, fontWeight: "bold" }}>
+                  {report.photos.filter(p => p.capturedAt).length}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 8, color: colors.mediumGray }}>Hash Verified:</Text>
+                <Text style={{ fontSize: 10, fontWeight: "bold" }}>
+                  {report.photos.filter(p => p.hashVerified).length}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.footer}>
+            <Text>Report: {report.reportNumber} - Appendix A: Photograph Index</Text>
+            <Text render={({ pageNumber }) => `Page ${pageNumber}`} />
+          </View>
+        </Page>
+      )}
+
+      {/* Appendix F: Standards & References */}
+      <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.title, { fontSize: 16 }]}>APPENDIX F: STANDARDS & REFERENCES</Text>
+            <Text style={styles.subtitle}>Applicable Codes and Guidelines</Text>
+          </View>
+          <View style={styles.headerText}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.blue }}>
+              RANZ
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.subsectionTitle, { fontSize: 11 }]}>Building Code & Acceptable Solutions</Text>
+          <View style={{ paddingLeft: 10 }}>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• New Zealand Building Code Clause E2 - External Moisture</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• New Zealand Building Code Clause B2 - Durability</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• E2/AS1 4th Edition (from 28 July 2025) - Acceptable Solution for E2</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• NZS 3604:2011 - Timber Framed Buildings</Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.subsectionTitle, { fontSize: 11 }]}>Industry Standards</Text>
+          <View style={{ paddingLeft: 10 }}>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• NZ Metal Roof and Wall Cladding Code of Practice v25.12</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• AS 4349.1 - Pre-purchase Building Inspections</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• ISO/IEC 17020:2012 - Inspection Bodies Requirements</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• ISO 9001:2015 - Quality Management Systems</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• ISO 19011:2018 - Auditing Management Systems</Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.subsectionTitle, { fontSize: 11 }]}>Legal Requirements</Text>
+          <View style={{ paddingLeft: 10 }}>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• Evidence Act 2006 (Section 25, Section 137)</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• High Court Rules Schedule 4 - Expert Witnesses</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• Building Act 2004 (Section 317)</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• NZ Plain Language Act 2022</Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.subsectionTitle, { fontSize: 11 }]}>RANZ Guidelines</Text>
+          <View style={{ paddingLeft: 10 }}>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• RANZ Roofing Inspection Methodology 2025</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• RANZ Expert Witness Code of Conduct</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• RANZ Evidence Integrity Standards</Text>
+            <Text style={{ fontSize: 9, marginBottom: 4 }}>• RANZ Quality Assurance Framework</Text>
+          </View>
+        </View>
+
+        <View style={{ marginTop: 20, padding: 12, backgroundColor: colors.lightGray, borderRadius: 4 }}>
+          <Text style={{ fontSize: 9, fontWeight: "bold", marginBottom: 5 }}>Note on Standards Currency</Text>
+          <Text style={{ fontSize: 8, lineHeight: 1.5 }}>
+            Standards and codes referenced in this report were current at the time of inspection.
+            Users of this report should verify that subsequent amendments have not materially
+            affected the findings or recommendations. Building Code compliance requirements are
+            determined by the version of the Building Code in effect at the time of consent.
+          </Text>
+        </View>
+
+        <View style={styles.footer}>
+          <Text>Report: {report.reportNumber} - Appendix F: Standards & References</Text>
           <Text render={({ pageNumber }) => `Page ${pageNumber}`} />
         </View>
       </Page>

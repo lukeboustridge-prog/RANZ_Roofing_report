@@ -1,57 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { z } from "zod";
-
-const updateReportSchema = z.object({
-  propertyAddress: z.string().min(1).optional(),
-  propertyCity: z.string().min(1).optional(),
-  propertyRegion: z.string().min(1).optional(),
-  propertyPostcode: z.string().min(1).optional(),
-  propertyType: z.enum([
-    "RESIDENTIAL_1",
-    "RESIDENTIAL_2",
-    "RESIDENTIAL_3",
-    "COMMERCIAL_LOW",
-    "COMMERCIAL_HIGH",
-    "INDUSTRIAL",
-  ]).optional(),
-  buildingAge: z.number().nullable().optional(),
-  gpsLat: z.number().nullable().optional(),
-  gpsLng: z.number().nullable().optional(),
-  inspectionDate: z.string().transform((s) => new Date(s)).optional(),
-  inspectionType: z.enum([
-    "FULL_INSPECTION",
-    "VISUAL_ONLY",
-    "NON_INVASIVE",
-    "INVASIVE",
-    "DISPUTE_RESOLUTION",
-    "PRE_PURCHASE",
-    "MAINTENANCE_REVIEW",
-    "WARRANTY_CLAIM",
-  ]).optional(),
-  weatherConditions: z.string().nullable().optional(),
-  accessMethod: z.string().nullable().optional(),
-  limitations: z.string().nullable().optional(),
-  clientName: z.string().min(1).optional(),
-  clientEmail: z.string().email().optional().nullable(),
-  clientPhone: z.string().nullable().optional(),
-  scopeOfWorks: z.any().optional(),
-  methodology: z.any().optional(),
-  findings: z.any().optional(),
-  conclusions: z.any().optional(),
-  recommendations: z.any().optional(),
-  status: z.enum([
-    "DRAFT",
-    "IN_PROGRESS",
-    "PENDING_REVIEW",
-    "UNDER_REVIEW",
-    "REVISION_REQUIRED",
-    "APPROVED",
-    "FINALISED",
-    "ARCHIVED",
-  ]).optional(),
-});
+import { Prisma } from "@prisma/client";
+import { ZodError } from "zod";
+import { UpdateReportSchema, formatZodError } from "@/lib/validations";
 
 // GET /api/reports/[id] - Get single report
 export async function GET(
@@ -178,11 +130,11 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const validatedData = updateReportSchema.parse(body);
+    const validatedData = UpdateReportSchema.parse(body);
 
     const updatedReport = await prisma.report.update({
       where: { id },
-      data: validatedData,
+      data: validatedData as Prisma.ReportUpdateInput,
       include: {
         _count: {
           select: {
@@ -209,11 +161,8 @@ export async function PATCH(
   } catch (error) {
     console.error("Error updating report:", error);
 
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation failed", details: error.issues },
-        { status: 400 }
-      );
+    if (error instanceof ZodError) {
+      return NextResponse.json(formatZodError(error), { status: 400 });
     }
 
     return NextResponse.json(

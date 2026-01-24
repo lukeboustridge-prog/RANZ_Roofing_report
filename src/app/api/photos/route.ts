@@ -4,6 +4,7 @@ import prisma from "@/lib/db";
 import { uploadToR2, generatePhotoKey, generateThumbnailKey } from "@/lib/r2";
 import { processPhoto } from "@/lib/exif";
 import { z } from "zod";
+import { rateLimit, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
 
 const uploadSchema = z.object({
   reportId: z.string().min(1),
@@ -15,6 +16,10 @@ const uploadSchema = z.object({
 
 // POST /api/photos - Upload photo
 export async function POST(request: NextRequest) {
+  // Apply rate limiting for photo uploads
+  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.upload);
+  if (rateLimitResult) return rateLimitResult;
+
   try {
     const { userId } = await auth();
 

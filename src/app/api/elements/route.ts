@@ -1,33 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { z } from "zod";
+import { ZodError, z } from "zod";
+import { CreateRoofElementSchema, formatZodError } from "@/lib/validations";
 
-const createElementSchema = z.object({
-  reportId: z.string().min(1),
-  elementType: z.enum([
-    "ROOF_CLADDING",
-    "RIDGE",
-    "VALLEY",
-    "HIP",
-    "BARGE",
-    "FASCIA",
-    "GUTTER",
-    "DOWNPIPE",
-    "FLASHING_WALL",
-    "FLASHING_PENETRATION",
-    "SKYLIGHT",
-    "VENT",
-    "OTHER",
-  ]),
-  location: z.string().min(1),
-  claddingType: z.string().optional(),
-  material: z.string().optional(),
-  manufacturer: z.string().optional(),
-  pitch: z.number().nullable().optional(),
-  area: z.number().nullable().optional(),
-  conditionRating: z.enum(["GOOD", "FAIR", "POOR", "CRITICAL", "NOT_INSPECTED"]).optional(),
-  conditionNotes: z.string().optional(),
+// Extended schema that includes reportId (not in the base schema)
+const createElementWithReportSchema = CreateRoofElementSchema.extend({
+  reportId: z.string().min(1, "Report ID is required"),
 });
 
 // POST /api/elements - Create element
@@ -48,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validatedData = createElementSchema.parse(body);
+    const validatedData = createElementWithReportSchema.parse(body);
 
     // Verify report exists and belongs to user
     const report = await prisma.report.findFirst({
@@ -81,11 +60,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating element:", error);
 
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation failed", details: error.issues },
-        { status: 400 }
-      );
+    if (error instanceof ZodError) {
+      return NextResponse.json(formatZodError(error), { status: 400 });
     }
 
     return NextResponse.json(

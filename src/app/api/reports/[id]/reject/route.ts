@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { z } from "zod";
+import { sendRevisionRequiredNotification } from "@/lib/email";
 
 const rejectSchema = z.object({
   reason: z.string().min(10, "Rejection reason must be at least 10 characters"),
@@ -117,6 +118,38 @@ export async function POST(
         },
       },
     });
+
+    // Send email notification to inspector (non-blocking)
+    if (report.inspector?.email) {
+      // Get comments summary for this report
+      const comments = await prisma.reviewComment.groupBy({
+        by: ["severity"],
+        where: { reportId: id, resolved: false },
+        _count: true,
+      });
+
+      const commentsSummary = {
+        critical: comments.find((c) => c.severity === "CRITICAL")?._count || 0,
+        issue: comments.find((c) => c.severity === "ISSUE")?._count || 0,
+        note: comments.find((c) => c.severity === "NOTE")?._count || 0,
+        suggestion: comments.find((c) => c.severity === "SUGGESTION")?._count || 0,
+      };
+
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reports.ranzroofing.co.nz";
+      sendRevisionRequiredNotification(
+        {
+          reportNumber: report.reportNumber,
+          propertyAddress: report.propertyAddress,
+          inspectorName: report.inspector.name,
+          inspectorEmail: report.inspector.email,
+          reportUrl: `${baseUrl}/reports/${report.id}`,
+        },
+        user.name,
+        commentsSummary
+      ).catch((err) => {
+        console.error("[Reject] Failed to send notification email:", err);
+      });
+    }
 
     return NextResponse.json({
       success: true,
