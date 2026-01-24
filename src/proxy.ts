@@ -83,7 +83,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.accounts.dev https://*.clerk.com https://*.vercel.app",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://*.r2.cloudflarestorage.com https://*.clerk.com https://*.cloudflare.com https://*.vercel.app",
+      "img-src 'self' data: blob: https://*.r2.dev https://*.r2.cloudflarestorage.com https://*.clerk.com https://*.cloudflare.com https://*.vercel.app",
       "font-src 'self' data:",
       "connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev wss://*.clerk.com https://clerk-telemetry.com https://*.vercel.app",
       "worker-src 'self' blob:",
