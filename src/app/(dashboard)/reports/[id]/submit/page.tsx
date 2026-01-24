@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { SignaturePad, type SignaturePadRef } from "@/components/signature";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -28,6 +29,8 @@ import {
   AlertOctagon,
   PenTool,
   RefreshCw,
+  Scale,
+  AlertCircle,
 } from "lucide-react";
 
 interface ValidationDetails {
@@ -62,6 +65,16 @@ interface SignatureStatus {
   signatureUrl: string | null;
 }
 
+interface ExpertDeclaration {
+  expertiseConfirmed: boolean;
+  codeOfConductAccepted: boolean;
+  courtComplianceAccepted: boolean;
+  falseEvidenceUnderstood: boolean;
+  impartialityConfirmed: boolean;
+  inspectionConducted: boolean;
+  evidenceIntegrity: boolean;
+}
+
 export default function SubmitReportPage() {
   const params = useParams();
   const router = useRouter();
@@ -80,6 +93,30 @@ export default function SubmitReportPage() {
   const [signatureStatus, setSignatureStatus] = useState<SignatureStatus | null>(null);
   const [declarationChecked, setDeclarationChecked] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
+
+  // Expert Declaration state (High Court Rules Schedule 4)
+  const [expertDeclaration, setExpertDeclaration] = useState<ExpertDeclaration>({
+    expertiseConfirmed: false,
+    codeOfConductAccepted: false,
+    courtComplianceAccepted: false,
+    falseEvidenceUnderstood: false,
+    impartialityConfirmed: false,
+    inspectionConducted: false,
+    evidenceIntegrity: false,
+  });
+  const [hasConflict, setHasConflict] = useState(false);
+  const [conflictDisclosure, setConflictDisclosure] = useState("");
+
+  // Check if all declarations are complete
+  const allDeclarationsComplete =
+    expertDeclaration.expertiseConfirmed &&
+    expertDeclaration.codeOfConductAccepted &&
+    expertDeclaration.courtComplianceAccepted &&
+    expertDeclaration.falseEvidenceUnderstood &&
+    expertDeclaration.impartialityConfirmed &&
+    expertDeclaration.inspectionConducted &&
+    expertDeclaration.evidenceIntegrity &&
+    (!hasConflict || conflictDisclosure.trim().length > 0);
 
   useEffect(() => {
     fetchValidation();
@@ -131,8 +168,8 @@ export default function SubmitReportPage() {
       return false;
     }
 
-    if (!declarationChecked) {
-      setError("Please accept the declaration before signing");
+    if (!allDeclarationsComplete) {
+      setError("Please complete all declaration items before signing");
       return false;
     }
 
@@ -145,7 +182,10 @@ export default function SubmitReportPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           signatureDataUrl,
-          declarationAccepted: declarationChecked,
+          declarationAccepted: true,
+          expertDeclaration,
+          hasConflict,
+          conflictDisclosure: hasConflict ? conflictDisclosure : null,
         }),
       });
 
@@ -161,6 +201,7 @@ export default function SubmitReportPage() {
         signatureUrl: data.signatureUrl,
       });
       setHasSignature(true);
+      setDeclarationChecked(true);
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save signature");
@@ -594,77 +635,25 @@ export default function SubmitReportPage() {
             </Alert>
           )}
 
-          {/* Declaration and Signature */}
+          {/* Expert Witness Declaration - High Court Rules Schedule 4 */}
           {!isAlreadySubmitted && validation.isValid && (
-            <Card>
-              <CardHeader>
+            <Card className="border-[var(--ranz-blue-200)]">
+              <CardHeader className="bg-[var(--ranz-blue-50)] rounded-t-lg">
                 <CardTitle className="flex items-center gap-2">
-                  <PenTool className="h-5 w-5" />
-                  Declaration & Signature
+                  <Scale className="h-5 w-5 text-[var(--ranz-blue-600)]" />
+                  Expert Witness Declaration
                 </CardTitle>
                 <CardDescription>
-                  Please read and accept the declaration, then sign below to certify this report.
+                  In accordance with High Court Rules Schedule 4 and the Evidence Act 2006
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Declaration Text */}
-                <div className="p-4 bg-muted rounded-lg space-y-4 text-sm">
-                  <p className="font-semibold">Inspector Declaration</p>
-                  <p>
-                    I, the undersigned inspector, hereby declare that:
-                  </p>
-                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                    <li>
-                      The inspection was conducted in accordance with the scope defined in this report
-                      and to the best of my professional ability.
-                    </li>
-                    <li>
-                      All observations, findings, and opinions expressed in this report are based on
-                      the conditions observed at the time of inspection.
-                    </li>
-                    <li>
-                      I have no personal or financial interest in the property or its sale/purchase
-                      that could constitute a conflict of interest.
-                    </li>
-                    <li>
-                      The photographs and evidence included in this report have not been altered or
-                      manipulated beyond standard optimization.
-                    </li>
-                    <li>
-                      I understand that this report may be relied upon for legal, insurance, or
-                      dispute resolution purposes.
-                    </li>
-                  </ul>
-                  <p className="text-xs text-muted-foreground italic">
-                    This declaration is made in accordance with the High Court Rules Schedule 4
-                    requirements for expert witnesses.
-                  </p>
-                </div>
-
-                {/* Declaration Checkbox */}
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id="declaration"
-                    checked={declarationChecked}
-                    onCheckedChange={(checked) => setDeclarationChecked(checked === true)}
-                    disabled={signatureStatus?.declarationSigned}
-                  />
-                  <Label
-                    htmlFor="declaration"
-                    className="text-sm font-medium leading-relaxed cursor-pointer"
-                  >
-                    I have read and accept the above declaration. I certify that all information
-                    in this report is true and accurate to the best of my knowledge and professional
-                    judgment.
-                  </Label>
-                </div>
-
-                {/* Signature Section */}
+              <CardContent className="space-y-6 pt-6">
                 {signatureStatus?.declarationSigned ? (
-                  <div className="space-y-3">
+                  /* Already Signed View */
+                  <div className="space-y-4">
                     <div className="flex items-center gap-2 text-green-600">
                       <CheckCircle2 className="h-5 w-5" />
-                      <span className="font-medium">Report Signed</span>
+                      <span className="font-medium">Declaration Signed</span>
                     </div>
                     {signatureStatus.signatureUrl && (
                       <div className="relative w-full max-w-md h-32 border rounded-lg overflow-hidden bg-white">
@@ -687,44 +676,284 @@ export default function SubmitReportPage() {
                       onClick={clearSignature}
                     >
                       <RefreshCw className="mr-2 h-4 w-4" />
-                      Re-sign
+                      Re-sign Declaration
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium">Your Signature</Label>
-                    <SignaturePad
-                      ref={signaturePadRef}
-                      width={500}
-                      height={200}
-                      disabled={!declarationChecked}
-                      onSign={() => setHasSignature(true)}
-                    />
-                    {!declarationChecked && (
-                      <p className="text-sm text-muted-foreground">
-                        Please accept the declaration above to enable signing.
+                  /* Declaration Form */
+                  <>
+                    {/* Introduction */}
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-sm font-medium mb-2">
+                        I, the undersigned expert witness, make the following declaration:
                       </p>
-                    )}
-                    {declarationChecked && hasSignature && (
-                      <Button
-                        onClick={saveSignature}
-                        disabled={savingSignature}
-                        variant="outline"
-                      >
-                        {savingSignature ? (
+                      <p className="text-xs text-muted-foreground">
+                        This declaration is required under High Court Rules Schedule 4, Part 3
+                        for expert witness reports that may be used in court proceedings,
+                        Disputes Tribunal hearings, or LBP Board complaints.
+                      </p>
+                    </div>
+
+                    {/* Section 1: Expertise Confirmation */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-[var(--ranz-blue-100)] text-[var(--ranz-blue-700)] flex items-center justify-center text-xs font-bold">1</span>
+                        Expertise & Qualifications
+                      </h4>
+                      <div className="flex items-start space-x-3 pl-8">
+                        <Checkbox
+                          id="expertiseConfirmed"
+                          checked={expertDeclaration.expertiseConfirmed}
+                          onCheckedChange={(checked) =>
+                            setExpertDeclaration(prev => ({ ...prev, expertiseConfirmed: checked === true }))
+                          }
+                        />
+                        <Label htmlFor="expertiseConfirmed" className="text-sm leading-relaxed cursor-pointer">
+                          I confirm that I am an expert in <strong>roofing inspection, assessment, and building compliance</strong>.
+                          My qualifications, training, and experience that qualify me to give this opinion are set out
+                          in the Inspector Credentials section of this report and in Appendix E (CV).
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* Section 2: Code of Conduct */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-[var(--ranz-blue-100)] text-[var(--ranz-blue-700)] flex items-center justify-center text-xs font-bold">2</span>
+                        Expert Witness Code of Conduct
+                      </h4>
+                      <div className="flex items-start space-x-3 pl-8">
+                        <Checkbox
+                          id="codeOfConductAccepted"
+                          checked={expertDeclaration.codeOfConductAccepted}
+                          onCheckedChange={(checked) =>
+                            setExpertDeclaration(prev => ({ ...prev, codeOfConductAccepted: checked === true }))
+                          }
+                        />
+                        <Label htmlFor="codeOfConductAccepted" className="text-sm leading-relaxed cursor-pointer">
+                          I have read and agree to comply with the <strong>Expert Witness Code of Conduct</strong> as
+                          set out in Schedule 4 of the High Court Rules. I understand my duty is to assist the
+                          Court impartially on matters within my area of expertise.
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* Section 3: Impartiality */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-[var(--ranz-blue-100)] text-[var(--ranz-blue-700)] flex items-center justify-center text-xs font-bold">3</span>
+                        Impartiality & Independence
+                      </h4>
+                      <div className="flex items-start space-x-3 pl-8">
+                        <Checkbox
+                          id="impartialityConfirmed"
+                          checked={expertDeclaration.impartialityConfirmed}
+                          onCheckedChange={(checked) =>
+                            setExpertDeclaration(prev => ({ ...prev, impartialityConfirmed: checked === true }))
+                          }
+                        />
+                        <Label htmlFor="impartialityConfirmed" className="text-sm leading-relaxed cursor-pointer">
+                          I confirm that this report represents my <strong>independent, impartial opinion</strong> and
+                          has not been influenced by the party engaging me or any other person. My opinions are
+                          based solely on the evidence and my professional expertise.
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* Section 4: Conflict of Interest */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-[var(--ranz-blue-100)] text-[var(--ranz-blue-700)] flex items-center justify-center text-xs font-bold">4</span>
+                        Conflict of Interest Disclosure
+                      </h4>
+                      <div className="pl-8 space-y-3">
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id="noConflict"
+                            checked={!hasConflict}
+                            onCheckedChange={(checked) => setHasConflict(checked !== true)}
+                          />
+                          <Label htmlFor="noConflict" className="text-sm cursor-pointer">
+                            I have <strong>no conflict of interest</strong> to declare regarding this inspection or report.
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id="hasConflict"
+                            checked={hasConflict}
+                            onCheckedChange={(checked) => setHasConflict(checked === true)}
+                          />
+                          <Label htmlFor="hasConflict" className="text-sm cursor-pointer">
+                            I have a <strong>potential conflict of interest</strong> to disclose (details below).
+                          </Label>
+                        </div>
+                        {hasConflict && (
+                          <div className="space-y-2">
+                            <Label htmlFor="conflictDetails" className="text-sm font-medium">
+                              Please describe the conflict of interest:
+                            </Label>
+                            <Textarea
+                              id="conflictDetails"
+                              value={conflictDisclosure}
+                              onChange={(e) => setConflictDisclosure(e.target.value)}
+                              placeholder="Describe any actual or potential conflict of interest, prior relationship with the property/parties, or financial interest..."
+                              rows={3}
+                              className={hasConflict && !conflictDisclosure.trim() ? "border-red-300" : ""}
+                            />
+                            {hasConflict && !conflictDisclosure.trim() && (
+                              <p className="text-xs text-red-600 flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                Conflict disclosure is required when a conflict is declared.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Section 5: Inspection Conduct */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-[var(--ranz-blue-100)] text-[var(--ranz-blue-700)] flex items-center justify-center text-xs font-bold">5</span>
+                        Inspection Methodology
+                      </h4>
+                      <div className="flex items-start space-x-3 pl-8">
+                        <Checkbox
+                          id="inspectionConducted"
+                          checked={expertDeclaration.inspectionConducted}
+                          onCheckedChange={(checked) =>
+                            setExpertDeclaration(prev => ({ ...prev, inspectionConducted: checked === true }))
+                          }
+                        />
+                        <Label htmlFor="inspectionConducted" className="text-sm leading-relaxed cursor-pointer">
+                          The inspection was conducted in accordance with the <strong>scope defined in this report</strong>,
+                          to the best of my professional ability, and in compliance with relevant New Zealand standards
+                          including ISO/IEC 17020:2012 and applicable Building Code requirements.
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* Section 6: Evidence Integrity */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-[var(--ranz-blue-100)] text-[var(--ranz-blue-700)] flex items-center justify-center text-xs font-bold">6</span>
+                        Evidence Integrity
+                      </h4>
+                      <div className="flex items-start space-x-3 pl-8">
+                        <Checkbox
+                          id="evidenceIntegrity"
+                          checked={expertDeclaration.evidenceIntegrity}
+                          onCheckedChange={(checked) =>
+                            setExpertDeclaration(prev => ({ ...prev, evidenceIntegrity: checked === true }))
+                          }
+                        />
+                        <Label htmlFor="evidenceIntegrity" className="text-sm leading-relaxed cursor-pointer">
+                          All photographs and documentary evidence included in this report are <strong>genuine and unaltered</strong>
+                          (except for standard optimization). Digital hashes have been computed to verify integrity.
+                          Chain of custody has been maintained as documented in Appendix C.
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* Section 7: Court Compliance */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-[var(--ranz-blue-100)] text-[var(--ranz-blue-700)] flex items-center justify-center text-xs font-bold">7</span>
+                        Court Compliance
+                      </h4>
+                      <div className="flex items-start space-x-3 pl-8">
+                        <Checkbox
+                          id="courtComplianceAccepted"
+                          checked={expertDeclaration.courtComplianceAccepted}
+                          onCheckedChange={(checked) =>
+                            setExpertDeclaration(prev => ({ ...prev, courtComplianceAccepted: checked === true }))
+                          }
+                        />
+                        <Label htmlFor="courtComplianceAccepted" className="text-sm leading-relaxed cursor-pointer">
+                          I agree to <strong>comply with any direction of the Court</strong> regarding my evidence and
+                          to promptly notify the Court and all parties if I change my opinion on a material matter.
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* Section 8: False Evidence Warning */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">!</span>
+                        Acknowledgment
+                      </h4>
+                      <div className="flex items-start space-x-3 pl-8">
+                        <Checkbox
+                          id="falseEvidenceUnderstood"
+                          checked={expertDeclaration.falseEvidenceUnderstood}
+                          onCheckedChange={(checked) =>
+                            setExpertDeclaration(prev => ({ ...prev, falseEvidenceUnderstood: checked === true }))
+                          }
+                        />
+                        <Label htmlFor="falseEvidenceUnderstood" className="text-sm leading-relaxed cursor-pointer">
+                          I understand that <strong>giving false evidence may constitute perjury</strong> and may
+                          expose me to criminal prosecution under the Crimes Act 1961. I confirm that all
+                          statements in this report are true and accurate to the best of my knowledge and belief.
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* Completion Status */}
+                    <div className={`p-4 rounded-lg ${allDeclarationsComplete ? 'bg-green-50 border border-green-200' : 'bg-orange-50 border border-orange-200'}`}>
+                      <div className="flex items-center gap-2">
+                        {allDeclarationsComplete ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
+                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            <span className="font-medium text-green-800">All declarations complete</span>
                           </>
                         ) : (
                           <>
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Save Signature
+                            <AlertCircle className="h-5 w-5 text-orange-600" />
+                            <span className="font-medium text-orange-800">Please complete all declaration items above</span>
                           </>
                         )}
-                      </Button>
-                    )}
-                  </div>
+                      </div>
+                    </div>
+
+                    {/* Signature Section */}
+                    <div className="space-y-4 pt-4 border-t">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <PenTool className="h-4 w-4" />
+                        Inspector Signature
+                      </h4>
+                      <SignaturePad
+                        ref={signaturePadRef}
+                        width={500}
+                        height={200}
+                        disabled={!allDeclarationsComplete}
+                        onSign={() => setHasSignature(true)}
+                      />
+                      {!allDeclarationsComplete && (
+                        <p className="text-sm text-muted-foreground">
+                          Please complete all declaration items above to enable signing.
+                        </p>
+                      )}
+                      {allDeclarationsComplete && hasSignature && (
+                        <Button
+                          onClick={saveSignature}
+                          disabled={savingSignature}
+                          className="bg-[var(--ranz-blue-600)] hover:bg-[var(--ranz-blue-700)]"
+                        >
+                          {savingSignature ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Saving Declaration...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="mr-2 h-4 w-4" />
+                              Sign & Save Declaration
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -751,7 +980,7 @@ export default function SubmitReportPage() {
                     disabled={
                       !validation.isValid ||
                       submitting ||
-                      (!signatureStatus?.declarationSigned && (!declarationChecked || !hasSignature))
+                      (!signatureStatus?.declarationSigned && (!allDeclarationsComplete || !hasSignature))
                     }
                   >
                     {submitting ? (

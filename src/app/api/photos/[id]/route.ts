@@ -7,7 +7,7 @@ const updatePhotoSchema = z.object({
   defectId: z.string().nullable().optional(),
   roofElementId: z.string().nullable().optional(),
   caption: z.string().nullable().optional(),
-  photoType: z.enum(["OVERVIEW", "CONTEXT", "DETAIL", "SCALE_REFERENCE", "GENERAL"]).optional(),
+  photoType: z.enum(["OVERVIEW", "CONTEXT", "DETAIL", "SCALE_REFERENCE", "INACCESSIBLE", "EQUIPMENT", "GENERAL"]).optional(),
 });
 
 // PATCH /api/photos/[id] - Update photo

@@ -25,6 +25,8 @@ import {
   ChevronRight,
   Video,
   FolderOpen,
+  ClipboardList,
+  History,
 } from "lucide-react";
 import type { ReportStatus, DefectSeverity, DefectClass, ConditionRating } from "@prisma/client";
 
@@ -148,16 +150,47 @@ export default async function ReportDetailPage({
               Preview PDF
             </Link>
           </Button>
-          {!["PENDING_REVIEW", "APPROVED", "FINALISED"].includes(report.status) && (
+          {report.status === "REVISION_REQUIRED" && (
+            <Button variant="destructive" asChild>
+              <Link href={`/reports/${report.id}/revisions`}>
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                View Feedback
+              </Link>
+            </Button>
+          )}
+          {!["PENDING_REVIEW", "UNDER_REVIEW", "APPROVED", "FINALISED"].includes(report.status) && (
             <Button asChild>
               <Link href={`/reports/${report.id}/submit`}>
                 <Send className="mr-2 h-4 w-4" />
-                Submit
+                {report.status === "REVISION_REQUIRED" ? "Resubmit" : "Submit"}
               </Link>
             </Button>
           )}
         </div>
       </div>
+
+      {/* Revision Required Banner */}
+      {report.status === "REVISION_REQUIRED" && (
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-yellow-800">Revisions Required</h3>
+              <p className="text-sm text-yellow-700 mt-1">
+                The reviewer has requested changes to this report. Please review the feedback
+                and make the necessary updates before resubmitting.
+              </p>
+              <Link
+                href={`/reports/${report.id}/revisions`}
+                className="inline-flex items-center text-sm font-medium text-yellow-800 hover:text-yellow-900 mt-2"
+              >
+                View Revision Feedback
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick stats */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -369,6 +402,30 @@ export default async function ReportDetailPage({
               <span>Compliance</span>
               <span className="text-xs text-muted-foreground">
                 Code assessment
+              </span>
+            </div>
+          </Link>
+        </Button>
+
+        <Button variant="outline" asChild className="h-auto py-4">
+          <Link href={`/reports/${report.id}/executive-summary`}>
+            <div className="flex flex-col items-center gap-2">
+              <ClipboardList className="h-6 w-6" />
+              <span>Executive Summary</span>
+              <span className="text-xs text-muted-foreground">
+                Key findings
+              </span>
+            </div>
+          </Link>
+        </Button>
+
+        <Button variant="outline" asChild className="h-auto py-4">
+          <Link href={`/reports/${report.id}/audit-log`}>
+            <div className="flex flex-col items-center gap-2">
+              <History className="h-6 w-6" />
+              <span>Audit Trail</span>
+              <span className="text-xs text-muted-foreground">
+                Change history
               </span>
             </div>
           </Link>

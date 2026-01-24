@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -28,11 +28,13 @@ import {
 } from "lucide-react";
 
 const PHOTO_TYPES = [
-  { value: "OVERVIEW", label: "Overview" },
-  { value: "CONTEXT", label: "Context" },
-  { value: "DETAIL", label: "Detail" },
-  { value: "SCALE_REFERENCE", label: "Scale Reference" },
-  { value: "GENERAL", label: "General" },
+  { value: "OVERVIEW", label: "Overview", description: "Wide shot showing location" },
+  { value: "CONTEXT", label: "Context", description: "Mid-range showing element in context" },
+  { value: "DETAIL", label: "Detail", description: "Close-up of specific defect/feature" },
+  { value: "SCALE_REFERENCE", label: "Scale Reference", description: "Photo with measurement reference" },
+  { value: "INACCESSIBLE", label: "Inaccessible", description: "Documentation of inaccessible areas" },
+  { value: "EQUIPMENT", label: "Equipment", description: "Calibration/equipment photos" },
+  { value: "GENERAL", label: "General", description: "Other documentation" },
 ];
 
 interface Photo {
@@ -83,6 +85,8 @@ export default function PhotosPage() {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [uploadType, setUploadType] = useState("GENERAL");
   const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
+  const [editCaption, setEditCaption] = useState("");
+  const captionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get the display URL for a photo (annotated version if available)
   const getDisplayUrl = (photo: Photo) => {
@@ -259,6 +263,68 @@ export default function PhotosPage() {
       setLinking(false);
     }
   };
+
+  const handleUpdatePhotoType = async (photoId: string, photoType: string) => {
+    try {
+      const response = await fetch(`/api/photos/${photoId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoType }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update photo type");
+      }
+
+      const updatedPhoto = await response.json();
+      setPhotos(photos.map(p => p.id === photoId ? updatedPhoto : p));
+      if (selectedPhoto?.id === photoId) {
+        setSelectedPhoto(updatedPhoto);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update photo type");
+    }
+  };
+
+  const saveCaption = useCallback(async (photoId: string, caption: string) => {
+    try {
+      const response = await fetch(`/api/photos/${photoId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caption: caption || null }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update caption");
+      }
+
+      const updatedPhoto = await response.json();
+      setPhotos(prev => prev.map(p => p.id === photoId ? updatedPhoto : p));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update caption");
+    }
+  }, []);
+
+  const handleCaptionChange = (caption: string) => {
+    setEditCaption(caption);
+
+    // Clear existing timeout
+    if (captionTimeoutRef.current) {
+      clearTimeout(captionTimeoutRef.current);
+    }
+
+    // Debounce the save
+    if (selectedPhoto) {
+      captionTimeoutRef.current = setTimeout(() => {
+        saveCaption(selectedPhoto.id, caption);
+      }, 500);
+    }
+  };
+
+  // Sync editCaption when selected photo changes
+  useEffect(() => {
+    setEditCaption(selectedPhoto?.caption || "");
+  }, [selectedPhoto?.id, selectedPhoto?.caption]);
 
   const getDefectForPhoto = (defectId: string | null) => {
     if (!defectId) return null;
@@ -476,8 +542,30 @@ export default function PhotosPage() {
                   </div>
 
                   <div>
-                    <p className="text-muted-foreground">Type</p>
-                    <Badge>{selectedPhoto.photoType.replace("_", " ")}</Badge>
+                    <Label htmlFor="photoType" className="text-muted-foreground">Type</Label>
+                    <NativeSelect
+                      id="photoType"
+                      value={selectedPhoto.photoType}
+                      onChange={(e) => handleUpdatePhotoType(selectedPhoto.id, e.target.value)}
+                      className="mt-1"
+                    >
+                      {PHOTO_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="caption" className="text-muted-foreground">Caption</Label>
+                    <Input
+                      id="caption"
+                      placeholder="Add a caption..."
+                      value={editCaption}
+                      onChange={(e) => handleCaptionChange(e.target.value)}
+                      className="mt-1"
+                    />
                   </div>
 
                   {selectedPhoto.capturedAt && (
@@ -513,13 +601,6 @@ export default function PhotosPage() {
                           .filter(Boolean)
                           .join(" ")}
                       </p>
-                    </div>
-                  )}
-
-                  {selectedPhoto.caption && (
-                    <div>
-                      <p className="text-muted-foreground">Caption</p>
-                      <p className="font-medium">{selectedPhoto.caption}</p>
                     </div>
                   )}
 

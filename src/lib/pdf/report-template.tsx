@@ -8,22 +8,43 @@ import {
   Image,
 } from "@react-pdf/renderer";
 
-// RANZ brand colors
+// RANZ brand colors - From Brand Guidelines 2025
 const colors = {
-  blue: "#2d5c8f",
-  orange: "#e65100",
-  darkBlue: "#1a3a5c",
-  lightGray: "#f5f5f5",
-  mediumGray: "#666666",
-  borderGray: "#e0e0e0",
-  critical: "#dc2626",
+  // Core - Charcoal family (primary brand color)
+  charcoal: "#3c4b5d",
+  charcoalDark: "#2c3546",
+  charcoalLight: "#7d8c9d",
+  charcoalExtraDark: "#2a2e31",
+
+  // Secondary colors
+  darkBlue: "#00417a",
+  red: "#be4039",
+  yellow: "#fcb613",
+
+  // Logo colors
+  black: "#000000",
+  silver: "#939598",
+
+  // Legacy aliases (for backward compatibility)
+  blue: "#3c4b5d",         // Now charcoal
+  orange: "#fcb613",       // Now yellow
+
+  // UI colors
+  lightGray: "#f0f2f5",
+  mediumGray: "#7d8c9d",
+  borderGray: "#e1e5ea",
+
+  // Status colors
+  critical: "#be4039",     // RANZ red
   high: "#ea580c",
-  medium: "#ca8a04",
+  medium: "#fcb613",       // RANZ yellow
   low: "#16a34a",
+
+  // Compliance colors
   pass: "#16a34a",
-  fail: "#dc2626",
-  partial: "#ea580c",
-  na: "#9ca3af",
+  fail: "#be4039",         // RANZ red
+  partial: "#fcb613",      // RANZ yellow
+  na: "#939598",           // RANZ silver
 };
 
 const styles = StyleSheet.create({
@@ -454,6 +475,16 @@ interface ComplianceAssessmentData {
   nonComplianceSummary: string | null;
 }
 
+interface ExpertDeclarationData {
+  expertiseConfirmed: boolean;
+  codeOfConductAccepted: boolean;
+  courtComplianceAccepted: boolean;
+  falseEvidenceUnderstood: boolean;
+  impartialityConfirmed: boolean;
+  inspectionConducted: boolean;
+  evidenceIntegrity: boolean;
+}
+
 interface ReportData {
   reportNumber: string;
   propertyAddress: string;
@@ -470,6 +501,13 @@ interface ReportData {
   clientName: string;
   clientEmail: string | null;
   clientPhone: string | null;
+  // Declaration fields
+  declarationSigned: boolean;
+  signedAt: Date | string | null;
+  signatureUrl: string | null;
+  expertDeclaration: ExpertDeclarationData | null;
+  hasConflict: boolean;
+  conflictDisclosure: string | null;
   inspector: {
     name: string;
     email: string;
@@ -500,6 +538,13 @@ interface ReportData {
     url: string;
     caption: string | null;
     photoType: string;
+    filename?: string;
+    originalHash?: string;
+    capturedAt?: Date | string | null;
+    uploadedAt?: Date | string | null;
+    gpsLat?: number | null;
+    gpsLng?: number | null;
+    hashVerified?: boolean;
   }>;
   complianceAssessment?: ComplianceAssessmentData | null;
 }
@@ -809,6 +854,184 @@ export function ReportPDF({ report }: ReportPDFProps) {
         </View>
       </Page>
 
+      {/* Expert Witness Declaration Page - High Court Rules Schedule 4 */}
+      {report.declarationSigned && (
+        <Page size="A4" style={styles.page}>
+          <View style={styles.header}>
+            <View>
+              <Text style={[styles.title, { fontSize: 18 }]}>EXPERT WITNESS DECLARATION</Text>
+              <Text style={styles.subtitle}>High Court Rules Schedule 4 Compliance</Text>
+            </View>
+            <View style={styles.headerText}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.blue }}>
+                RANZ
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={{ fontSize: 10, lineHeight: 1.6, marginBottom: 15 }}>
+              I, <Text style={{ fontWeight: "bold" }}>{report.inspector.name}</Text>, make this declaration
+              in accordance with High Court Rules Schedule 4, Part 3 and the Evidence Act 2006:
+            </Text>
+
+            {/* Section 1: Expertise */}
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.blue, marginBottom: 5 }}>
+                1. EXPERTISE AND QUALIFICATIONS
+              </Text>
+              <Text style={{ fontSize: 9, lineHeight: 1.5, color: "#333" }}>
+                I confirm that I am an expert in roofing inspection, assessment, and building compliance.
+                My qualifications, training, and experience that qualify me to give this opinion are:
+              </Text>
+              {report.inspector.qualifications && (
+                <Text style={{ fontSize: 9, lineHeight: 1.5, marginTop: 5, fontStyle: "italic" }}>
+                  {report.inspector.qualifications}
+                </Text>
+              )}
+              {report.inspector.lbpNumber && (
+                <Text style={{ fontSize: 9, marginTop: 5 }}>
+                  Licensed Building Practitioner Number: {report.inspector.lbpNumber}
+                </Text>
+              )}
+              {report.inspector.yearsExperience && (
+                <Text style={{ fontSize: 9, marginTop: 3 }}>
+                  Years of Experience: {report.inspector.yearsExperience}
+                </Text>
+              )}
+            </View>
+
+            {/* Section 2: Code of Conduct */}
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.blue, marginBottom: 5 }}>
+                2. EXPERT WITNESS CODE OF CONDUCT
+              </Text>
+              <Text style={{ fontSize: 9, lineHeight: 1.5, color: "#333" }}>
+                I have read and agree to comply with the Expert Witness Code of Conduct as set out in
+                Schedule 4 of the High Court Rules. I understand my duty is to assist the Court impartially
+                on matters within my area of expertise.
+              </Text>
+            </View>
+
+            {/* Section 3: Impartiality */}
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.blue, marginBottom: 5 }}>
+                3. IMPARTIALITY AND INDEPENDENCE
+              </Text>
+              <Text style={{ fontSize: 9, lineHeight: 1.5, color: "#333" }}>
+                I confirm that this report represents my independent, impartial opinion and has not been
+                influenced by the party engaging me or any other person. My opinions are based solely on
+                the evidence and my professional expertise.
+              </Text>
+            </View>
+
+            {/* Section 4: Conflict of Interest */}
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.blue, marginBottom: 5 }}>
+                4. CONFLICT OF INTEREST DISCLOSURE
+              </Text>
+              {report.hasConflict && report.conflictDisclosure ? (
+                <View>
+                  <Text style={{ fontSize: 9, lineHeight: 1.5, color: "#333" }}>
+                    I declare the following potential conflict of interest:
+                  </Text>
+                  <Text style={{ fontSize: 9, lineHeight: 1.5, marginTop: 5, padding: 8, backgroundColor: "#fff7ed", borderLeftWidth: 3, borderLeftColor: colors.orange }}>
+                    {report.conflictDisclosure}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={{ fontSize: 9, lineHeight: 1.5, color: "#333" }}>
+                  I have no conflict of interest to declare regarding this inspection or report. I have no
+                  personal or financial interest in the property, its sale, purchase, or any related matter.
+                </Text>
+              )}
+            </View>
+
+            {/* Section 5: Inspection Methodology */}
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.blue, marginBottom: 5 }}>
+                5. INSPECTION METHODOLOGY
+              </Text>
+              <Text style={{ fontSize: 9, lineHeight: 1.5, color: "#333" }}>
+                The inspection was conducted in accordance with the scope defined in this report, to the
+                best of my professional ability, and in compliance with relevant New Zealand standards
+                including ISO/IEC 17020:2012 and applicable Building Code requirements.
+              </Text>
+            </View>
+
+            {/* Section 6: Evidence Integrity */}
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.blue, marginBottom: 5 }}>
+                6. EVIDENCE INTEGRITY
+              </Text>
+              <Text style={{ fontSize: 9, lineHeight: 1.5, color: "#333" }}>
+                All photographs and documentary evidence included in this report are genuine and unaltered
+                (except for standard optimization). Digital SHA-256 hashes have been computed to verify
+                integrity. Chain of custody has been maintained as documented.
+              </Text>
+            </View>
+
+            {/* Section 7: Court Compliance */}
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.blue, marginBottom: 5 }}>
+                7. COURT COMPLIANCE
+              </Text>
+              <Text style={{ fontSize: 9, lineHeight: 1.5, color: "#333" }}>
+                I agree to comply with any direction of the Court regarding my evidence and to promptly
+                notify the Court and all parties if I change my opinion on a material matter.
+              </Text>
+            </View>
+
+            {/* Section 8: Acknowledgment */}
+            <View style={{ marginBottom: 20, padding: 10, backgroundColor: "#fef2f2", borderWidth: 1, borderColor: "#fecaca" }}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.critical, marginBottom: 5 }}>
+                ACKNOWLEDGMENT
+              </Text>
+              <Text style={{ fontSize: 9, lineHeight: 1.5, color: "#991b1b" }}>
+                I understand that giving false evidence may constitute perjury and may expose me to criminal
+                prosecution under the Crimes Act 1961. I confirm that all statements in this report are true
+                and accurate to the best of my knowledge and belief.
+              </Text>
+            </View>
+
+            {/* Signature Block */}
+            <View style={{ marginTop: 20, borderTopWidth: 2, borderTopColor: colors.blue, paddingTop: 15 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <View style={{ width: "60%" }}>
+                  <Text style={{ fontSize: 10, fontWeight: "bold", marginBottom: 10 }}>
+                    Inspector Signature:
+                  </Text>
+                  {report.signatureUrl && (
+                    <Image
+                      src={report.signatureUrl}
+                      style={{ width: 150, height: 60, objectFit: "contain" }}
+                    />
+                  )}
+                  <View style={{ borderTopWidth: 1, borderTopColor: "#999", width: 200, marginTop: 5 }} />
+                  <Text style={{ fontSize: 10, marginTop: 5 }}>{report.inspector.name}</Text>
+                  {report.inspector.lbpNumber && (
+                    <Text style={{ fontSize: 9, color: colors.mediumGray }}>
+                      LBP: {report.inspector.lbpNumber}
+                    </Text>
+                  )}
+                </View>
+                <View style={{ width: "35%", alignItems: "flex-end" }}>
+                  <Text style={{ fontSize: 10, fontWeight: "bold", marginBottom: 5 }}>Date Signed:</Text>
+                  <Text style={{ fontSize: 10 }}>
+                    {report.signedAt ? formatDate(report.signedAt) : "—"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.footer}>
+            <Text>Report: {report.reportNumber}</Text>
+            <Text style={styles.pageNumber}>Page 2 - Expert Witness Declaration</Text>
+          </View>
+        </Page>
+      )}
+
       {/* Defects Pages */}
       {report.defects.length > 0 && (
         <Page size="A4" style={styles.page}>
@@ -1095,6 +1318,171 @@ export function ReportPDF({ report }: ReportPDFProps) {
           <Text render={({ pageNumber }) => `Page ${pageNumber}`} />
         </View>
       </Page>
+
+      {/* Chain of Custody Certificate - Appendix C */}
+      {report.photos && report.photos.length > 0 && (
+        <Page size="A4" style={styles.page}>
+          <View style={styles.header}>
+            <View>
+              <Text style={[styles.title, { fontSize: 16 }]}>CHAIN OF CUSTODY CERTIFICATE</Text>
+              <Text style={styles.subtitle}>Evidence Integrity Documentation</Text>
+            </View>
+            <View style={styles.headerText}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.blue }}>
+                RANZ
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={{ fontSize: 10, lineHeight: 1.6, marginBottom: 15 }}>
+              This certificate documents the chain of custody for all photographic evidence
+              included in Report <Text style={{ fontWeight: "bold" }}>{report.reportNumber}</Text>.
+              Each photograph has been cryptographically hashed using SHA-256 to ensure integrity.
+            </Text>
+
+            <View style={{ backgroundColor: colors.lightGray, padding: 10, marginBottom: 15, borderRadius: 4 }}>
+              <Text style={{ fontSize: 9, fontWeight: "bold", marginBottom: 5 }}>
+                Evidence Act 2006 Compliance Statement
+              </Text>
+              <Text style={{ fontSize: 8, lineHeight: 1.4 }}>
+                The photographic evidence listed below has been collected, stored, and maintained
+                in accordance with the Evidence Act 2006 (NZ) Section 137 requirements. Original
+                files are preserved with their EXIF metadata intact. Hash verification confirms
+                that no modifications have been made to the original evidence files.
+              </Text>
+            </View>
+          </View>
+
+          {/* Report Metadata */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { fontSize: 11 }]}>Report Information</Text>
+            <View style={styles.row}>
+              <Text style={[styles.label, { width: "30%" }]}>Report Number</Text>
+              <Text style={styles.value}>{report.reportNumber}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={[styles.label, { width: "30%" }]}>Property</Text>
+              <Text style={styles.value}>{report.propertyAddress}, {report.propertyCity}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={[styles.label, { width: "30%" }]}>Inspection Date</Text>
+              <Text style={styles.value}>{formatDate(report.inspectionDate)}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={[styles.label, { width: "30%" }]}>Inspector</Text>
+              <Text style={styles.value}>{report.inspector.name}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={[styles.label, { width: "30%" }]}>Total Photographs</Text>
+              <Text style={styles.value}>{report.photos.length}</Text>
+            </View>
+          </View>
+
+          {/* Photo Evidence Registry */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { fontSize: 11 }]}>Photographic Evidence Registry</Text>
+
+            {/* Table Header */}
+            <View style={{ flexDirection: "row", backgroundColor: colors.blue, padding: 6 }}>
+              <Text style={{ width: "5%", fontSize: 7, fontWeight: "bold", color: "#fff" }}>#</Text>
+              <Text style={{ width: "20%", fontSize: 7, fontWeight: "bold", color: "#fff" }}>Filename</Text>
+              <Text style={{ width: "35%", fontSize: 7, fontWeight: "bold", color: "#fff" }}>SHA-256 Hash (First 32 chars)</Text>
+              <Text style={{ width: "20%", fontSize: 7, fontWeight: "bold", color: "#fff" }}>Captured</Text>
+              <Text style={{ width: "10%", fontSize: 7, fontWeight: "bold", color: "#fff" }}>GPS</Text>
+              <Text style={{ width: "10%", fontSize: 7, fontWeight: "bold", color: "#fff" }}>Verified</Text>
+            </View>
+
+            {/* Photo Rows */}
+            {report.photos.slice(0, 30).map((photo, index) => (
+              <View
+                key={index}
+                style={{
+                  flexDirection: "row",
+                  padding: 4,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.borderGray,
+                  backgroundColor: index % 2 === 0 ? "#fff" : colors.lightGray
+                }}
+              >
+                <Text style={{ width: "5%", fontSize: 7 }}>{index + 1}</Text>
+                <Text style={{ width: "20%", fontSize: 7 }}>
+                  {photo.filename ? photo.filename.substring(0, 20) : `Photo ${index + 1}`}
+                </Text>
+                <Text style={{ width: "35%", fontSize: 6, fontFamily: "Courier" }}>
+                  {photo.originalHash ? photo.originalHash.substring(0, 32) + "..." : "N/A"}
+                </Text>
+                <Text style={{ width: "20%", fontSize: 7 }}>
+                  {photo.capturedAt ? formatDate(photo.capturedAt) : "N/A"}
+                </Text>
+                <Text style={{ width: "10%", fontSize: 7 }}>
+                  {photo.gpsLat && photo.gpsLng ? "Yes" : "No"}
+                </Text>
+                <Text style={{ width: "10%", fontSize: 7, color: photo.hashVerified ? colors.pass : colors.medium }}>
+                  {photo.hashVerified ? "Yes" : "Pending"}
+                </Text>
+              </View>
+            ))}
+
+            {report.photos.length > 30 && (
+              <View style={{ padding: 8, backgroundColor: colors.lightGray }}>
+                <Text style={{ fontSize: 8, fontStyle: "italic" }}>
+                  + {report.photos.length - 30} additional photographs. Full registry available upon request.
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Integrity Statement */}
+          <View style={{ marginTop: 20, padding: 15, borderWidth: 1, borderColor: colors.blue, borderRadius: 4 }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold", color: colors.blue, marginBottom: 8 }}>
+              Chain of Custody Certification
+            </Text>
+            <Text style={{ fontSize: 9, lineHeight: 1.5 }}>
+              I, <Text style={{ fontWeight: "bold" }}>{report.inspector.name}</Text>, certify that:
+              {"\n\n"}
+              1. All photographs listed above were captured by me during the inspection conducted on {formatDate(report.inspectionDate)}.
+              {"\n\n"}
+              2. The original files have been securely stored and have not been modified since capture.
+              {"\n\n"}
+              3. The SHA-256 hash values recorded above can be used to verify the integrity of the original files.
+              {"\n\n"}
+              4. Any annotations or markups have been applied to copies only; originals remain unaltered.
+            </Text>
+          </View>
+
+          {/* Signature Block */}
+          {report.signatureUrl && (
+            <View style={{ marginTop: 20 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <View style={{ width: "45%" }}>
+                  <Text style={{ fontSize: 9, marginBottom: 5 }}>Inspector Signature:</Text>
+                  <View style={{ borderBottomWidth: 1, borderBottomColor: "#333", paddingBottom: 30 }}>
+                    {/* Signature would be rendered here if we had Image support */}
+                    <Text style={{ fontSize: 8, fontStyle: "italic", color: colors.mediumGray }}>
+                      [Signed electronically]
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 9, marginTop: 5 }}>{report.inspector.name}</Text>
+                </View>
+                <View style={{ width: "45%" }}>
+                  <Text style={{ fontSize: 9, marginBottom: 5 }}>Date:</Text>
+                  <View style={{ borderBottomWidth: 1, borderBottomColor: "#333", paddingBottom: 30 }}>
+                    <Text style={{ fontSize: 10 }}>
+                      {report.signedAt ? formatDate(report.signedAt) : formatDate(new Date())}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.footer}>
+            <Text>Report: {report.reportNumber} - Appendix C: Chain of Custody</Text>
+            <Text render={({ pageNumber }) => `Page ${pageNumber}`} />
+          </View>
+        </Page>
+      )}
     </Document>
   );
 }

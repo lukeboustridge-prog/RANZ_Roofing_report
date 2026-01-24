@@ -63,9 +63,21 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Type for expert declaration data
+    interface ExpertDeclarationData {
+      expertiseConfirmed: boolean;
+      codeOfConductAccepted: boolean;
+      courtComplianceAccepted: boolean;
+      falseEvidenceUnderstood: boolean;
+      impartialityConfirmed: boolean;
+      inspectionConducted: boolean;
+      evidenceIntegrity: boolean;
+    }
+
     // Transform report data for PDF generation
     const reportData = {
       ...report,
+      expertDeclaration: report.expertDeclaration as ExpertDeclarationData | null,
       complianceAssessment: report.complianceAssessment
         ? {
             checklistResults: report.complianceAssessment.checklistResults as Record<string, Record<string, string>>,

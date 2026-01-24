@@ -44,7 +44,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { signatureDataUrl, declarationAccepted } = body;
+    const { signatureDataUrl, declarationAccepted, expertDeclaration, hasConflict, conflictDisclosure } = body;
 
     if (!signatureDataUrl) {
       return NextResponse.json(
@@ -60,6 +60,36 @@ export async function POST(
       );
     }
 
+    // Validate expert declaration if provided
+    if (expertDeclaration) {
+      const requiredFields = [
+        'expertiseConfirmed',
+        'codeOfConductAccepted',
+        'courtComplianceAccepted',
+        'falseEvidenceUnderstood',
+        'impartialityConfirmed',
+        'inspectionConducted',
+        'evidenceIntegrity'
+      ];
+
+      for (const field of requiredFields) {
+        if (!expertDeclaration[field]) {
+          return NextResponse.json(
+            { error: `All declaration items must be confirmed (missing: ${field})` },
+            { status: 400 }
+          );
+        }
+      }
+
+      // If conflict declared, disclosure is required
+      if (hasConflict && (!conflictDisclosure || !conflictDisclosure.trim())) {
+        return NextResponse.json(
+          { error: "Conflict disclosure is required when a conflict is declared" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Convert base64 data URL to buffer
     const base64Data = signatureDataUrl.replace(/^data:image\/png;base64,/, "");
     const buffer = Buffer.from(base64Data, "base64");
@@ -68,13 +98,16 @@ export async function POST(
     const signatureKey = generateFileKey(id, "signature.png", "signatures");
     const signatureUrl = await uploadToR2(buffer, signatureKey, "image/png");
 
-    // Update report with signature
+    // Update report with signature and declaration data
     const updatedReport = await prisma.report.update({
       where: { id },
       data: {
         declarationSigned: true,
         signedAt: new Date(),
         signatureUrl,
+        expertDeclaration: expertDeclaration || null,
+        hasConflict: hasConflict || false,
+        conflictDisclosure: conflictDisclosure || null,
       },
     });
 

@@ -14,7 +14,7 @@ interface ValidationResult {
     inspectionDetails: { complete: boolean; missing: string[] };
     roofElements: { complete: boolean; count: number; minimum: number };
     defects: { documented: boolean; count: number };
-    photos: { sufficient: boolean; count: number; minimum: number; withExif: number };
+    photos: { sufficient: boolean; count: number; minimum: number; withExif: number; withGps: number };
     compliance: { complete: boolean; coverage: number; required: number };
   };
 }
@@ -345,12 +345,46 @@ function validateReport(report: any): ValidationResult {
     missingRequiredItems.push(`Photos (need ${minimumPhotos - photoCount} more)`);
   }
 
-  // EXIF warning - important for legal evidence
+  // EXIF validation - critical for legal evidence in dispute/court reports
   const photosWithoutExif = photoCount - photosWithExif;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const photosWithGps = report.photos?.filter((p: any) => p.gpsLat && p.gpsLng).length || 0;
+  const photosWithoutGps = photoCount - photosWithGps;
+
+  // Court report types require stricter evidence standards
+  const courtReportTypes: InspectionType[] = ["DISPUTE_RESOLUTION", "WARRANTY_CLAIM"];
+  const isCourtReport = courtReportTypes.includes(report.inspectionType as InspectionType);
+
   if (photosWithoutExif > 0) {
-    warnings.push(
-      `${photosWithoutExif} photo(s) missing EXIF metadata. This may affect evidentiary value.`
-    );
+    // For dispute resolution and warranty claims, EXIF is mandatory for forensic evidence
+    if (isCourtReport) {
+      errors.push(
+        `${photosWithoutExif} photo(s) missing EXIF metadata (timestamp/camera info). ` +
+        `EXIF data is mandatory for ${report.inspectionType.replace("_", " ").toLowerCase()} ` +
+        `reports as evidence may be presented in court proceedings.`
+      );
+      missingRequiredItems.push(`EXIF metadata for ${photosWithoutExif} photo(s)`);
+    } else {
+      warnings.push(
+        `${photosWithoutExif} photo(s) missing EXIF metadata. This may affect evidentiary value.`
+      );
+    }
+  }
+
+  // GPS coordinates are critical for court reports to prove location
+  if (photosWithoutGps > 0) {
+    if (isCourtReport) {
+      errors.push(
+        `${photosWithoutGps} photo(s) missing GPS coordinates. ` +
+        `GPS location data is mandatory for ${report.inspectionType.replace("_", " ").toLowerCase()} ` +
+        `reports to establish photos were taken at the property.`
+      );
+      missingRequiredItems.push(`GPS coordinates for ${photosWithoutGps} photo(s)`);
+    } else {
+      warnings.push(
+        `${photosWithoutGps} photo(s) missing GPS coordinates. This is recommended for evidentiary purposes.`
+      );
+    }
   }
 
   // 7. Validate Compliance Assessment
@@ -448,6 +482,7 @@ function validateReport(report: any): ValidationResult {
         count: photoCount,
         minimum: minimumPhotos,
         withExif: photosWithExif,
+        withGps: photosWithGps,
       },
       compliance: {
         complete: report.complianceAssessment && complianceCoverage === 100,

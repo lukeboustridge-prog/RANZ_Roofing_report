@@ -33,8 +33,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  reports     Report[]
-  assignments Assignment[]
+  reports        Report[]
+  assignments    Assignment[]
+  reviewComments ReviewComment[] @relation("ReviewComments")
 }
 
 enum UserRole {
@@ -98,15 +99,23 @@ model Report {
   conclusions     Json?
   recommendations Json?
 
+  // Executive Summary (structured for PDF)
+  executiveSummary Json?   // { keyFindings: string[], majorDefects: string, overallCondition: string, criticalRecommendations: string[] }
+
   // Compliance Assessment (direct JSON fields)
   e2Compliance  Json?
   b2Compliance  Json?
   copCompliance Json?
 
-  // Sign-off
+  // Sign-off & Expert Declaration (High Court Rules Schedule 4)
   declarationSigned Boolean   @default(false)
   signedAt          DateTime?
   signatureUrl      String?
+
+  // Expert Witness Declaration Data
+  expertDeclaration Json?     // { expertiseConfirmed, codeOfConductAccepted, courtComplianceAccepted, falseEvidenceUnderstood, impartialityConfirmed, expertiseAreas: string[], qualificationsSummary: string }
+  conflictDisclosure String?  @db.Text  // Free text disclosure of any conflicts of interest
+  hasConflict        Boolean  @default(false)  // Whether inspector declared a conflict
 
   // PDF
   pdfUrl         String?
@@ -131,6 +140,10 @@ model Report {
   roofElements         RoofElement[]
   auditLog             AuditLog[]
   complianceAssessment ComplianceAssessment?
+  reviewComments       ReviewComment[]
+
+  // Revision tracking
+  revisionRound Int @default(0) // 0 = initial submission, 1+ = resubmissions
 
   @@index([reportNumber])
   @@index([inspectorId])
@@ -570,4 +583,49 @@ model ComplianceAssessment {
   updatedAt DateTime @updatedAt
 
   @@index([reportId])
+}
+
+// ============================================
+// REVIEW COMMENTS & FEEDBACK
+// ============================================
+
+model ReviewComment {
+  id       String @id @default(cuid())
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  reviewerId String
+  reviewer   User   @relation("ReviewComments", fields: [reviewerId], references: [id])
+
+  // Optional targeting - can comment on specific items
+  defectId      String?
+  roofElementId String?
+  photoId       String?
+  section       String? // e.g., "property_details", "compliance", "conclusions"
+
+  // Comment content
+  comment  String         @db.Text
+  severity CommentSeverity @default(NOTE)
+
+  // Resolution tracking
+  resolved   Boolean   @default(false)
+  resolvedAt DateTime?
+  resolvedBy String?
+
+  // Revision round this comment belongs to
+  revisionRound Int @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reportId])
+  @@index([reviewerId])
+  @@index([resolved])
+}
+
+enum CommentSeverity {
+  CRITICAL    // Must be fixed before approval
+  ISSUE       // Should be addressed
+  NOTE        // Informational feedback
+  SUGGESTION  // Optional improvement
 }
