@@ -1,6 +1,13 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { z } from "zod";
+
+const reviewDecisionSchema = z.object({
+  decision: z.enum(["APPROVE", "REJECT", "REQUEST_REVISION"]),
+  comment: z.string().optional(),
+  revisionItems: z.array(z.string()).optional(),
+});
 
 /**
  * POST /api/reports/[id]/review - Start reviewing a report (mark as UNDER_REVIEW)
@@ -234,6 +241,160 @@ export async function GET(
     console.error("Error fetching review status:", error);
     return NextResponse.json(
       { error: "Failed to fetch review status" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/reports/[id]/review - Submit review decision (approve, reject, request revision)
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { userId } = await auth();
+    const { id } = await params;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check user has reviewer/admin permissions
+    if (!["REVIEWER", "ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+      return NextResponse.json(
+        { error: "Only reviewers and admins can submit review decisions" },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const validationResult = reviewDecisionSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: validationResult.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const { decision, comment, revisionItems } = validationResult.data;
+
+    // Fetch the report
+    const report = await prisma.report.findUnique({
+      where: { id },
+      include: {
+        inspector: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    if (!report) {
+      return NextResponse.json({ error: "Report not found" }, { status: 404 });
+    }
+
+    // Check report is under review
+    if (report.status !== "UNDER_REVIEW") {
+      return NextResponse.json(
+        {
+          error: `Cannot submit review decision. Current status: ${report.status}. Report must be UNDER_REVIEW.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const now = new Date();
+
+    // Determine new status based on decision
+    const statusMap: Record<string, string> = {
+      APPROVE: "APPROVED",
+      REJECT: "DRAFT",
+      REQUEST_REVISION: "REVISION_REQUIRED",
+    };
+
+    const newStatus = statusMap[decision];
+
+    // Update the report
+    const updateData: Record<string, unknown> = {
+      status: newStatus,
+      updatedAt: now,
+    };
+
+    if (decision === "APPROVE") {
+      updateData.approvedAt = now;
+    }
+
+    const updatedReport = await prisma.report.update({
+      where: { id },
+      data: updateData,
+      include: {
+        inspector: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    // Create audit log entry
+    await prisma.auditLog.create({
+      data: {
+        reportId: id,
+        userId: user.id,
+        action: decision === "APPROVE" ? "APPROVED" : "REVIEWED",
+        details: {
+          outcome: decision,
+          previousStatus: report.status,
+          newStatus,
+          reviewerName: user.name,
+          reason: comment || null,
+          revisionItems: revisionItems || null,
+        },
+      },
+    });
+
+    // Create a review comment if provided
+    if (comment) {
+      await prisma.reviewComment.create({
+        data: {
+          reportId: id,
+          reviewerId: user.id,
+          comment: comment,
+          severity: decision === "REQUEST_REVISION" ? "ISSUE" : "NOTE",
+        },
+      });
+    }
+
+    // Build response message
+    const messages: Record<string, string> = {
+      APPROVE: "Report has been approved.",
+      REJECT: "Report has been rejected and returned to draft status.",
+      REQUEST_REVISION: "Revision has been requested. The inspector will be notified.",
+    };
+
+    return NextResponse.json({
+      success: true,
+      message: messages[decision],
+      report: {
+        id: updatedReport.id,
+        reportNumber: updatedReport.reportNumber,
+        status: updatedReport.status,
+        approvedAt: updatedReport.approvedAt,
+        inspector: updatedReport.inspector,
+      },
+    });
+  } catch (error) {
+    console.error("Error submitting review decision:", error);
+    return NextResponse.json(
+      { error: "Failed to submit review decision" },
       { status: 500 }
     );
   }

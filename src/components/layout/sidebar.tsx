@@ -14,6 +14,7 @@ import {
   UserCircle,
   BarChart3,
   ClipboardList,
+  ClipboardCheck,
 } from "lucide-react";
 
 const navigation = [
@@ -27,6 +28,7 @@ const navigation = [
 ];
 
 const adminNavigation = [
+  { name: "Review Queue", href: "/review", icon: ClipboardCheck },
   { name: "Admin Portal", href: "/admin", icon: Shield },
 ];
 
