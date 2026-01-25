@@ -1,4 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "build": {
+    "env": {
+      "TURBOPACK": "0",
+      "NEXT_PRIVATE_MINIMAL_MODE": "1"
+    }
+  }
 }
