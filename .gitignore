@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Local uploads (development)
 /public/uploads
+
+.vercel
+.env*.local

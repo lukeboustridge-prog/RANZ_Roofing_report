@@ -126,10 +126,12 @@ const nextConfig: NextConfig = {
   },
 
   // Server-only packages (not bundled for client)
-  serverExternalPackages: ["@react-pdf/renderer"],
+  // This works for both webpack and Turbopack
+  serverExternalPackages: ["@react-pdf/renderer", "sharp"],
 
   // Experimental features
   experimental: {
+    // Optimize imports for better tree-shaking
     optimizePackageImports: ["lucide-react"],
   },
 };
