@@ -51,13 +51,31 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Webpack configuration to externalize @react-pdf/renderer
   webpack: (config, { isServer }) => {
+    // Externalize @react-pdf/renderer for ALL builds (server and client)
+    // This prevents the "<Html> should not be imported outside pages/_document" error
+    // because @react-pdf/renderer exports its own Html component that conflicts with Next.js
+    config.externals = config.externals || [];
+
     if (isServer) {
-      // Externalize @react-pdf/renderer to prevent it from being bundled
-      config.externals = config.externals || [];
+      config.externals.push({
+        "@react-pdf/renderer": "commonjs @react-pdf/renderer",
+      });
+    } else {
+      // For client builds, completely exclude @react-pdf/renderer
+      // It should never be used on the client anyway
       config.externals.push({
         "@react-pdf/renderer": "commonjs @react-pdf/renderer",
       });
     }
+
+    // Add rule to ignore @react-pdf/renderer in client bundles
+    // This prevents static analysis from pulling in the Html component
+    if (!isServer) {
+      config.resolve = config.resolve || {};
+      config.resolve.fallback = config.resolve.fallback || {};
+      config.resolve.fallback["@react-pdf/renderer"] = false;
+    }
+
     return config;
   },
 
