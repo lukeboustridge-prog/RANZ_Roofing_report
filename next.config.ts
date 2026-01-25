@@ -99,6 +99,9 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "@clerk/nextjs"],
   },
+
+  // External packages that should not be bundled in middleware
+  serverExternalPackages: ["@clerk/nextjs"],
 };
 
 export default nextConfig;
