@@ -7,8 +7,7 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // Native HTML select for simple use cases (backward compatibility)
-export interface NativeSelectProps
-  extends React.SelectHTMLAttributes<HTMLSelectElement> {}
+export type NativeSelectProps = React.SelectHTMLAttributes<HTMLSelectElement>;
 
 const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProps>(
   ({ className, children, ...props }, ref) => {

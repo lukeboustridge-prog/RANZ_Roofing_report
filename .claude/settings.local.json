@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(del \"C:\\\\Users\\\\LukeBoustridge\\\\projects\\\\ranz_roofing_report\\\\src\\\\middleware.ts\")",
+      "Bash(npx kill-port:*)",
+      "Bash(git add:*)",
+      "Bash(git push)",
+      "Bash(npx prisma db push)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx tsx:*)",
+      "Bash(node -e:*)",
+      "Bash(ls:*)",
+      "Bash(taskkill:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Add report sub-pages and API routes\n\n- Add defects management page with three-part structure \\(Observation/Analysis/Opinion\\)\n- Add photos management page with EXIF metadata display\n- Add roof elements documentation page with condition ratings\n- Add PDF generation page\n- Add settings/profile page\n- Add API routes for elements, photos, and user profile\n- Add local file storage fallback for development \\(no R2 required\\)\n- Make photo processing more resilient with fallbacks\n- Update schema with company and address fields for users\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(npm install:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm show:*)",
+      "Bash(git init:*)",
+      "Bash(gh repo create:*)",
+      "Bash(cmd /c \"cd C:\\\\Users\\\\LukeBoustridge\\\\projects\\\\ranz-mobile && gh repo create ranz-mobile --private --source=. --push\")",
+      "Bash(powershell:*)",
+      "Bash(npm start:*)",
+      "Bash(npx expo install:*)",
+      "Bash(npx expo start:*)"
+    ]
+  }
+}

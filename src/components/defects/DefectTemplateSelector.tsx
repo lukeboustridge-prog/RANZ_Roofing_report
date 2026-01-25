@@ -191,7 +191,7 @@ export function DefectTemplateSelector({
           filteredTemplates.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="mx-auto h-8 w-8 mb-2" />
-              <p>No templates found for "{searchQuery}"</p>
+              <p>No templates found for &quot;{searchQuery}&quot;</p>
             </div>
           ) : (
             <div className="space-y-2">
