@@ -1,3 +1,4 @@
+import "server-only";
 import React from "react";
 import { Text, View, Image } from "@react-pdf/renderer";
 import { styles, colors, getSeverityColor, getConditionColor } from "./styles";

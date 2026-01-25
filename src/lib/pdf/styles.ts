@@ -1,3 +1,4 @@
+import "server-only";
 import { StyleSheet, Font } from "@react-pdf/renderer";
 
 // Register fonts (using system fonts for now)
