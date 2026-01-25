@@ -1,9 +1,17 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { renderToBuffer } from "@react-pdf/renderer";
-import { ReportPDF } from "@/lib/pdf/report-template";
 import { rateLimit, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
+
+// Dynamic imports to prevent @react-pdf/renderer from being analyzed during build
+// This avoids the "Html should not be imported outside pages/_document" error
+async function loadPdfModules() {
+  const [{ renderToBuffer }, { ReportPDF }] = await Promise.all([
+    import("@react-pdf/renderer"),
+    import("@/lib/pdf/report-template"),
+  ]);
+  return { renderToBuffer, ReportPDF };
+}
 
 // GET /api/reports/[id]/pdf - Generate PDF
 export async function GET(
@@ -111,7 +119,8 @@ export async function GET(
         : null,
     };
 
-    // Generate PDF
+    // Generate PDF (using dynamic imports to avoid build issues)
+    const { renderToBuffer, ReportPDF } = await loadPdfModules();
     const pdfBuffer = await renderToBuffer(ReportPDF({ report: reportData }));
 
     // Update report with PDF generation timestamp
