@@ -36,6 +36,7 @@ model User {
   reports        Report[]
   assignments    Assignment[]
   reviewComments ReviewComment[] @relation("ReviewComments")
+  preferences    UserPreferences?
 }
 
 enum UserRole {
@@ -49,6 +50,35 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   PENDING_APPROVAL
+}
+
+model UserPreferences {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Email notification preferences
+  emailReportSubmitted   Boolean @default(true)  // When a report is submitted for review
+  emailReportApproved    Boolean @default(true)  // When a report is approved
+  emailReportRejected    Boolean @default(true)  // When a report needs revision
+  emailReportComments    Boolean @default(true)  // When new comments are added
+  emailReportFinalized   Boolean @default(true)  // When a report is finalized
+  emailAssignmentNew     Boolean @default(true)  // When assigned to a new inspection
+  emailWeeklyDigest      Boolean @default(false) // Weekly summary email
+
+  // UI preferences
+  theme           String @default("system") // system, light, dark
+  defaultListView String @default("grid")   // grid, list
+  itemsPerPage    Int    @default(12)
+
+  // Default report settings
+  defaultInspectionType String? // Pre-fill inspection type
+  defaultRegion         String? // Pre-fill region
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // ============================================
@@ -141,6 +171,7 @@ model Report {
   auditLog             AuditLog[]
   complianceAssessment ComplianceAssessment?
   reviewComments       ReviewComment[]
+  shares               ReportShare[]
 
   // Revision tracking
   revisionRound Int @default(0) // 0 = initial submission, 1+ = resubmissions
@@ -489,6 +520,53 @@ enum AuditAction {
   PDF_GENERATED
   DOWNLOADED
   SHARED
+}
+
+// ============================================
+// REPORT SHARING
+// ============================================
+
+model ReportShare {
+  id       String @id @default(cuid())
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  // Secure token for the share link
+  token String @unique @default(cuid())
+
+  // Who created the share
+  createdById String
+
+  // Recipient info (for audit/notification)
+  recipientEmail String?
+  recipientName  String?
+
+  // Access control
+  accessLevel ShareAccessLevel @default(VIEW_ONLY)
+  expiresAt   DateTime?
+  password    String?          // Optional password protection (hashed)
+
+  // Usage tracking
+  viewCount     Int       @default(0)
+  lastViewedAt  DateTime?
+  downloadCount Int       @default(0)
+
+  // Status
+  isActive Boolean @default(true)
+  revokedAt DateTime?
+  revokedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reportId])
+  @@index([token])
+  @@index([createdById])
+}
+
+enum ShareAccessLevel {
+  VIEW_ONLY       // Can view report online
+  VIEW_DOWNLOAD   // Can view and download PDF
 }
 
 // ============================================

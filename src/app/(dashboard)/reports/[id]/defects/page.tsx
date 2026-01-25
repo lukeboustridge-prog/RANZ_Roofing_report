@@ -23,7 +23,9 @@ import {
   MapPin,
   Camera,
   Image as ImageIcon,
+  FileText,
 } from "lucide-react";
+import { DefectTemplateSelector } from "@/components/defects/DefectTemplateSelector";
 import Image from "next/image";
 import type { DefectSeverity, DefectClass } from "@prisma/client";
 
@@ -137,6 +139,7 @@ export default function DefectsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
 
@@ -317,10 +320,53 @@ export default function DefectsPage() {
 
   const cancelForm = () => {
     setShowForm(false);
+    setShowTemplateSelector(false);
     setEditingId(null);
     setFormData(initialFormData);
     setSelectedPhotoIds([]);
     setError("");
+  };
+
+  interface DefectTemplate {
+    id: string;
+    name: string;
+    category: string;
+    title: string;
+    description: string;
+    classification: string;
+    severity: string;
+    observationTemplate: string;
+    analysisTemplate?: string;
+    opinionTemplate?: string;
+    codeReference?: string;
+    copReference?: string;
+    probableCauseTemplate?: string;
+    recommendationTemplate?: string;
+    priorityLevel?: string;
+    tags: string[];
+  }
+
+  const handleTemplateSelect = (template: DefectTemplate) => {
+    setFormData({
+      title: template.title,
+      description: template.description,
+      location: "", // User must fill in
+      roofElementId: "",
+      classification: template.classification,
+      severity: template.severity,
+      observation: template.observationTemplate,
+      analysis: template.analysisTemplate || "",
+      opinion: template.opinionTemplate || "",
+      codeReference: template.codeReference || "",
+      copReference: template.copReference || "",
+      probableCause: template.probableCauseTemplate || "",
+      contributingFactors: "",
+      recommendation: template.recommendationTemplate || "",
+      priorityLevel: template.priorityLevel || "MEDIUM_TERM",
+      estimatedCost: "",
+    });
+    setShowTemplateSelector(false);
+    setShowForm(true);
   };
 
 
@@ -349,11 +395,17 @@ export default function DefectsPage() {
             Document and classify defects found during inspection.
           </p>
         </div>
-        {!showForm && (
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Defect
-          </Button>
+        {!showForm && !showTemplateSelector && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowTemplateSelector(true)}>
+              <FileText className="mr-2 h-4 w-4" />
+              Use Template
+            </Button>
+            <Button onClick={() => setShowForm(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Defect
+            </Button>
+          </div>
         )}
       </div>
 
@@ -361,6 +413,18 @@ export default function DefectsPage() {
         <div className="p-4 bg-destructive/10 text-destructive rounded-md">
           {error}
         </div>
+      )}
+
+      {/* Template Selector */}
+      {showTemplateSelector && (
+        <Card>
+          <CardContent className="pt-6">
+            <DefectTemplateSelector
+              onSelect={handleTemplateSelect}
+              onClose={() => setShowTemplateSelector(false)}
+            />
+          </CardContent>
+        </Card>
       )}
 
       {/* Add/Edit Form */}
@@ -376,6 +440,20 @@ export default function DefectsPage() {
                   Use the three-part structure: Observation (factual) → Analysis
                   (technical) → Opinion (professional judgment)
                 </CardDescription>
+                {!editingId && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto mt-1"
+                    onClick={() => {
+                      setShowForm(false);
+                      setShowTemplateSelector(true);
+                    }}
+                  >
+                    <FileText className="mr-1 h-3 w-3" />
+                    Or start from a template
+                  </Button>
+                )}
               </div>
               <Button variant="ghost" size="icon" onClick={cancelForm}>
                 <X className="h-4 w-4" />

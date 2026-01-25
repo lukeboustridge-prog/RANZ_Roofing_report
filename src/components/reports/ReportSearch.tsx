@@ -25,7 +25,13 @@ import {
   FileText,
   Loader2,
   Download,
+  Archive,
+  Trash2,
+  CheckSquare,
+  Square,
+  MinusSquare,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -140,7 +146,9 @@ export function ReportSearch() {
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Fetch reports from API
   const fetchReports = useCallback(
@@ -263,6 +271,98 @@ export function ReportSearch() {
       setError(err instanceof Error ? err.message : "Export failed");
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  // Selection helpers
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === reports.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(reports.map((r) => r.id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const isAllSelected = reports.length > 0 && selectedIds.size === reports.length;
+  const isSomeSelected = selectedIds.size > 0 && selectedIds.size < reports.length;
+
+  // Get selected reports info for batch actions
+  const selectedReports = reports.filter((r) => selectedIds.has(r.id));
+  const canArchive = selectedReports.every((r) =>
+    ["FINALISED", "APPROVED"].includes(r.status)
+  );
+  const canUnarchive = selectedReports.every((r) => r.status === "ARCHIVED");
+  const canDelete = selectedReports.every((r) => r.status === "DRAFT");
+
+  // Batch actions
+  const handleBatchAction = async (
+    action: "archive" | "unarchive" | "delete" | "export",
+    exportType?: "reports" | "defects"
+  ) => {
+    if (selectedIds.size === 0) return;
+
+    setIsBatchProcessing(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/reports/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          reportIds: Array.from(selectedIds),
+          exportType,
+        }),
+      });
+
+      if (action === "export" && response.ok) {
+        // Handle file download
+        const contentDisposition = response.headers.get("Content-Disposition");
+        const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+        const filename = filenameMatch?.[1] || `ranz-batch-export.csv`;
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        return;
+      }
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || data.details || "Batch operation failed");
+      }
+
+      // Refresh the list and clear selection
+      clearSelection();
+      startTransition(() => {
+        fetchReports(pagination?.page || 1);
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Batch operation failed");
+    } finally {
+      setIsBatchProcessing(false);
     }
   };
 
@@ -440,12 +540,99 @@ export function ReportSearch() {
         </Card>
       )}
 
+      {/* Batch Action Bar */}
+      {selectedIds.size > 0 && (
+        <Card className="border-primary bg-primary/5">
+          <CardContent className="flex items-center justify-between p-3">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="sm" onClick={clearSelection}>
+                <X className="mr-1 h-4 w-4" />
+                Clear
+              </Button>
+              <span className="text-sm font-medium">
+                {selectedIds.size} report{selectedIds.size !== 1 ? "s" : ""} selected
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {canArchive && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBatchAction("archive")}
+                  disabled={isBatchProcessing}
+                >
+                  <Archive className="mr-2 h-4 w-4" />
+                  Archive
+                </Button>
+              )}
+              {canUnarchive && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBatchAction("unarchive")}
+                  disabled={isBatchProcessing}
+                >
+                  <Archive className="mr-2 h-4 w-4" />
+                  Unarchive
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBatchAction("delete")}
+                  disabled={isBatchProcessing}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" disabled={isBatchProcessing}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export Selected
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleBatchAction("export", "reports")}>
+                    Export as CSV (Reports)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleBatchAction("export", "defects")}>
+                    Export as CSV (Defects)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {isBatchProcessing && <Loader2 className="h-4 w-4 animate-spin" />}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Results Summary */}
       {pagination && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            Showing {reports.length} of {pagination.totalCount} reports
-          </span>
+          <div className="flex items-center gap-3">
+            {reports.length > 0 && (
+              <button
+                onClick={toggleSelectAll}
+                className="flex items-center gap-2 hover:text-foreground"
+              >
+                {isAllSelected ? (
+                  <CheckSquare className="h-4 w-4" />
+                ) : isSomeSelected ? (
+                  <MinusSquare className="h-4 w-4" />
+                ) : (
+                  <Square className="h-4 w-4" />
+                )}
+                <span className="text-xs">Select all</span>
+              </button>
+            )}
+            <span>
+              Showing {reports.length} of {pagination.totalCount} reports
+            </span>
+          </div>
           {isPending && (
             <span className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -504,40 +691,57 @@ export function ReportSearch() {
       {reports.length > 0 && (
         <div className="grid gap-4">
           {reports.map((report) => (
-            <Link key={report.id} href={`/reports/${report.id}`}>
-              <Card className="cursor-pointer transition-colors hover:bg-secondary/50">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-semibold">{report.reportNumber}</span>
-                        <Badge variant={statusBadgeVariants[report.status]}>
-                          {statusLabels[report.status]}
-                        </Badge>
-                      </div>
-                      <p className="text-muted-foreground">
-                        {report.propertyAddress}, {report.propertyCity}, {report.propertyRegion}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Client: {report.clientName}</p>
-                      {report.inspector && (
-                        <p className="text-sm text-muted-foreground">
-                          Inspector: {report.inspector.name}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right text-sm text-muted-foreground">
-                      <p>Inspected: {formatDate(new Date(report.inspectionDate))}</p>
-                      <p className="mt-1">
-                        {report._count.defects} defects &bull; {report._count.photos} photos
-                      </p>
-                      <p className="mt-1 text-xs">
-                        {inspectionTypeLabels[report.inspectionType]}
-                      </p>
-                    </div>
+            <Card
+              key={report.id}
+              className={`transition-colors hover:bg-secondary/50 ${
+                selectedIds.has(report.id) ? "ring-2 ring-primary" : ""
+              }`}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  {/* Checkbox */}
+                  <div className="pt-1">
+                    <Checkbox
+                      checked={selectedIds.has(report.id)}
+                      onCheckedChange={() => toggleSelection(report.id)}
+                      aria-label={`Select ${report.reportNumber}`}
+                    />
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
+
+                  {/* Report content - clickable */}
+                  <Link href={`/reports/${report.id}`} className="flex-1 cursor-pointer">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-semibold">{report.reportNumber}</span>
+                          <Badge variant={statusBadgeVariants[report.status]}>
+                            {statusLabels[report.status]}
+                          </Badge>
+                        </div>
+                        <p className="text-muted-foreground">
+                          {report.propertyAddress}, {report.propertyCity}, {report.propertyRegion}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Client: {report.clientName}</p>
+                        {report.inspector && (
+                          <p className="text-sm text-muted-foreground">
+                            Inspector: {report.inspector.name}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right text-sm text-muted-foreground">
+                        <p>Inspected: {formatDate(new Date(report.inspectionDate))}</p>
+                        <p className="mt-1">
+                          {report._count.defects} defects &bull; {report._count.photos} photos
+                        </p>
+                        <p className="mt-1 text-xs">
+                          {inspectionTypeLabels[report.inspectionType]}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
