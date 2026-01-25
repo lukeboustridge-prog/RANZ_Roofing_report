@@ -95,6 +95,9 @@ const nextConfig: NextConfig = {
     },
   },
 
+  // Server-only packages (not bundled for client)
+  serverExternalPackages: ["@react-pdf/renderer"],
+
   // Experimental features
   experimental: {
     optimizePackageImports: ["lucide-react"],
