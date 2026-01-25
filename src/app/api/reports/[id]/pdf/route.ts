@@ -7,7 +7,7 @@ import { rateLimit, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
 // This avoids the "Html should not be imported outside pages/_document" error
 async function loadPdfModules() {
   const [{ renderToBuffer }, { ReportPDF }] = await Promise.all([
-    import("@react-pdf/renderer"),
+    import("@/lib/pdf/react-pdf-wrapper"),
     import("@/lib/pdf/report-template"),
   ]);
   return { renderToBuffer, ReportPDF };

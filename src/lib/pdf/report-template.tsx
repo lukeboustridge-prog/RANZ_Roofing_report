@@ -7,7 +7,7 @@ import {
   View,
   StyleSheet,
   Image,
-} from "@react-pdf/renderer";
+} from "./react-pdf-wrapper";
 
 // RANZ brand colors - From Brand Guidelines 2025
 const colors = {

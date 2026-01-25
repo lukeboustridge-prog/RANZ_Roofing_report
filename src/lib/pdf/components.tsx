@@ -1,6 +1,6 @@
 import "server-only";
 import React from "react";
-import { Text, View, Image } from "@react-pdf/renderer";
+import { Text, View, Image } from "./react-pdf-wrapper";
 import { styles, colors, getSeverityColor, getConditionColor } from "./styles";
 
 // Header component
