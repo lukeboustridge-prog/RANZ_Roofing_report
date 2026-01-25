@@ -12,12 +12,16 @@ import {
   Plus,
   Shield,
   UserCircle,
+  BarChart3,
+  ClipboardList,
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "New Report", href: "/reports/new", icon: Plus },
+  { name: "Assignments", href: "/assignments", icon: ClipboardList },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Profile", href: "/profile", icon: UserCircle },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

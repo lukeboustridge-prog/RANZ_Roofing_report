@@ -25,6 +25,10 @@ import {
   Maximize2,
   ChevronLeft,
   ChevronRight,
+  CheckSquare,
+  Square,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 
 const PHOTO_TYPES = [
@@ -88,6 +92,11 @@ export default function PhotosPage() {
   const [editCaption, setEditCaption] = useState("");
   const captionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Bulk selection state
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
+  const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
   // Get the display URL for a photo (annotated version if available)
   const getDisplayUrl = (photo: Photo) => {
     return photo.annotatedUrl || photo.url;
@@ -115,6 +124,86 @@ export default function PhotosPage() {
     fetchDefects();
     fetchRoofElements();
   }, [reportId]);
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!lightboxPhoto) return;
+
+      if (e.key === "Escape") {
+        setLightboxPhoto(null);
+      } else if (e.key === "ArrowLeft") {
+        navigateLightbox("prev");
+      } else if (e.key === "ArrowRight") {
+        navigateLightbox("next");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxPhoto, photos]);
+
+  // Bulk selection functions
+  const togglePhotoSelection = (photoId: string) => {
+    setSelectedPhotos(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(photoId)) {
+        newSet.delete(photoId);
+      } else {
+        newSet.add(photoId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllPhotos = () => {
+    setSelectedPhotos(new Set(photos.map(p => p.id)));
+  };
+
+  const deselectAllPhotos = () => {
+    setSelectedPhotos(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedPhotos.size === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedPhotos.size} photo(s)?`)) return;
+
+    setBulkDeleting(true);
+    try {
+      await Promise.all(
+        Array.from(selectedPhotos).map(photoId =>
+          fetch(`/api/photos/${photoId}`, { method: "DELETE" })
+        )
+      );
+      await fetchPhotos();
+      setSelectedPhotos(new Set());
+      setBulkSelectMode(false);
+      setSelectedPhoto(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete photos");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const handleBulkTypeChange = async (photoType: string) => {
+    if (selectedPhotos.size === 0) return;
+
+    try {
+      await Promise.all(
+        Array.from(selectedPhotos).map(photoId =>
+          fetch(`/api/photos/${photoId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ photoType }),
+          })
+        )
+      );
+      await fetchPhotos();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update photos");
+    }
+  };
 
   const fetchDefects = async () => {
     try {
@@ -356,7 +445,85 @@ export default function PhotosPage() {
             Upload and manage inspection photos.
           </p>
         </div>
+        {photos.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant={bulkSelectMode ? "default" : "outline"}
+              onClick={() => {
+                setBulkSelectMode(!bulkSelectMode);
+                if (bulkSelectMode) {
+                  setSelectedPhotos(new Set());
+                }
+              }}
+            >
+              <CheckSquare className="h-4 w-4 mr-2" />
+              {bulkSelectMode ? "Done Selecting" : "Select Multiple"}
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* Bulk Selection Toolbar */}
+      {bulkSelectMode && (
+        <Card>
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium">
+                  {selectedPhotos.size} photo(s) selected
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={selectAllPhotos}
+                >
+                  Select All
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={deselectAllPhotos}
+                  disabled={selectedPhotos.size === 0}
+                >
+                  Deselect All
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <NativeSelect
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleBulkTypeChange(e.target.value);
+                    }
+                  }}
+                  disabled={selectedPhotos.size === 0}
+                  className="w-40"
+                >
+                  <option value="">Change Type...</option>
+                  {PHOTO_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </NativeSelect>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  disabled={selectedPhotos.size === 0 || bulkDeleting}
+                >
+                  {bulkDeleting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2" />
+                  )}
+                  Delete Selected
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {error && (
         <div className="p-4 bg-destructive/10 text-destructive rounded-md">
@@ -432,55 +599,86 @@ export default function PhotosPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {photos.map((photo) => (
-                <div
-                  key={photo.id}
-                  onClick={() => setSelectedPhoto(photo)}
-                  className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
-                    selectedPhoto?.id === photo.id
-                      ? "border-[var(--ranz-blue-500)] ring-2 ring-[var(--ranz-blue-500)]/20"
-                      : "border-transparent hover:border-muted-foreground/20"
-                  }`}
-                >
-                  {getGridUrl(photo) ? (
-                    <Image
-                      src={getGridUrl(photo)}
-                      alt={photo.caption || photo.originalFilename}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <Camera className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <Badge variant="secondary" className="text-xs">
-                        {photo.photoType.replace("_", " ")}
-                      </Badge>
-                      {photo.isEdited && (
-                        <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-200 border-blue-400/50">
-                          <Pencil className="h-3 w-3 mr-0.5" />
-                          Annotated
+              {photos.map((photo) => {
+                const isSelected = selectedPhotos.has(photo.id);
+                return (
+                  <div
+                    key={photo.id}
+                    onClick={() => {
+                      if (bulkSelectMode) {
+                        togglePhotoSelection(photo.id);
+                      } else {
+                        setSelectedPhoto(photo);
+                      }
+                    }}
+                    className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+                      bulkSelectMode && isSelected
+                        ? "border-[var(--ranz-blue-500)] ring-2 ring-[var(--ranz-blue-500)]/30"
+                        : selectedPhoto?.id === photo.id
+                        ? "border-[var(--ranz-blue-500)] ring-2 ring-[var(--ranz-blue-500)]/20"
+                        : "border-transparent hover:border-muted-foreground/20"
+                    }`}
+                  >
+                    {getGridUrl(photo) ? (
+                      <Image
+                        src={getGridUrl(photo)}
+                        alt={photo.caption || photo.originalFilename}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <Camera className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+
+                    {/* Bulk selection checkbox */}
+                    {bulkSelectMode && (
+                      <div className="absolute top-2 left-2 z-10">
+                        <div
+                          className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${
+                            isSelected
+                              ? "bg-[var(--ranz-blue-500)] text-white"
+                              : "bg-white/80 text-gray-400 hover:bg-white"
+                          }`}
+                        >
+                          {isSelected ? (
+                            <CheckCircle2 className="h-5 w-5" />
+                          ) : (
+                            <Square className="h-5 w-5" />
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <Badge variant="secondary" className="text-xs">
+                          {photo.photoType.replace("_", " ")}
                         </Badge>
-                      )}
-                      {photo.defectId && (
-                        <Badge variant="destructive" className="text-xs">
-                          <AlertTriangle className="h-3 w-3 mr-0.5" />
-                          Defect
-                        </Badge>
-                      )}
-                      {photo.roofElementId && (
-                        <Badge variant="outline" className="text-xs bg-green-500/20 text-green-200 border-green-400/50">
-                          <LinkIcon className="h-3 w-3 mr-0.5" />
-                          Element
-                        </Badge>
-                      )}
+                        {photo.isEdited && (
+                          <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-200 border-blue-400/50">
+                            <Pencil className="h-3 w-3 mr-0.5" />
+                            Annotated
+                          </Badge>
+                        )}
+                        {photo.defectId && (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertTriangle className="h-3 w-3 mr-0.5" />
+                            Defect
+                          </Badge>
+                        )}
+                        {photo.roofElementId && (
+                          <Badge variant="outline" className="text-xs bg-green-500/20 text-green-200 border-green-400/50">
+                            <LinkIcon className="h-3 w-3 mr-0.5" />
+                            Element
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
