@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import type { CommentSeverity } from "@prisma/client";
+import { sendNewCommentsNotification } from "@/lib/email";
 
 // GET /api/reports/[id]/comments - Get all review comments for a report
 export async function GET(
@@ -153,6 +154,13 @@ export async function POST(
         status: true,
         revisionRound: true,
         reportNumber: true,
+        propertyAddress: true,
+        inspector: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
       },
     });
 
@@ -232,6 +240,24 @@ export async function POST(
         },
       },
     });
+
+    // Send notification to inspector about new comment (non-blocking)
+    if (report.inspector?.email) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reports.ranzroofing.co.nz";
+      sendNewCommentsNotification(
+        {
+          reportNumber: report.reportNumber,
+          propertyAddress: report.propertyAddress,
+          inspectorName: report.inspector.name,
+          inspectorEmail: report.inspector.email,
+          reportUrl: `${baseUrl}/reports/${report.id}`,
+        },
+        user.name,
+        1 // Single comment added
+      ).catch((err) => {
+        console.error("[Comments] Failed to send notification email:", err);
+      });
+    }
 
     return NextResponse.json({
       success: true,

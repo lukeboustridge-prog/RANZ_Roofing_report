@@ -274,3 +274,114 @@ export async function sendNewCommentsNotification(
     html: wrapInTemplate(content, "New Review Comments"),
   });
 }
+
+/**
+ * Send notification when a report is finalized
+ */
+export async function sendReportFinalizedNotification(
+  report: ReportInfo,
+  clientEmail?: string
+): Promise<SendResult[]> {
+  const results: SendResult[] = [];
+
+  // Notify inspector
+  const inspectorContent = `
+    <h2 style="color: #16a34a; margin: 0 0 16px 0; font-size: 18px;">Report Finalized</h2>
+
+    <p style="margin: 0 0 16px 0;">Your report has been finalized and is ready for delivery to your client.</p>
+
+    <div style="background-color: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 0 0 16px 0;">
+      <p style="margin: 0 0 8px 0;"><strong>Report:</strong> ${report.reportNumber}</p>
+      <p style="margin: 0;"><strong>Property:</strong> ${report.propertyAddress}</p>
+    </div>
+
+    <a href="${report.reportUrl}/pdf" style="display: inline-block; background-color: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500;">
+      Download PDF
+    </a>
+
+    <p style="margin: 16px 0 0 0; color: #6b7280; font-size: 14px;">
+      This report has been locked and can no longer be edited.
+    </p>
+  `;
+
+  results.push(
+    await sendEmail({
+      to: report.inspectorEmail,
+      subject: `[Finalized] Report ${report.reportNumber} - Ready for Delivery`,
+      text: `Your report ${report.reportNumber} for ${report.propertyAddress} has been finalized. Download PDF at: ${report.reportUrl}/pdf`,
+      html: wrapInTemplate(inspectorContent, "Report Finalized"),
+    })
+  );
+
+  // Optionally notify client if email provided
+  if (clientEmail) {
+    const clientContent = `
+      <h2 style="color: #2d5c8f; margin: 0 0 16px 0; font-size: 18px;">Your Roofing Inspection Report is Ready</h2>
+
+      <p style="margin: 0 0 16px 0;">The roofing inspection report for your property is now complete and ready for your review.</p>
+
+      <div style="background-color: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 0 0 16px 0;">
+        <p style="margin: 0 0 8px 0;"><strong>Report Number:</strong> ${report.reportNumber}</p>
+        <p style="margin: 0 0 8px 0;"><strong>Property:</strong> ${report.propertyAddress}</p>
+        <p style="margin: 0;"><strong>Inspector:</strong> ${report.inspectorName}</p>
+      </div>
+
+      <p style="margin: 0 0 16px 0; color: #6b7280; font-size: 14px;">
+        Your inspector will provide you with the full report. If you have any questions,
+        please contact them directly at ${report.inspectorEmail}.
+      </p>
+    `;
+
+    results.push(
+      await sendEmail({
+        to: clientEmail,
+        subject: `Roofing Inspection Report Ready - ${report.propertyAddress}`,
+        text: `Your roofing inspection report (${report.reportNumber}) for ${report.propertyAddress} is now complete. Please contact your inspector ${report.inspectorName} at ${report.inspectorEmail} for the full report.`,
+        html: wrapInTemplate(clientContent, "Your Report is Ready"),
+      })
+    );
+  }
+
+  return results;
+}
+
+/**
+ * Send notification when a report is rejected
+ */
+export async function sendReportRejectedNotification(
+  report: ReportInfo,
+  reviewerName: string,
+  reason: string
+): Promise<SendResult> {
+  const content = `
+    <h2 style="color: #dc2626; margin: 0 0 16px 0; font-size: 18px;">Report Rejected</h2>
+
+    <p style="margin: 0 0 16px 0;">Unfortunately, your report has been rejected and cannot proceed in its current form.</p>
+
+    <div style="background-color: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 0 0 16px 0;">
+      <p style="margin: 0 0 8px 0;"><strong>Report:</strong> ${report.reportNumber}</p>
+      <p style="margin: 0 0 8px 0;"><strong>Property:</strong> ${report.propertyAddress}</p>
+      <p style="margin: 0;"><strong>Rejected by:</strong> ${reviewerName}</p>
+    </div>
+
+    <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 16px; margin: 0 0 16px 0;">
+      <p style="margin: 0 0 8px 0; font-weight: 500; color: #991b1b;">Reason for Rejection:</p>
+      <p style="margin: 0; color: #7f1d1d;">${reason}</p>
+    </div>
+
+    <a href="${report.reportUrl}" style="display: inline-block; background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500;">
+      View Report
+    </a>
+
+    <p style="margin: 16px 0 0 0; color: #6b7280; font-size: 14px;">
+      Please review the feedback and consider starting a new inspection if necessary.
+    </p>
+  `;
+
+  return sendEmail({
+    to: report.inspectorEmail,
+    subject: `[Rejected] Report ${report.reportNumber} - ${report.propertyAddress}`,
+    text: `Your report ${report.reportNumber} for ${report.propertyAddress} has been rejected by ${reviewerName}. Reason: ${reason}. View at: ${report.reportUrl}`,
+    html: wrapInTemplate(content, "Report Rejected"),
+  });
+}

@@ -2,7 +2,10 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { z } from "zod";
-import { sendReportApprovedNotification } from "@/lib/email";
+import {
+  sendReportApprovedNotification,
+  sendReportFinalizedNotification,
+} from "@/lib/email";
 
 const approveSchema = z.object({
   comments: z.string().optional(),
@@ -124,18 +127,27 @@ export async function POST(
     // Send email notification to inspector (non-blocking)
     if (report.inspector?.email) {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reports.ranzroofing.co.nz";
-      sendReportApprovedNotification(
-        {
-          reportNumber: report.reportNumber,
-          propertyAddress: report.propertyAddress,
-          inspectorName: report.inspector.name,
-          inspectorEmail: report.inspector.email,
-          reportUrl: `${baseUrl}/reports/${report.id}`,
-        },
-        user.name
-      ).catch((err) => {
-        console.error("[Approve] Failed to send notification email:", err);
-      });
+      const reportInfo = {
+        reportNumber: report.reportNumber,
+        propertyAddress: report.propertyAddress,
+        inspectorName: report.inspector.name,
+        inspectorEmail: report.inspector.email,
+        reportUrl: `${baseUrl}/reports/${report.id}`,
+      };
+
+      if (finalise) {
+        // Send finalization notification (includes client notification if email provided)
+        sendReportFinalizedNotification(reportInfo, report.clientEmail || undefined).catch(
+          (err) => {
+            console.error("[Approve] Failed to send finalization notification:", err);
+          }
+        );
+      } else {
+        // Send approval notification
+        sendReportApprovedNotification(reportInfo, user.name).catch((err) => {
+          console.error("[Approve] Failed to send approval notification:", err);
+        });
+      }
     }
 
     return NextResponse.json({
