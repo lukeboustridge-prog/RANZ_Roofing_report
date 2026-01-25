@@ -41,3 +41,6 @@ export {
 
 // Dashboard components
 export { DashboardStats } from "./dashboard";
+
+// Accessibility components
+export { SkipLinks, VisuallyHidden, FocusTrap, LiveRegion } from "./accessibility";

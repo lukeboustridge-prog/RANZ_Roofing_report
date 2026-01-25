@@ -103,7 +103,21 @@ export const cacheKeys = {
   analytics: (period: string) => `analytics:${period}`,
   auditLogs: (page: number, reportId?: string) =>
     reportId ? `audit:${reportId}:${page}` : `audit:all:${page}`,
+  dashboardStats: (userId: string) => `dashboard:stats:${userId}`,
+  userProfile: (userId: string) => `user:profile:${userId}`,
 } as const;
+
+/**
+ * Invalidate all caches related to a report change
+ */
+export function invalidateReportCaches(userId: string, reportId?: string): void {
+  invalidateCachePattern(`reports:${userId}`);
+  invalidateCache(cacheKeys.userReports(userId));
+  invalidateCache(cacheKeys.dashboardStats(userId));
+  if (reportId) {
+    invalidateCache(cacheKeys.report(reportId));
+  }
+}
 
 /**
  * Stale-while-revalidate pattern

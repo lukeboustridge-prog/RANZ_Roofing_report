@@ -1,10 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { staleWhileRevalidate, cacheKeys, CACHE_TTL } from "@/lib/cache";
 
 /**
  * Dashboard Statistics API
  * Returns aggregated statistics for the user's dashboard
+ * Uses stale-while-revalidate caching for performance
  */
 
 // GET /api/dashboard/stats - Get dashboard statistics
@@ -24,6 +26,31 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Use stale-while-revalidate caching - return cached data immediately
+    // while refreshing in background (60 second TTL)
+    const stats = await staleWhileRevalidate(
+      cacheKeys.dashboardStats(user.id),
+      () => fetchDashboardStats(user.id),
+      CACHE_TTL.SHORT
+    );
+
+    // Add cache headers for CDN/browser caching
+    const response = NextResponse.json(stats);
+    response.headers.set("Cache-Control", "private, max-age=30, stale-while-revalidate=60");
+    return response;
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch dashboard statistics" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Fetch dashboard statistics from database
+ */
+async function fetchDashboardStats(inspectorId: string) {
     // Get date ranges
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -59,19 +86,19 @@ export async function GET() {
       // Report counts by status
       prisma.report.groupBy({
         by: ["status"],
-        where: { inspectorId: user.id },
+        where: { inspectorId },
         _count: { id: true },
       }),
 
       // Total reports
       prisma.report.count({
-        where: { inspectorId: user.id },
+        where: { inspectorId },
       }),
 
       // Reports this month
       prisma.report.count({
         where: {
-          inspectorId: user.id,
+          inspectorId,
           createdAt: { gte: startOfMonth },
         },
       }),
@@ -79,7 +106,7 @@ export async function GET() {
       // Reports this week
       prisma.report.count({
         where: {
-          inspectorId: user.id,
+          inspectorId,
           createdAt: { gte: sevenDaysAgo },
         },
       }),
@@ -87,7 +114,7 @@ export async function GET() {
       // Recent reports (last 30 days) for trend
       prisma.report.findMany({
         where: {
-          inspectorId: user.id,
+          inspectorId,
           createdAt: { gte: thirtyDaysAgo },
         },
         select: {
@@ -100,14 +127,14 @@ export async function GET() {
       // Total photos
       prisma.photo.count({
         where: {
-          report: { inspectorId: user.id },
+          report: { inspectorId },
         },
       }),
 
       // Total defects
       prisma.defect.count({
         where: {
-          report: { inspectorId: user.id },
+          report: { inspectorId },
         },
       }),
 
@@ -115,7 +142,7 @@ export async function GET() {
       prisma.defect.groupBy({
         by: ["severity"],
         where: {
-          report: { inspectorId: user.id },
+          report: { inspectorId },
         },
         _count: { id: true },
       }),
@@ -123,13 +150,13 @@ export async function GET() {
       // Reports by inspection type
       prisma.report.groupBy({
         by: ["inspectionType"],
-        where: { inspectorId: user.id },
+        where: { inspectorId },
         _count: { id: true },
       }),
 
       // Average defects per report (using raw query for aggregation)
       prisma.report.findMany({
-        where: { inspectorId: user.id },
+        where: { inspectorId },
         select: {
           _count: { select: { defects: true } },
         },
@@ -138,7 +165,7 @@ export async function GET() {
       // Photos this month
       prisma.photo.count({
         where: {
-          report: { inspectorId: user.id },
+          report: { inspectorId },
           createdAt: { gte: startOfMonth },
         },
       }),
@@ -191,7 +218,7 @@ export async function GET() {
     const nonDraftCount = totalReports - (statusCounts.DRAFT || 0);
     const completionRate = nonDraftCount > 0 ? (completedCount / nonDraftCount) * 100 : 0;
 
-    return NextResponse.json({
+    return {
       overview: {
         totalReports,
         reportsThisMonth,
@@ -208,12 +235,5 @@ export async function GET() {
       trends: {
         dailyReports: dailyReportCounts,
       },
-    });
-  } catch (error) {
-    console.error("Error fetching dashboard stats:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch dashboard statistics" },
-      { status: 500 }
-    );
-  }
+    };
 }
