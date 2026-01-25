@@ -49,6 +49,18 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Webpack configuration to externalize @react-pdf/renderer
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Externalize @react-pdf/renderer to prevent it from being bundled
+      config.externals = config.externals || [];
+      config.externals.push({
+        "@react-pdf/renderer": "commonjs @react-pdf/renderer",
+      });
+    }
+    return config;
+  },
+
   // Security headers
   async headers() {
     return [
