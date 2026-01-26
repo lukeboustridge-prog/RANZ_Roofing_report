@@ -199,11 +199,13 @@ export function ReportSearch() {
 
   // Handle filter changes
   const updateFilter = (key: keyof SearchFilters, value: string) => {
+    setError(null); // Clear any previous error when filters change
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   // Clear all filters
   const clearFilters = () => {
+    setError(null); // Clear any previous error when clearing filters
     setFilters(defaultFilters);
   };
 
