@@ -2,42 +2,51 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { InspectionType } from "@prisma/client";
+import { z } from "zod";
+import { rateLimit, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
 
 /**
  * Report Templates API
  * Manage reusable report templates for different inspection types
  */
 
-interface TemplateSection {
-  id: string;
-  name: string;
-  description?: string;
-  required: boolean;
-  order: number;
-  fields: Array<{
-    id: string;
-    label: string;
-    type: "text" | "textarea" | "select" | "checkbox" | "number";
-    placeholder?: string;
-    options?: string[];
-    defaultValue?: string;
-    required: boolean;
-  }>;
-}
+// Zod schemas for proper validation
+const templateFieldSchema = z.object({
+  id: z.string().min(1, "Field ID is required"),
+  label: z.string().min(1, "Field label is required"),
+  type: z.enum(["text", "textarea", "select", "checkbox", "number"]),
+  placeholder: z.string().optional(),
+  options: z.array(z.string()).optional(),
+  defaultValue: z.string().optional(),
+  required: z.boolean(),
+});
 
-interface CreateTemplateBody {
-  name: string;
-  description?: string;
-  inspectionType: InspectionType;
-  sections: TemplateSection[];
-  checklists?: string[];
-  isDefault?: boolean;
-}
+const templateSectionSchema = z.object({
+  id: z.string().min(1, "Section ID is required"),
+  name: z.string().min(1, "Section name is required"),
+  description: z.string().optional(),
+  required: z.boolean(),
+  order: z.number().int().min(0),
+  fields: z.array(templateFieldSchema).min(0),
+});
+
+const createTemplateSchema = z.object({
+  name: z.string().min(1, "Template name is required").max(255),
+  description: z.string().max(1000).optional(),
+  inspectionType: z.nativeEnum(InspectionType),
+  sections: z.array(templateSectionSchema).min(1, "At least one section is required"),
+  checklists: z.array(z.string()).optional(),
+  isDefault: z.boolean().optional().default(false),
+});
 
 /**
  * GET /api/templates - List all active templates
  */
 export async function GET(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.standard);
+  if (rateLimitResult) return rateLimitResult;
+
   try {
     const { userId } = await auth();
 
@@ -96,6 +105,10 @@ export async function GET(request: NextRequest) {
  * POST /api/templates - Create a new template (admin only)
  */
 export async function POST(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.standard);
+  if (rateLimitResult) return rateLimitResult;
+
   try {
     const { userId } = await auth();
 
@@ -119,19 +132,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body: CreateTemplateBody = await request.json();
-
-    // Validate required fields
-    if (!body.name || !body.inspectionType || !body.sections) {
-      return NextResponse.json(
-        { error: "Name, inspection type, and sections are required" },
-        { status: 400 }
-      );
-    }
+    // Parse and validate request body with Zod
+    const body = await request.json();
+    const validatedData = createTemplateSchema.parse(body);
 
     // Check for duplicate name
     const existing = await prisma.reportTemplate.findUnique({
-      where: { name: body.name },
+      where: { name: validatedData.name },
     });
 
     if (existing) {
@@ -142,10 +149,10 @@ export async function POST(request: NextRequest) {
     }
 
     // If this is marked as default, unset other defaults for this type
-    if (body.isDefault) {
+    if (validatedData.isDefault) {
       await prisma.reportTemplate.updateMany({
         where: {
-          inspectionType: body.inspectionType,
+          inspectionType: validatedData.inspectionType,
           isDefault: true,
         },
         data: { isDefault: false },
@@ -154,12 +161,12 @@ export async function POST(request: NextRequest) {
 
     const template = await prisma.reportTemplate.create({
       data: {
-        name: body.name,
-        description: body.description,
-        inspectionType: body.inspectionType,
-        sections: body.sections as unknown as object,
-        checklists: (body.checklists || []) as unknown as object,
-        isDefault: body.isDefault || false,
+        name: validatedData.name,
+        description: validatedData.description,
+        inspectionType: validatedData.inspectionType,
+        sections: validatedData.sections as unknown as object,
+        checklists: (validatedData.checklists || []) as unknown as object,
+        isDefault: validatedData.isDefault,
         isActive: true,
       },
     });
@@ -167,6 +174,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(template, { status: 201 });
   } catch (error) {
     console.error("Error creating template:", error);
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation failed", details: error.issues },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to create template" },
       { status: 500 }
