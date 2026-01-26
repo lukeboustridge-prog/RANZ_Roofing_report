@@ -77,8 +77,11 @@ export async function GET(
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
 
-    // Verify ownership
-    if (report.inspectorId !== user.id) {
+    // Verify access - owner or reviewer/admin can download
+    const isOwner = report.inspectorId === user.id;
+    const isReviewerOrAdmin = ["REVIEWER", "ADMIN", "SUPER_ADMIN"].includes(user.role);
+
+    if (!isOwner && !isReviewerOrAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

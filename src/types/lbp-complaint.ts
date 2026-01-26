@@ -163,43 +163,43 @@ export interface CreateLBPComplaintInput {
 
 export interface UpdateLBPComplaintInput {
   // Subject LBP
-  subjectLbpNumber?: string;
-  subjectLbpName?: string;
-  subjectLbpEmail?: string;
-  subjectLbpPhone?: string;
-  subjectLbpCompany?: string;
-  subjectLbpAddress?: string;
-  subjectLbpLicenseTypes?: string[];
-  subjectSightedLicense?: boolean;
-  subjectWorkType?: string;
+  subjectLbpNumber?: string | null;
+  subjectLbpName?: string | null;
+  subjectLbpEmail?: string | null;
+  subjectLbpPhone?: string | null;
+  subjectLbpCompany?: string | null;
+  subjectLbpAddress?: string | null;
+  subjectLbpLicenseTypes?: string[] | null;
+  subjectSightedLicense?: boolean | null;
+  subjectWorkType?: string | null;
 
   // Work details
-  workAddress?: string;
-  workSuburb?: string;
-  workCity?: string;
-  workStartDate?: Date;
-  workEndDate?: Date;
-  workDescription?: string;
-  buildingConsentNumber?: string;
-  buildingConsentDate?: Date;
+  workAddress?: string | null;
+  workSuburb?: string | null;
+  workCity?: string | null;
+  workStartDate?: Date | null;
+  workEndDate?: Date | null;
+  workDescription?: string | null;
+  buildingConsentNumber?: string | null;
+  buildingConsentDate?: Date | null;
 
   // Complaint details
-  groundsForDiscipline?: string[];
-  conductDescription?: string;
-  evidenceSummary?: string;
-  stepsToResolve?: string;
+  groundsForDiscipline?: string[] | null;
+  conductDescription?: string | null;
+  evidenceSummary?: string | null;
+  stepsToResolve?: string | null;
 
   // Evidence
-  attachedPhotoIds?: string[];
-  attachedDefectIds?: string[];
-  witnesses?: WitnessDetails[];
-  additionalAttachments?: string[];
+  attachedPhotoIds?: string[] | null;
+  attachedDefectIds?: string[] | null;
+  witnesses?: WitnessDetails[] | null;
+  additionalAttachments?: string[] | null;
 
   // Complainant (RANZ - usually pre-filled)
-  complainantName?: string;
-  complainantAddress?: string;
-  complainantPhone?: string;
-  complainantEmail?: string;
+  complainantName?: string | null;
+  complainantAddress?: string | null;
+  complainantPhone?: string | null;
+  complainantEmail?: string | null;
 }
 
 // Review input

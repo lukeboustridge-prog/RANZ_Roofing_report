@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { lbpComplaintService } from "@/services/lbp-complaint-service";
 import { z } from "zod";
+import type { LBPComplaintStatus } from "@prisma/client";
 
 const createComplaintSchema = z.object({
   reportId: z.string().min(1, "Report ID is required"),
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status") as Parameters<typeof lbpComplaintService.listComplaints>[0]["status"];
+    const status = searchParams.get("status") as LBPComplaintStatus | null;
     const page = parseInt(searchParams.get("page") || "1");
     const pageSize = parseInt(searchParams.get("pageSize") || "20");
 

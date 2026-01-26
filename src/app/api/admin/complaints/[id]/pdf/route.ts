@@ -52,8 +52,11 @@ export async function GET(
     // Generate PDF (service fetches complaint internally)
     const pdfBuffer = await lbpComplaintPDFService.generateComplaintPDF(id);
 
+    // Convert NodeJS Buffer to Uint8Array for Response
+    const pdfUint8Array = new Uint8Array(pdfBuffer);
+
     // Return PDF as download
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfUint8Array, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { checkRateLimit, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
 
 interface HealthStatus {
   status: "healthy" | "degraded" | "unhealthy";
@@ -11,7 +12,24 @@ interface HealthStatus {
   };
 }
 
-export async function GET() {
+/**
+ * GET /api/health
+ * Health check endpoint - rate limited to prevent abuse
+ * Note: This endpoint is intentionally public for monitoring services,
+ * but rate limited to prevent information disclosure attacks.
+ */
+export async function GET(request: NextRequest) {
+  // Apply strict rate limiting to prevent abuse
+  const rateLimitResult = await checkRateLimit(
+    request,
+    RATE_LIMIT_PRESETS.strict
+  );
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429 }
+    );
+  }
   const startTime = Date.now();
   const checks: HealthStatus["checks"] = {
     database: { status: "down" },
@@ -48,11 +66,10 @@ export async function GET() {
     status = "degraded";
   }
 
-  const response: HealthStatus = {
+  // Return minimal info publicly - don't expose internal details
+  const response = {
     status,
     timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version || "1.0.0",
-    checks,
   };
 
   const statusCode = status === "healthy" ? 200 : status === "degraded" ? 200 : 503;

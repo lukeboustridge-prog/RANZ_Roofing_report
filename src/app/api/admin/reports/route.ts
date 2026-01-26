@@ -1,12 +1,17 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { rateLimit, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
 
 /**
  * GET /api/admin/reports - List all reports with filters (admin/reviewer only)
  * Supports filtering by status, inspector, date range, and search
  */
 export async function GET(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.standard);
+  if (rateLimitResult) return rateLimitResult;
+
   try {
     const { userId } = await auth();
 

@@ -2,8 +2,37 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * Rate Limiting Utility
- * Simple in-memory rate limiter for API endpoints
- * Note: For production with multiple server instances, use Redis-based rate limiting
+ *
+ * This implementation uses an in-memory store suitable for:
+ * - Development environments
+ * - Single-instance deployments
+ * - Low-traffic applications
+ *
+ * PRODUCTION DEPLOYMENT WARNING:
+ * For production with multiple server instances or serverless deployments
+ * (e.g., Vercel, AWS Lambda), this in-memory implementation will NOT work
+ * correctly because each instance has its own memory space.
+ *
+ * For production, replace with a distributed rate limiter using:
+ * - Upstash Redis (@upstash/ratelimit) - Recommended for serverless
+ * - Redis with ioredis
+ * - Cloudflare Rate Limiting (at edge)
+ *
+ * Example with Upstash:
+ * ```typescript
+ * import { Ratelimit } from "@upstash/ratelimit";
+ * import { Redis } from "@upstash/redis";
+ *
+ * const redis = new Redis({
+ *   url: process.env.UPSTASH_REDIS_URL,
+ *   token: process.env.UPSTASH_REDIS_TOKEN,
+ * });
+ *
+ * const ratelimit = new Ratelimit({
+ *   redis,
+ *   limiter: Ratelimit.slidingWindow(100, "1m"),
+ * });
+ * ```
  */
 
 interface RateLimitEntry {
