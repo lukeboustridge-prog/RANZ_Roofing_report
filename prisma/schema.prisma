@@ -658,6 +658,10 @@ model ComplianceAssessment {
   checklistResults     Json
   nonComplianceSummary String? @db.Text
 
+  // Risk & Scope Assessment Wizard Data
+  // Stores the user's answers from the compliance wizard evaluation
+  wizardData Json?   // { pathway, scope, pitch, complex[], age, consent_status, b_type, variation, exec_task, discovery, licence, supervision, completion }
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

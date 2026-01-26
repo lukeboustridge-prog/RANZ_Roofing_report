@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   Card,
@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ComplianceToggle } from "@/components/form/ComplianceToggle";
+import { RiskAssessmentForm } from "@/components/compliance";
+import { type WizardInputs } from "@/lib/compliance";
 import {
   ArrowLeft,
   ArrowRight,
@@ -77,7 +79,6 @@ const STATUS_COLORS: Record<ComplianceStatus, string> = {
 
 export default function ComplianceAssessmentPage() {
   const params = useParams();
-  const router = useRouter();
   const reportId = params.id as string;
 
   // State
@@ -93,6 +94,9 @@ export default function ComplianceAssessmentPage() {
     new Set()
   );
   const [activeTab, setActiveTab] = useState<string>("all");
+
+  // Risk Assessment Wizard State
+  const [wizardData, setWizardData] = useState<WizardInputs | null>(null);
 
   // Fetch checklists and existing assessment
   useEffect(() => {
@@ -116,6 +120,10 @@ export default function ComplianceAssessmentPage() {
             setNonComplianceSummary(
               assessmentData.data.nonComplianceSummary || ""
             );
+            // Load wizard data if it exists
+            if (assessmentData.data.wizardData) {
+              setWizardData(assessmentData.data.wizardData as WizardInputs);
+            }
           }
         }
       } catch (err) {
@@ -131,13 +139,13 @@ export default function ComplianceAssessmentPage() {
   // Auto-save every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      if (Object.keys(results).length > 0) {
+      if (Object.keys(results).length > 0 || wizardData) {
         handleSave(true);
       }
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [results, nonComplianceSummary]);
+  }, [results, nonComplianceSummary, wizardData]);
 
   // Update item status
   const updateItemStatus = (
@@ -210,6 +218,7 @@ export default function ComplianceAssessmentPage() {
         body: JSON.stringify({
           checklistResults: results,
           nonComplianceSummary,
+          wizardData,
         }),
       });
 
@@ -226,6 +235,12 @@ export default function ComplianceAssessmentPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Handle wizard data save
+  const handleWizardSave = async (inputs: WizardInputs) => {
+    setWizardData(inputs);
+    await handleSave(false);
   };
 
   // Calculate completion percentage
@@ -339,6 +354,14 @@ export default function ComplianceAssessmentPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Risk & Scope Assessment */}
+      <RiskAssessmentForm
+        initialData={wizardData}
+        onInputsChange={setWizardData}
+        onSave={handleWizardSave}
+        saving={saving}
+      />
 
       {/* Standard Tabs */}
       {Object.keys(checklists).length > 1 && (

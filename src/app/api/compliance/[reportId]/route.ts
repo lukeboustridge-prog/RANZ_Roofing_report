@@ -1,11 +1,35 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
+
+// Wizard data schema for Risk & Scope Assessment
+const wizardDataSchema = z.object({
+  pathway: z.enum(["planning", "execution"]).nullable(),
+  scope: z.enum(["new", "replace_same", "replace_change"]).nullable().optional(),
+  pitch: z.enum(["standard", "low", "zero"]).optional(),
+  complex: z.array(z.enum([
+    "gutter", "skillion", "truss", "dormer", "container",
+    "attic_storage", "h1_upgrade", "sips", "solar", "asbestos", "none"
+  ])).optional(),
+  age: z.enum(["old", "young"]).nullable().optional(),
+  consent_status: z.enum(["yes", "emergency", "no_check"]).nullable().optional(),
+  b_type: z.enum(["residential", "rental", "commercial"]).nullable().optional(),
+  variation: z.enum(["yes", "no"]).nullable().optional(),
+  exec_task: z.enum([
+    "finish_eaves", "flashings", "penetration", "substitution", "insulation", "none"
+  ]).optional(),
+  discovery: z.enum(["structural", "checked_ok", "none"]).nullable().optional(),
+  licence: z.enum(["yes", "no"]).nullable().optional(),
+  supervision: z.enum(["self", "check", "remote"]).nullable().optional(),
+  completion: z.enum(["in_progress", "finished", "dispute", "terminated"]).nullable().optional(),
+}).nullable().optional();
 
 const complianceAssessmentSchema = z.object({
   checklistResults: z.record(z.string(), z.record(z.string(), z.string())),
   nonComplianceSummary: z.string().optional().nullable(),
+  wizardData: wizardDataSchema,
 });
 
 /**
@@ -63,6 +87,7 @@ export async function GET(
         reportId: assessment.reportId,
         checklistResults: assessment.checklistResults,
         nonComplianceSummary: assessment.nonComplianceSummary,
+        wizardData: assessment.wizardData,
         createdAt: assessment.createdAt,
         updatedAt: assessment.updatedAt,
       },
@@ -123,17 +148,24 @@ export async function POST(
     const body = await request.json();
     const validatedData = complianceAssessmentSchema.parse(body);
 
+    // Prepare wizardData - convert null to Prisma.JsonNull for proper DB storage
+    const wizardDataValue = validatedData.wizardData
+      ? (validatedData.wizardData as Prisma.InputJsonValue)
+      : Prisma.JsonNull;
+
     // Upsert compliance assessment
     const assessment = await prisma.complianceAssessment.upsert({
       where: { reportId },
       create: {
         reportId,
-        checklistResults: validatedData.checklistResults as object,
+        checklistResults: validatedData.checklistResults as Prisma.InputJsonValue,
         nonComplianceSummary: validatedData.nonComplianceSummary,
+        wizardData: wizardDataValue,
       },
       update: {
-        checklistResults: validatedData.checklistResults as object,
+        checklistResults: validatedData.checklistResults as Prisma.InputJsonValue,
         nonComplianceSummary: validatedData.nonComplianceSummary,
+        wizardData: wizardDataValue,
       },
     });
 
@@ -157,6 +189,7 @@ export async function POST(
         reportId: assessment.reportId,
         checklistResults: assessment.checklistResults,
         nonComplianceSummary: assessment.nonComplianceSummary,
+        wizardData: assessment.wizardData,
         createdAt: assessment.createdAt,
         updatedAt: assessment.updatedAt,
       },
