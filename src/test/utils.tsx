@@ -154,6 +154,90 @@ export function createMockPhoto(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/**
+ * Create mock LBP complaint data for tests
+ */
+export function createMockLBPComplaint(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "test-complaint-id",
+    complaintNumber: "RANZ-LBP-2025-00001",
+    reportId: "test-report-id",
+    status: "DRAFT",
+    workAddress: "123 Test Street",
+    workCity: "Auckland",
+    workStartDate: new Date("2024-06-15"),
+    workDescription: "Roof installation work",
+    conductDescription: "Description of conduct issues",
+    evidenceSummary: "Summary of evidence",
+    groundsForDiscipline: ["NEGLIGENCE", "INCOMPETENCE"],
+    subjectLbpNumber: "BP123456",
+    subjectLbpName: "Test Builder",
+    subjectLbpLicenseTypes: ["ROOFING"],
+    complainantName: "Roofing Association of New Zealand",
+    complainantAddress: "PO Box 12345, Auckland",
+    complainantPhone: "+64 9 123 4567",
+    complainantEmail: "admin@ranz.org.nz",
+    complainantRelation: "Industry body representing roofing professionals",
+    preparedBy: "admin-user-id",
+    preparedByName: "Admin User",
+    preparedByEmail: "admin@ranz.org.nz",
+    attachedPhotoIds: ["photo-1", "photo-2"],
+    attachedDefectIds: ["defect-1"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
+/**
+ * Create mock roof element data for tests
+ */
+export function createMockRoofElement(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "test-element-id",
+    reportId: "test-report-id",
+    elementType: "ROOF_CLADDING",
+    location: "Main roof - North elevation",
+    claddingType: "Corrugated",
+    claddingProfile: "Corrugate",
+    material: "Steel",
+    manufacturer: "Steel & Tube",
+    colour: "Grey Friars",
+    pitch: 15.0,
+    area: 120.5,
+    ageYears: 5,
+    conditionRating: "FAIR",
+    conditionNotes: "Minor surface corrosion observed",
+    meetsCop: true,
+    meetsE2: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
+/**
+ * Create mock compliance assessment data for tests
+ */
+export function createMockComplianceAssessment(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "test-compliance-id",
+    reportId: "test-report-id",
+    assessmentType: "E2_EXTERNAL_MOISTURE",
+    overallCompliance: "COMPLIANT",
+    checklistData: {
+      items: [
+        { id: "1", description: "Roof pitch meets minimum", compliant: true },
+        { id: "2", description: "Flashings properly installed", compliant: true },
+      ],
+    },
+    notes: "All E2 requirements met",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
 // Re-export everything from testing-library
 export * from "@testing-library/react";
 export { userEvent };

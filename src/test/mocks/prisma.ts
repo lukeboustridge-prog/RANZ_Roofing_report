@@ -60,6 +60,51 @@ export const mockPrismaClient = {
     findMany: vi.fn(),
     create: vi.fn(),
   },
+  lBPComplaint: {
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    count: vi.fn(),
+  },
+  video: {
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    count: vi.fn(),
+  },
+  document: {
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    count: vi.fn(),
+  },
+  complianceAssessment: {
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    upsert: vi.fn(),
+    delete: vi.fn(),
+  },
+  reviewComment: {
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    count: vi.fn(),
+  },
   reportTemplate: {
     findUnique: vi.fn(),
     findFirst: vi.fn(),
@@ -88,9 +133,11 @@ export function resetPrismaMocks() {
   });
 }
 
-// Mock the prisma import
+// Mock the prisma import - exports both named and default
 vi.mock("@/lib/db", () => ({
+  prisma: mockPrismaClient,
   default: mockPrismaClient,
 }));
 
+export { mockPrismaClient as prisma };
 export default mockPrismaClient;
