@@ -172,6 +172,7 @@ model Report {
   complianceAssessment ComplianceAssessment?
   reviewComments       ReviewComment[]
   shares               ReportShare[]
+  lbpComplaints        LBPComplaint[]
 
   // Revision tracking
   revisionRound Int @default(0) // 0 = initial submission, 1+ = resubmissions
@@ -706,4 +707,122 @@ enum CommentSeverity {
   ISSUE       // Should be addressed
   NOTE        // Informational feedback
   SUGGESTION  // Optional improvement
+}
+
+// ============================================
+// LBP COMPLAINT SYSTEM
+// ============================================
+
+model LBPComplaint {
+  id                    String             @id @default(cuid())
+  complaintNumber       String             @unique // Format: RANZ-LBP-YYYY-NNNNN
+
+  // Links to source report
+  reportId              String
+  report                Report             @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  // Complaint details
+  status                LBPComplaintStatus @default(DRAFT)
+  groundsForDiscipline  String[] // Array of grounds (Building Act 317 sections)
+  conductDescription    String             @db.Text
+  evidenceSummary       String             @db.Text
+  stepsToResolve        String?            @db.Text // Steps taken before complaint
+
+  // Subject LBP details (the person being complained about)
+  subjectLbpNumber      String
+  subjectLbpName        String
+  subjectLbpEmail       String?
+  subjectLbpPhone       String?
+  subjectLbpCompany     String?
+  subjectLbpAddress     String?
+  subjectLbpLicenseTypes String[] // Roofing, Design, Site, etc.
+  subjectSightedLicense Boolean            @default(false)
+  subjectWorkType       String? // "carried_out", "supervised", "both"
+
+  // Work details
+  workAddress           String
+  workSuburb            String?
+  workCity              String?
+  workStartDate         DateTime?
+  workEndDate           DateTime?
+  workDescription       String             @db.Text
+  buildingConsentNumber String?
+  buildingConsentDate   DateTime?
+
+  // Witnesses (JSON array of witness objects)
+  witnesses             Json? // [{name, phone, email, role, details}]
+
+  // Evidence attachments (references to existing photos/defects)
+  attachedPhotoIds      String[]
+  attachedDefectIds     String[]
+  inspectorReportUrl    String?
+  additionalAttachments String[] // URLs to other evidence
+
+  // Complainant details (RANZ)
+  complainantName       String             @default("Roofing Association of New Zealand")
+  complainantAddress    String?
+  complainantPhone      String?
+  complainantEmail      String?
+  complainantRelation   String             @default("Third-party inspector")
+
+  // Preparation & Review
+  preparedBy            String // Admin user ID
+  preparedByName        String
+  preparedByEmail       String
+  preparedAt            DateTime           @default(now())
+
+  reviewedBy            String? // Senior admin user ID
+  reviewedByName        String?
+  reviewedAt            DateTime?
+  reviewNotes           String?            @db.Text
+
+  // Digital signature
+  signedBy              String? // Admin user ID
+  signedByName          String?
+  signatureData         String? // Base64 signature image
+  signedAt              DateTime?
+  declarationAccepted   Boolean            @default(false)
+
+  // Submission tracking
+  submittedBy           String? // Admin who clicked submit
+  submittedByName       String?
+  submittedAt           DateTime?
+  submissionMethod      String? // "EMAIL", "POSTAL"
+  submissionEmail       String? // Email sent to
+  submissionConfirmation String? // Email send confirmation ID
+
+  // Generated documents
+  complaintPdfUrl       String?
+  complaintPdfHash      String? // SHA-256 for integrity
+  evidencePackageUrl    String?
+  evidencePackageHash   String?
+
+  // BPB response tracking
+  bpbReference          String? // BPB case number if provided
+  bpbAcknowledgedAt     DateTime?
+  bpbDecision           String? // "PROCEED_TO_HEARING", "DISMISSED", etc.
+  bpbDecisionDate       DateTime?
+  bpbOutcome            String?            @db.Text
+  bpbNotes              String?            @db.Text
+
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([reportId])
+  @@index([status])
+  @@index([subjectLbpNumber])
+  @@index([complaintNumber])
+}
+
+enum LBPComplaintStatus {
+  DRAFT // Being prepared by admin
+  PENDING_REVIEW // Awaiting senior admin review
+  READY_TO_SUBMIT // Approved, ready to send
+  SUBMITTED // Sent to BPB
+  ACKNOWLEDGED // BPB confirmed receipt
+  UNDER_INVESTIGATION // BPB investigating
+  HEARING_SCHEDULED // Going to hearing
+  DECIDED // BPB made decision
+  CLOSED // Case closed
+  WITHDRAWN // Complaint withdrawn
 }

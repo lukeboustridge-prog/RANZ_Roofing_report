@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { Header } from "@/components/layout/header";
-import { MobileNav } from "@/components/layout/mobile-nav";
+import { AdminMobileNav } from "@/components/layout/admin-mobile-nav";
 import { Toaster } from "@/components/ui/toaster";
 
 export default function AdminLayout({
@@ -19,7 +19,7 @@ export default function AdminLayout({
       <AdminSidebar />
 
       {/* Mobile navigation */}
-      <MobileNav open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <AdminMobileNav open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       {/* Main content area */}
       <div className="lg:pl-64">

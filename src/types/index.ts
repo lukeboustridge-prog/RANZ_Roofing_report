@@ -13,6 +13,8 @@ import type {
   PhotoType,
   ElementType,
   ConditionRating,
+  LBPComplaint,
+  LBPComplaintStatus,
 } from "@prisma/client";
 
 // Re-export Prisma types
@@ -31,7 +33,12 @@ export type {
   PhotoType,
   ElementType,
   ConditionRating,
+  LBPComplaint,
+  LBPComplaintStatus,
 };
+
+// Re-export LBP Complaint types
+export * from "./lbp-complaint";
 
 // Extended types with relations
 export type ReportWithRelations = Report & {

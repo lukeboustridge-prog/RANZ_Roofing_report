@@ -12,12 +12,14 @@ import {
   ArrowLeft,
   Shield,
   ClipboardCheck,
+  AlertTriangle,
 } from "lucide-react";
 
 const navigation = [
   { name: "Admin Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Review Queue", href: "/admin/reviews", icon: ClipboardCheck },
   { name: "All Reports", href: "/admin/reports", icon: FileText },
+  { name: "LBP Complaints", href: "/admin/complaints", icon: AlertTriangle },
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Settings", href: "/admin/settings", icon: Settings },

@@ -176,7 +176,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -191,6 +191,26 @@ export default async function AdminDashboardPage() {
             <Button asChild className="w-full">
               <Link href="/admin/reviews">
                 View Queue
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              LBP Complaints
+            </CardTitle>
+            <CardDescription>
+              Manage Building Practitioners Board complaints
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/admin/complaints">
+                View Complaints
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
