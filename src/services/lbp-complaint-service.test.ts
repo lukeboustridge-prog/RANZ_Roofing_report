@@ -481,6 +481,192 @@ describe("LBPComplaintService", () => {
     });
   });
 
+  describe("markAsSubmitted", () => {
+    const mockAdmin = createMockUser({ id: "admin-1", role: "ADMIN", name: "Admin User" });
+
+    it("should mark complaint as submitted with submission data", async () => {
+      mockPrismaClient.user.findUnique.mockResolvedValue(mockAdmin);
+      mockPrismaClient.lBPComplaint.findUnique.mockResolvedValue(
+        createMockLBPComplaint({ status: "READY_TO_SUBMIT" })
+      );
+      mockPrismaClient.lBPComplaint.update.mockResolvedValue(
+        createMockLBPComplaint({
+          status: "SUBMITTED",
+          submittedAt: new Date(),
+          submissionMethod: "EMAIL",
+        })
+      );
+      mockPrismaClient.auditLog.create.mockResolvedValue({});
+
+      const submissionData = {
+        submissionEmail: "complaints@lbp.govt.nz",
+        submissionConfirmation: "CONF-12345",
+        complaintPdfUrl: "https://storage.example.com/complaint.pdf",
+        complaintPdfHash: "abc123hash",
+      };
+
+      const result = await lbpComplaintService.markAsSubmitted(
+        "complaint-id",
+        "admin-1",
+        submissionData
+      );
+
+      expect(result.status).toBe("SUBMITTED");
+      expect(mockPrismaClient.lBPComplaint.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: "SUBMITTED",
+            submissionMethod: "EMAIL",
+          }),
+        })
+      );
+    });
+
+    it("should throw error if admin not found", async () => {
+      mockPrismaClient.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        lbpComplaintService.markAsSubmitted("complaint-id", "invalid-admin", {
+          submissionEmail: "test@example.com",
+          submissionConfirmation: "CONF-123",
+        })
+      ).rejects.toThrow("Admin not found");
+    });
+
+    it("should throw error if complaint not found", async () => {
+      mockPrismaClient.user.findUnique.mockResolvedValue(mockAdmin);
+      mockPrismaClient.lBPComplaint.findUnique.mockResolvedValue(null);
+
+      await expect(
+        lbpComplaintService.markAsSubmitted("invalid-complaint", "admin-1", {
+          submissionEmail: "test@example.com",
+          submissionConfirmation: "CONF-123",
+        })
+      ).rejects.toThrow("Complaint not found");
+    });
+  });
+
+  describe("updateBPBResponse", () => {
+    it("should update status to ACKNOWLEDGED when BPB acknowledges", async () => {
+      mockPrismaClient.lBPComplaint.findUnique.mockResolvedValue(
+        createMockLBPComplaint({ status: "SUBMITTED", reportId: "report-1" })
+      );
+      mockPrismaClient.lBPComplaint.update.mockResolvedValue(
+        createMockLBPComplaint({ status: "ACKNOWLEDGED" })
+      );
+      mockPrismaClient.auditLog.create.mockResolvedValue({});
+
+      const result = await lbpComplaintService.updateBPBResponse(
+        "complaint-id",
+        "admin-1",
+        { bpbAcknowledgedAt: new Date() }
+      );
+
+      expect(result.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("should update status to DECIDED when BPB makes decision", async () => {
+      mockPrismaClient.lBPComplaint.findUnique.mockResolvedValue(
+        createMockLBPComplaint({ status: "UNDER_INVESTIGATION", reportId: "report-1" })
+      );
+      mockPrismaClient.lBPComplaint.update.mockResolvedValue(
+        createMockLBPComplaint({ status: "DECIDED" })
+      );
+      mockPrismaClient.auditLog.create.mockResolvedValue({});
+
+      const result = await lbpComplaintService.updateBPBResponse(
+        "complaint-id",
+        "admin-1",
+        { bpbDecision: "LICENSE_SUSPENDED" }
+      );
+
+      expect(result.status).toBe("DECIDED");
+    });
+
+    it("should throw error if complaint not found", async () => {
+      mockPrismaClient.lBPComplaint.findUnique.mockResolvedValue(null);
+
+      await expect(
+        lbpComplaintService.updateBPBResponse("invalid-id", "admin-1", {})
+      ).rejects.toThrow("Complaint not found");
+    });
+
+    it("should keep current status if no status-changing fields provided", async () => {
+      mockPrismaClient.lBPComplaint.findUnique.mockResolvedValue(
+        createMockLBPComplaint({ status: "SUBMITTED", reportId: "report-1" })
+      );
+      mockPrismaClient.lBPComplaint.update.mockResolvedValue(
+        createMockLBPComplaint({ status: "SUBMITTED" })
+      );
+      mockPrismaClient.auditLog.create.mockResolvedValue({});
+
+      const result = await lbpComplaintService.updateBPBResponse(
+        "complaint-id",
+        "admin-1",
+        { bpbNotes: "Additional information received" }
+      );
+
+      expect(result.status).toBe("SUBMITTED");
+    });
+  });
+
+  describe("submitForReview validation", () => {
+    it("should throw error if required fields are missing", async () => {
+      // Complaint with missing required fields
+      const incompleteComplaint = createMockLBPComplaint({
+        status: "DRAFT",
+        subjectLbpNumber: "", // Missing
+        subjectLbpName: "", // Missing
+        workDescription: "", // Missing
+        conductDescription: "", // Missing
+        evidenceSummary: "", // Missing
+        groundsForDiscipline: [], // Empty array
+        attachedPhotoIds: [], // Empty array
+      });
+      mockPrismaClient.lBPComplaint.findUnique.mockResolvedValue(incompleteComplaint);
+
+      await expect(
+        lbpComplaintService.submitForReview("complaint-id", "admin-1")
+      ).rejects.toThrow(/Missing required fields/);
+    });
+
+    it("should throw error if grounds for discipline is empty array", async () => {
+      const complaintWithEmptyGrounds = createMockLBPComplaint({
+        status: "DRAFT",
+        subjectLbpNumber: "BP123456",
+        subjectLbpName: "Test Builder",
+        workDescription: "Description",
+        conductDescription: "Conduct",
+        evidenceSummary: "Evidence",
+        groundsForDiscipline: [], // Empty
+        attachedPhotoIds: ["photo-1"],
+      });
+      mockPrismaClient.lBPComplaint.findUnique.mockResolvedValue(complaintWithEmptyGrounds);
+
+      await expect(
+        lbpComplaintService.submitForReview("complaint-id", "admin-1")
+      ).rejects.toThrow(/Missing required fields.*groundsForDiscipline/);
+    });
+
+    it("should throw error if photos not attached", async () => {
+      const complaintWithoutPhotos = createMockLBPComplaint({
+        status: "DRAFT",
+        subjectLbpNumber: "BP123456",
+        subjectLbpName: "Test Builder",
+        workDescription: "Description",
+        conductDescription: "Conduct",
+        evidenceSummary: "Evidence",
+        groundsForDiscipline: ["NEGLIGENCE"],
+        attachedPhotoIds: [], // Empty
+      });
+      mockPrismaClient.lBPComplaint.findUnique.mockResolvedValue(complaintWithoutPhotos);
+
+      await expect(
+        lbpComplaintService.submitForReview("complaint-id", "admin-1")
+      ).rejects.toThrow(/Missing required fields.*attachedPhotoIds/);
+    });
+  });
+
   describe("calculateHash", () => {
     it("should calculate SHA-256 hash of data", () => {
       const data = Buffer.from("test data");
