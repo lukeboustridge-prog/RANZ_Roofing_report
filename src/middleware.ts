@@ -44,12 +44,11 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // All other routes require authentication
-  const { userId, sessionClaims } = await auth();
+  // Use auth.protect() which redirects to sign-in if not authenticated
+  await auth.protect();
 
-  if (!userId) {
-    // Not authenticated - redirect to sign in
-    return auth.redirectToSignIn({ returnBackUrl: req.url });
-  }
+  // Get session info after protection is established
+  const { userId, sessionClaims } = await auth();
 
   // Check onboarding status
   const onboardingCompleted =
