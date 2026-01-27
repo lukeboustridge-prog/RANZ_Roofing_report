@@ -6,6 +6,17 @@ import prisma from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 /**
+ * GET /api/onboarding/bypass
+ * Test endpoint to verify the bypass route is accessible
+ */
+export async function GET() {
+  return NextResponse.json({
+    message: "Bypass endpoint is accessible. Use POST with { email: 'your@email.com' } to bypass onboarding.",
+    usage: "POST /api/onboarding/bypass with body: { email: 'your@email.com' }",
+  });
+}
+
+/**
  * POST /api/onboarding/bypass
  * Emergency bypass to complete onboarding when the main flow is broken.
  * This is a temporary workaround - remove after fixing the auth issue.

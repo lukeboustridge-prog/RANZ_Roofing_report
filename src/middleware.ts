@@ -22,6 +22,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks(.*)",
+  "/api/onboarding/bypass(.*)",  // Temporary bypass endpoint
   "/shared/(.*)",
   "/inspectors(.*)",
 ]);
