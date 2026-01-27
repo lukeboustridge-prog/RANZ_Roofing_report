@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-// Define protected routes that require authentication
+// Define protected routes that require authentication (pages)
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/reports(.*)",
@@ -26,11 +26,26 @@ const isPublicRoute = createRouteMatcher([
   "/inspectors(.*)", // Public inspector directory
 ]);
 
-// Define API routes - these skip onboarding redirect but still need auth processing
-const isApiRoute = createRouteMatcher(["/api(.*)"]);
+// Define protected API routes (need auth but no onboarding redirect)
+const isProtectedApiRoute = createRouteMatcher([
+  "/api/onboarding(.*)",
+  "/api/user(.*)",
+  "/api/auth/me(.*)",
+  "/api/reports(.*)",
+  "/api/photos(.*)",
+  "/api/defects(.*)",
+  "/api/elements(.*)",
+  "/api/documents(.*)",
+  "/api/notifications(.*)",
+  "/api/assignments(.*)",
+  "/api/analytics(.*)",
+  "/api/admin(.*)",
+  "/api/compliance(.*)",
+  "/api/defect-templates(.*)",
+  "/api/templates(.*)",
+]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId, sessionClaims } = await auth();
   const url = req.nextUrl.clone();
 
   // Allow public routes without any checks
@@ -38,21 +53,20 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next();
   }
 
-  // For protected routes, require authentication
-  if (isProtectedRoute(req) || isOnboardingRoute(req)) {
-    if (!userId) {
-      await auth.protect();
-      return;
-    }
-  }
-
-  // API routes: skip onboarding redirect but let request continue
-  // Don't return early - let Clerk fully process auth context
-  if (isApiRoute(req)) {
-    // API routes handle their own auth via auth() call in route handlers
-    // Just skip the onboarding redirect logic below
+  // Protected API routes: require auth but skip onboarding redirect
+  // This ensures auth context is properly set up for route handlers
+  if (isProtectedApiRoute(req)) {
+    await auth.protect();
     return NextResponse.next();
   }
+
+  // For protected pages and onboarding, require authentication
+  if (isProtectedRoute(req) || isOnboardingRoute(req)) {
+    await auth.protect();
+  }
+
+  // Get auth info after protection is established
+  const { userId, sessionClaims } = await auth();
 
   // Check onboarding status from session claims
   const onboardingCompleted =
