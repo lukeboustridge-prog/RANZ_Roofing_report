@@ -11,12 +11,25 @@ Font.register({
   ],
 });
 
-// RANZ Brand Colors
+// RANZ Brand Colors - 2025 Brand Guidelines
 export const colors = {
+  // Primary brand colors
   primary: "#2d5c8f",
   primaryDark: "#1c3a5c",
   primaryLight: "#4a7ab0",
   accent: "#e65100",
+
+  // RANZ Core - Charcoal family (from brand guidelines)
+  charcoal: "#3c4b5d",
+  charcoalDark: "#2c3546",
+  charcoalLight: "#7d8c9d",
+  charcoalExtraDark: "#2a2e31",
+
+  // Secondary colors from RANZ
+  darkBlue: "#00417a",
+  ranzRed: "#be4039",
+  ranzYellow: "#fcb613",
+  ranzSilver: "#939598",
 
   // Status colors
   critical: "#dc2626",
@@ -29,16 +42,35 @@ export const colors = {
   fair: "#ca8a04",
   poor: "#ea580c",
 
+  // Extended status
+  green: "#16a34a",
+  yellow: "#ca8a04",
+  orange: "#ea580c",
+  red: "#dc2626",
+
+  // Compliance colors
+  pass: "#16a34a",
+  fail: "#dc2626",
+  partial: "#ca8a04",
+  na: "#6b7280",
+
   // Neutrals
   black: "#111827",
+  gray900: "#111827",
   gray700: "#374151",
   gray500: "#6b7280",
   gray300: "#d1d5db",
   gray100: "#f3f4f6",
+  gray50: "#f9fafb",
   white: "#ffffff",
+
+  // Backgrounds
+  backgroundLight: "#f9fafb",
+  backgroundAlt: "#f3f4f6",
 
   // Borders
   border: "#e5e7eb",
+  borderDark: "#d1d5db",
 };
 
 // Shared styles

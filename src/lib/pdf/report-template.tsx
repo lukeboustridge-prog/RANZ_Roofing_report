@@ -9,6 +9,13 @@ import {
   Image,
 } from "./react-pdf-wrapper";
 
+// Import new PDF sections
+import { CoverPage } from "./sections/cover-page";
+import { TableOfContents } from "./sections/toc";
+import { Declaration } from "./sections/declaration";
+import { EvidenceCertificate } from "./sections/evidence-certificate";
+import { PhotoAppendix } from "./sections/photo-appendix";
+
 // RANZ brand colors - From Brand Guidelines 2025
 const colors = {
   // Core - Charcoal family (primary brand color)
@@ -751,9 +758,80 @@ export function ReportPDF({ report }: ReportPDFProps) {
   const hasComplianceData = complianceStats.total > 0;
   const hasNonCompliance = complianceStats.fail > 0 || complianceStats.partial > 0;
 
+  // Transform photos for new sections
+  const photosForSections = report.photos.map((photo, index) => ({
+    id: `photo-${index}`,
+    url: photo.url,
+    caption: photo.caption,
+    photoType: photo.photoType,
+    filename: photo.filename || `Photo_${index + 1}.jpg`,
+    originalHash: photo.originalHash || "",
+    capturedAt: photo.capturedAt ? new Date(photo.capturedAt) : null,
+    uploadedAt: photo.uploadedAt ? new Date(photo.uploadedAt) : null,
+    gpsLat: photo.gpsLat,
+    gpsLng: photo.gpsLng,
+    hashVerified: photo.hashVerified ?? false,
+  }));
+
+  // Transform defects for photo appendix
+  const defectsForAppendix = report.defects.map((defect) => ({
+    id: `defect-${defect.defectNumber}`,
+    defectNumber: defect.defectNumber,
+    title: defect.title,
+    location: defect.location,
+  }));
+
+  // Transform elements for photo appendix
+  const elementsForAppendix = report.roofElements.map((element) => ({
+    id: element.id,
+    elementType: element.elementType,
+    location: element.location,
+  }));
+
   return (
     <Document>
-      {/* Cover Page */}
+      {/* NEW: Professional Cover Page */}
+      <CoverPage
+        reportNumber={report.reportNumber}
+        propertyAddress={report.propertyAddress}
+        propertyCity={report.propertyCity}
+        propertyRegion={report.propertyRegion}
+        inspectionDate={new Date(report.inspectionDate)}
+        inspectionType={report.inspectionType}
+        clientName={report.clientName}
+        inspector={{
+          name: report.inspector.name,
+          lbpNumber: report.inspector.lbpNumber,
+          qualifications: report.inspector.qualifications,
+        }}
+        classification="CONFIDENTIAL"
+      />
+
+      {/* NEW: Table of Contents */}
+      <TableOfContents
+        reportNumber={report.reportNumber}
+        defectCount={report.defects.length}
+        elementCount={report.roofElements.length}
+        photoCount={report.photos.length}
+        hasComplianceAssessment={hasComplianceData}
+      />
+
+      {/* NEW: Expert Witness Declaration (High Court Rules Schedule 4) */}
+      <Declaration
+        reportNumber={report.reportNumber}
+        inspector={{
+          name: report.inspector.name,
+          qualifications: report.inspector.qualifications,
+          lbpNumber: report.inspector.lbpNumber,
+          yearsExperience: report.inspector.yearsExperience,
+        }}
+        inspectionDate={new Date(report.inspectionDate)}
+        propertyAddress={`${report.propertyAddress}, ${report.propertyCity}`}
+        expertDeclaration={report.expertDeclaration || undefined}
+        signedAt={report.signedAt ? new Date(report.signedAt) : null}
+      />
+
+      {/* Property Details Page (formerly Cover Page) */}
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View>
@@ -2408,10 +2486,34 @@ export function ReportPDF({ report }: ReportPDFProps) {
           )}
 
           <View style={styles.footer}>
-            <Text>Report: {report.reportNumber} - Appendix C: Chain of Custody</Text>
+            <Text>Report: {report.reportNumber} - Legacy Evidence Registry</Text>
             <Text render={({ pageNumber }) => `Page ${pageNumber}`} />
           </View>
         </Page>
+      )}
+
+      {/* NEW: Evidence Integrity Certificate */}
+      {report.photos.length > 0 && (
+        <EvidenceCertificate
+          reportNumber={report.reportNumber}
+          inspector={{
+            name: report.inspector.name,
+            email: report.inspector.email,
+          }}
+          inspectionDate={new Date(report.inspectionDate)}
+          photos={photosForSections}
+          signedAt={report.signedAt ? new Date(report.signedAt) : null}
+        />
+      )}
+
+      {/* NEW: Photo Appendix with Full-Size Images */}
+      {report.photos.length > 0 && (
+        <PhotoAppendix
+          reportNumber={report.reportNumber}
+          photos={photosForSections}
+          defects={defectsForAppendix}
+          elements={elementsForAppendix}
+        />
       )}
     </Document>
   );

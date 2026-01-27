@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { Menu, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { OfflineIndicator } from "@/components/offline/OfflineIndicator";
+import { SyncStatusCompact } from "@/components/offline/SyncStatusBar";
 
 const UserButton = dynamic(
   () => import("@clerk/nextjs").then((mod) => mod.UserButton),
@@ -47,6 +49,15 @@ export function Header({ onMenuClick }: HeaderProps) {
         <div className="flex flex-1" />
 
         <div className="flex items-center gap-x-4 lg:gap-x-6">
+          {/* Sync status */}
+          <SyncStatusCompact />
+
+          {/* Online/Offline indicator */}
+          <OfflineIndicator />
+
+          {/* Separator */}
+          <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-[var(--ranz-charcoal-light)]/30" />
+
           {/* User menu */}
           <UserButton
             afterSignOutUrl="/"

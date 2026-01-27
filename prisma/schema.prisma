@@ -30,6 +30,17 @@ model User {
   specialisations String[]
   cvUrl           String?
 
+  // Onboarding tracking
+  onboardingCompleted   Boolean   @default(false)
+  onboardingStep        Int       @default(0)
+  onboardingCompletedAt DateTime?
+
+  // Public profile settings (for inspector directory)
+  isPublicListed     Boolean @default(false)
+  publicBio          String? @db.Text
+  serviceAreas       String[]
+  availabilityStatus AvailabilityStatus @default(AVAILABLE)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -37,6 +48,10 @@ model User {
   assignments    Assignment[]
   reviewComments ReviewComment[] @relation("ReviewComments")
   preferences    UserPreferences?
+  notifications  Notification[]
+
+  @@index([onboardingCompleted])
+  @@index([isPublicListed])
 }
 
 enum UserRole {
@@ -50,6 +65,13 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   PENDING_APPROVAL
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  BUSY
+  ON_LEAVE
+  NOT_ACCEPTING
 }
 
 model UserPreferences {
@@ -829,4 +851,92 @@ enum LBPComplaintStatus {
   DECIDED // BPB made decision
   CLOSED // Case closed
   WITHDRAWN // Complaint withdrawn
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id     String           @id @default(cuid())
+  userId String
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  title   String
+  message String           @db.Text
+  link    String?          // Optional link to relevant page
+
+  // Related entities (optional)
+  reportId     String?
+  assignmentId String?
+
+  // Status
+  read      Boolean   @default(false)
+  readAt    DateTime?
+  dismissed Boolean   @default(false)
+
+  // Metadata
+  metadata Json? // Additional context data
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@index([type])
+}
+
+enum NotificationType {
+  // Report-related
+  REPORT_SUBMITTED      // Report submitted for review
+  REPORT_APPROVED       // Report approved
+  REPORT_REJECTED       // Report needs revision
+  REPORT_COMMENTS       // New comments on report
+  REPORT_FINALIZED      // Report finalized
+  REPORT_SHARED         // Report shared with someone
+
+  // Assignment-related
+  NEW_ASSIGNMENT        // New inspection assignment
+  ASSIGNMENT_REMINDER   // Upcoming assignment reminder
+  ASSIGNMENT_CANCELLED  // Assignment cancelled
+
+  // System notifications
+  SYSTEM_ANNOUNCEMENT   // Platform announcements
+  SYSTEM_MAINTENANCE    // Scheduled maintenance
+  ACCOUNT_UPDATE        // Account changes
+
+  // Onboarding
+  WELCOME               // Welcome notification
+  PROFILE_INCOMPLETE    // Reminder to complete profile
+  ONBOARDING_COMPLETE   // Onboarding completed
+
+  // Sharing
+  SHARE_ACCESSED        // Someone viewed shared report
+  SHARE_EXPIRING        // Share link expiring soon
+}
+
+// ============================================
+// PUSH SUBSCRIPTIONS (Web Push)
+// ============================================
+
+model PushSubscription {
+  id       String @id @default(cuid())
+  userId   String
+  endpoint String @unique
+  p256dh   String // Public key for encryption
+  auth     String // Auth secret
+
+  // Device info
+  userAgent String?
+  deviceName String?
+
+  // Status
+  isActive Boolean @default(true)
+  lastUsed DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isActive])
 }
