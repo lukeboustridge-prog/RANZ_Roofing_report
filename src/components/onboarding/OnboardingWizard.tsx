@@ -108,6 +108,7 @@ export function OnboardingWizard({
       await fetch("/api/onboarding", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           step,
           ...formData,
@@ -138,6 +139,7 @@ export function OnboardingWizard({
       const response = await fetch("/api/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(formData),
       });
 
@@ -151,6 +153,7 @@ export function OnboardingWizard({
         await fetch("/api/notifications", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             type: "ONBOARDING_COMPLETE",
             title: "Welcome to RANZ!",
@@ -196,6 +199,7 @@ export function OnboardingWizard({
       const response = await fetch("/api/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           ...formData,
           // Ensure required field has a value

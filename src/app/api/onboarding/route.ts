@@ -60,9 +60,14 @@ export async function GET() {
 // POST /api/onboarding - Complete onboarding
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const authResult = await auth();
+    const { userId } = authResult;
 
     if (!userId) {
+      console.error("Onboarding POST: No userId found in auth result", {
+        hasSessionId: !!authResult.sessionId,
+        hasSessionClaims: !!authResult.sessionClaims,
+      });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -170,9 +175,14 @@ export async function POST(request: NextRequest) {
 // PATCH /api/onboarding - Update onboarding progress (save step)
 export async function PATCH(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const authResult = await auth();
+    const { userId } = authResult;
 
     if (!userId) {
+      console.error("Onboarding PATCH: No userId found in auth result", {
+        hasSessionId: !!authResult.sessionId,
+        hasSessionClaims: !!authResult.sessionClaims,
+      });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -26,7 +26,7 @@ const isPublicRoute = createRouteMatcher([
   "/inspectors(.*)", // Public inspector directory
 ]);
 
-// Define API routes that should skip onboarding check
+// Define API routes - these skip onboarding redirect but still need auth processing
 const isApiRoute = createRouteMatcher(["/api(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
@@ -46,8 +46,11 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
-  // Skip onboarding checks for API routes (let them handle their own logic)
+  // API routes: skip onboarding redirect but let request continue
+  // Don't return early - let Clerk fully process auth context
   if (isApiRoute(req)) {
+    // API routes handle their own auth via auth() call in route handlers
+    // Just skip the onboarding redirect logic below
     return NextResponse.next();
   }
 

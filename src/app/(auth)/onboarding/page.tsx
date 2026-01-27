@@ -35,7 +35,9 @@ export default function OnboardingPage() {
       if (!isUserLoaded || !user) return;
 
       try {
-        const response = await fetch("/api/auth/me");
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+        });
         if (response.ok) {
           const data = await response.json();
 
