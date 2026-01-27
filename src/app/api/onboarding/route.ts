@@ -60,14 +60,26 @@ export async function GET() {
 // POST /api/onboarding - Complete onboarding
 export async function POST(request: NextRequest) {
   try {
+    // Log request headers for debugging
+    const cookieHeader = request.headers.get("cookie");
+    console.log("Onboarding POST: Request received", {
+      hasCookies: !!cookieHeader,
+      cookieLength: cookieHeader?.length || 0,
+      hasClerkSession: cookieHeader?.includes("__session") || cookieHeader?.includes("__clerk"),
+    });
+
     const authResult = await auth();
     const { userId } = authResult;
 
+    console.log("Onboarding POST: Auth result", {
+      userId: userId || "NONE",
+      hasSessionId: !!authResult.sessionId,
+      hasSessionClaims: !!authResult.sessionClaims,
+      sessionId: authResult.sessionId || "NONE",
+    });
+
     if (!userId) {
-      console.error("Onboarding POST: No userId found in auth result", {
-        hasSessionId: !!authResult.sessionId,
-        hasSessionClaims: !!authResult.sessionClaims,
-      });
+      console.error("Onboarding POST: No userId - returning 401");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
