@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { z } from "zod";
 
+// Force dynamic rendering to ensure auth works correctly
+export const dynamic = "force-dynamic";
+
 const onboardingSchema = z.object({
   name: z.string().min(1, "Name is required"),
   phone: z.string().optional().nullable(),
