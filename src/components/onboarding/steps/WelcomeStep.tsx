@@ -5,7 +5,7 @@
  * First step of onboarding - introduces the platform
  */
 
-import { Sparkles, FileText, Shield, Smartphone } from "lucide-react";
+import { Sparkles, FileText, Shield, Smartphone, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -13,6 +13,7 @@ interface WelcomeStepProps {
   userName: string;
   onContinue: () => void;
   onSkip: () => void;
+  isSkipping?: boolean;
 }
 
 const FEATURES = [
@@ -33,7 +34,7 @@ const FEATURES = [
   },
 ];
 
-export function WelcomeStep({ userName, onContinue, onSkip }: WelcomeStepProps) {
+export function WelcomeStep({ userName, onContinue, onSkip, isSkipping }: WelcomeStepProps) {
   return (
     <Card className="bg-white/10 backdrop-blur-sm border-white/20">
       <CardContent className="pt-8 pb-6 px-6 sm:px-10">
@@ -79,9 +80,17 @@ export function WelcomeStep({ userName, onContinue, onSkip }: WelcomeStepProps) 
           <Button
             variant="ghost"
             onClick={onSkip}
-            className="w-full text-white/60 hover:text-white hover:bg-white/10"
+            disabled={isSkipping}
+            className="w-full text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-50"
           >
-            Skip for now
+            {isSkipping ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Skipping...
+              </>
+            ) : (
+              "Skip for now"
+            )}
           </Button>
         </div>
 

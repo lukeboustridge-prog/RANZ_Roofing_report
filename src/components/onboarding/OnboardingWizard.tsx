@@ -6,7 +6,6 @@
  */
 
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -76,7 +75,6 @@ export function OnboardingWizard({
   userData,
   clerkUser,
 }: OnboardingWizardProps) {
-  const router = useRouter();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -169,11 +167,11 @@ export function OnboardingWizard({
         description: "Welcome to RANZ. Redirecting to your dashboard...",
       });
 
-      // Redirect to dashboard after a short delay
-      // Use router.refresh() first to update session claims
+      // Use full page reload to ensure session claims are refreshed
+      // router.push doesn't refresh Clerk session tokens, causing
+      // middleware to redirect back to onboarding
       setTimeout(() => {
-        router.refresh();
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       }, 1500);
     } catch (error) {
       console.error("Failed to complete onboarding:", error);
@@ -190,9 +188,35 @@ export function OnboardingWizard({
     }
   };
 
-  const handleSkip = () => {
-    // Allow skipping to dashboard but mark as incomplete
-    router.push("/dashboard");
+  const handleSkip = async () => {
+    // Skip onboarding by completing with current/minimal data
+    // This prevents middleware from redirecting back to onboarding
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          // Ensure required field has a value
+          name: formData.name || "Inspector",
+        }),
+      });
+
+      if (!response.ok) {
+        // If API fails, show error but still try to navigate
+        console.error("Failed to save skip state");
+      }
+
+      // Use full page reload to refresh session claims
+      window.location.href = "/dashboard";
+    } catch (error) {
+      console.error("Skip error:", error);
+      // Still try to navigate even if save failed
+      window.location.href = "/dashboard";
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderStep = () => {
@@ -203,6 +227,7 @@ export function OnboardingWizard({
             userName={formData.name || clerkUser?.firstName || "there"}
             onContinue={handleNext}
             onSkip={handleSkip}
+            isSkipping={isSubmitting}
           />
         );
       case 1:
@@ -319,6 +344,19 @@ export function OnboardingWizard({
           {renderStep()}
         </motion.div>
       </AnimatePresence>
+
+      {/* Skip link for intermediate steps */}
+      {currentStep > 0 && currentStep < STEPS.length - 1 && (
+        <div className="text-center mt-4">
+          <button
+            onClick={handleSkip}
+            disabled={isSubmitting}
+            className="text-sm text-white/40 hover:text-white/60 underline underline-offset-2 disabled:opacity-50"
+          >
+            {isSubmitting ? "Saving..." : "Skip and complete later"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

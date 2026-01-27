@@ -5,6 +5,7 @@ import prisma from "@/lib/db";
 /**
  * GET /api/auth/me
  * Get current user information
+ * Returns user data directly at root level for compatibility with onboarding
  */
 export async function GET() {
   try {
@@ -24,6 +25,13 @@ export async function GET() {
         status: true,
         lbpNumber: true,
         qualifications: true,
+        phone: true,
+        company: true,
+        address: true,
+        yearsExperience: true,
+        specialisations: true,
+        onboardingCompleted: true,
+        onboardingStep: true,
       },
     });
 
@@ -31,7 +39,9 @@ export async function GET() {
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
-    return NextResponse.json({ user });
+    // Return user data at root level for onboarding page compatibility
+    // Also include nested { user } for other consumers
+    return NextResponse.json({ ...user, user });
   } catch (error) {
     console.error("Error fetching current user:", error);
     return NextResponse.json(
