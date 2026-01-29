@@ -1,4 +1,4 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { getAuthUser, getUserLookupField, getAuthMode } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { z } from "zod";
@@ -21,16 +21,18 @@ const onboardingSchema = z.object({
 });
 
 // GET /api/onboarding - Get current user's onboarding status
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const authUser = await getAuthUser(request);
+    const userId = authUser?.userId;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { [lookupField]: userId },
       select: {
         id: true,
         name: true,
@@ -68,17 +70,15 @@ export async function POST(request: NextRequest) {
     console.log("Onboarding POST: Request received", {
       hasCookies: !!cookieHeader,
       cookieLength: cookieHeader?.length || 0,
-      hasClerkSession: cookieHeader?.includes("__session") || cookieHeader?.includes("__clerk"),
+      authMode: getAuthMode(),
     });
 
-    const authResult = await auth();
-    const { userId } = authResult;
+    const authUser = await getAuthUser(request);
+    const userId = authUser?.userId;
 
     console.log("Onboarding POST: Auth result", {
       userId: userId || "NONE",
-      hasSessionId: !!authResult.sessionId,
-      hasSessionClaims: !!authResult.sessionClaims,
-      sessionId: authResult.sessionId || "NONE",
+      authSource: authUser?.authSource || "NONE",
     });
 
     if (!userId) {
@@ -86,8 +86,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { [lookupField]: userId },
     });
 
     if (!user) {
@@ -121,15 +122,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update Clerk user metadata to mark onboarding as complete
+    // Update Clerk user metadata to mark onboarding as complete (only in Clerk mode)
     // This allows middleware to check without database calls
-    const clerk = await clerkClient();
-    await clerk.users.updateUserMetadata(userId, {
-      publicMetadata: {
-        onboardingCompleted: true,
-        onboardingCompletedAt: new Date().toISOString(),
-      },
-    });
+    if (getAuthMode() === 'clerk') {
+      const { clerkClient } = await import('@clerk/nextjs/server');
+      const clerk = await clerkClient();
+      await clerk.users.updateUserMetadata(userId, {
+        publicMetadata: {
+          onboardingCompleted: true,
+          onboardingCompletedAt: new Date().toISOString(),
+        },
+      });
+    }
 
     // Create user preferences if needed
     try {
@@ -190,19 +194,19 @@ export async function POST(request: NextRequest) {
 // PATCH /api/onboarding - Update onboarding progress (save step)
 export async function PATCH(request: NextRequest) {
   try {
-    const authResult = await auth();
-    const { userId } = authResult;
+    const authUser = await getAuthUser(request);
+    const userId = authUser?.userId;
 
     if (!userId) {
       console.error("Onboarding PATCH: No userId found in auth result", {
-        hasSessionId: !!authResult.sessionId,
-        hasSessionClaims: !!authResult.sessionClaims,
+        authSource: authUser?.authSource || "NONE",
       });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { [lookupField]: userId },
     });
 
     if (!user) {

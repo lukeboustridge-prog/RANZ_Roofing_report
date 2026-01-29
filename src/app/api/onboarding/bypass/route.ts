@@ -1,4 +1,4 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { getAuthUser, getUserLookupField, getAuthMode } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
@@ -30,9 +30,9 @@ export async function POST(request: NextRequest) {
     let userEmail: string | null = null;
 
     try {
-      const authResult = await auth();
-      userId = authResult.userId;
-      console.log("Bypass: Auth result", { userId: userId || "NONE" });
+      const authUser = await getAuthUser(request);
+      userId = authUser?.userId || null;
+      console.log("Bypass: Auth result", { userId: userId || "NONE", authSource: authUser?.authSource || "NONE" });
     } catch (authError) {
       console.log("Bypass: Auth failed, trying email lookup", authError);
     }
@@ -43,11 +43,12 @@ export async function POST(request: NextRequest) {
 
     console.log("Bypass: Looking up user", { userId, userEmail });
 
-    // Find user by clerkId or email
+    // Find user by lookup field or email
     let user = null;
     if (userId) {
+      const lookupField = getUserLookupField();
       user = await prisma.user.findUnique({
-        where: { clerkId: userId },
+        where: { [lookupField]: userId },
       });
     }
 
@@ -81,9 +82,10 @@ export async function POST(request: NextRequest) {
 
     console.log("Bypass: Updated user in database");
 
-    // Try to update Clerk metadata
-    if (user.clerkId) {
+    // Try to update Clerk metadata (only in Clerk mode)
+    if (user.clerkId && getAuthMode() === 'clerk') {
       try {
+        const { clerkClient } = await import('@clerk/nextjs/server');
         const clerk = await clerkClient();
         await clerk.users.updateUserMetadata(user.clerkId, {
           publicMetadata: {
