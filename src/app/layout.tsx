@@ -37,7 +37,15 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html
+        lang="en"
+        style={
+          {
+            "--app-accent": "#D32F2F",
+            "--app-accent-foreground": "#ffffff",
+          } as React.CSSProperties
+        }
+      >
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
