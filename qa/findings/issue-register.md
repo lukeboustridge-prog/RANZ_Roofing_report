@@ -238,10 +238,10 @@ None identified.
 | OWASP Category | Status | Notes |
 |----------------|--------|-------|
 | A01 Broken Access Control | PASS | getAuthUser() in all protected routes |
-| A02 Security Misconfiguration | PASS* | Security headers recommended |
+| A02 Security Misconfiguration | PASS | Security headers implemented in next.config.ts |
 | A03 Injection | PASS | Prisma ORM, Zod validation |
 | A05 Cryptographic Failures | PASS | SHA-256, RS256 JWT |
-| A07 Software Integrity | PASS* | Next.js update recommended |
+| A07 Software Integrity | PASS | Next.js updated to 15.5.11 |
 | A09 Logging/Monitoring | PASS | Comprehensive audit logging |
 
 **Evidence Integrity Status:** PASS - Court-ready for Evidence Act 2006 and High Court Rules Schedule 4
@@ -258,6 +258,21 @@ None identified.
 
 ---
 
-*Document Version: 1.0*
+*Document Version: 1.1*
 *Generated: 2026-01-29*
-*Phase: 09-quality-control Plan: 06*
+*Last Updated: 2026-01-29 (09-07 remediation)*
+*Phase: 09-quality-control*
+
+---
+
+## Remediation Log (09-07)
+
+| Issue | Action | Result |
+|-------|--------|--------|
+| QCTL-RR-001 | Updated Next.js 15.5.9 -> 15.5.11 | CLOSED |
+| QCTL-RR-002 | Verified security headers already present | CLOSED (Pre-existing) |
+
+**Verification Results:**
+- `npm audit --audit-level=high`: 0 high/critical vulnerabilities
+- RSC DoS vulnerability (GHSA-h25m-26qc-wcjf): Fixed
+- Remaining vulnerabilities are moderate in dev dependencies
