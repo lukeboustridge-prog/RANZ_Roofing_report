@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { getAuthUser, getUserLookupField } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { z } from "zod";
@@ -13,16 +13,18 @@ const subscribeSchema = z.object({
 });
 
 // GET /api/notifications/subscribe - Get current user's push subscriptions
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const authUser = await getAuthUser(request);
+    const userId = authUser?.userId;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { [lookupField]: userId },
       select: { id: true },
     });
 
@@ -57,14 +59,16 @@ export async function GET() {
 // POST /api/notifications/subscribe - Subscribe to push notifications
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const authUser = await getAuthUser(request);
+    const userId = authUser?.userId;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { [lookupField]: userId },
       select: { id: true },
     });
 
@@ -130,14 +134,16 @@ export async function POST(request: NextRequest) {
 // DELETE /api/notifications/subscribe - Unsubscribe from push notifications
 export async function DELETE(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const authUser = await getAuthUser(request);
+    const userId = authUser?.userId;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { [lookupField]: userId },
       select: { id: true },
     });
 

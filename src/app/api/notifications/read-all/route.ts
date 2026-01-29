@@ -1,18 +1,20 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { getAuthUser, getUserLookupField } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
 // POST /api/notifications/read-all - Mark all notifications as read
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const authUser = await getAuthUser(request);
+    const userId = authUser?.userId;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { [lookupField]: userId },
       select: { id: true },
     });
 

@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { getAuthUser, getUserLookupField } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { z } from "zod";
@@ -34,14 +34,16 @@ const createNotificationSchema = z.object({
 // GET /api/notifications - List notifications for current user
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const authUser = await getAuthUser(request);
+    const userId = authUser?.userId;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { [lookupField]: userId },
       select: { id: true },
     });
 
@@ -117,14 +119,16 @@ export async function GET(request: NextRequest) {
 // POST /api/notifications - Create a notification (internal use or admin)
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const authUser = await getAuthUser(request);
+    const userId = authUser?.userId;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { [lookupField]: userId },
       select: { id: true, role: true },
     });
 

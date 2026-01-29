@@ -4,7 +4,7 @@
  * Handles reports, elements, defects, compliance, and photo metadata
  */
 
-import { auth } from "@clerk/nextjs/server";
+import { getAuthUser, getUserLookupField } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { getPresignedUploadUrl, generatePhotoKey } from "@/lib/r2";
@@ -288,15 +288,17 @@ export async function POST(request: NextRequest) {
 
   try {
     // Authenticate
-    const { userId } = await auth();
+    const authUser = await getAuthUser(request);
+    const userId = authUser?.userId;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get user from database
+    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { [lookupField]: userId },
     });
 
     if (!user) {
