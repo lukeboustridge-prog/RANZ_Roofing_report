@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { getAuthUser, getUserLookupField } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { ZodError, z } from "zod";
@@ -12,14 +12,16 @@ const createElementWithReportSchema = CreateRoofElementSchema.extend({
 // POST /api/elements - Create element
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const authUser = await getAuthUser(request);
+    const userId = authUser?.userId;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { [lookupField]: userId },
     });
 
     if (!user) {
@@ -74,14 +76,16 @@ export async function POST(request: NextRequest) {
 // GET /api/elements?reportId=xxx - List elements for a report
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const authUser = await getAuthUser(request);
+    const userId = authUser?.userId;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { [lookupField]: userId },
     });
 
     if (!user) {
