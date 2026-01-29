@@ -37,6 +37,10 @@
   --ranz-orange-400: #be4039;
   --ranz-orange-500: #be4039;
 
+  /* App-specific accent - Roofing Report uses red */
+  --app-accent: #D32F2F;
+  --app-accent-foreground: #ffffff;
+
   /* Status Colors */
   --status-critical: #dc2626;
   --status-high: #ea580c;
@@ -60,8 +64,8 @@
   --secondary-foreground: #2a2e31;
   --muted: #f0f2f5;
   --muted-foreground: #7d8c9d;
-  --accent: #00417a;
-  --accent-foreground: #ffffff;
+  --accent: var(--app-accent);
+  --accent-foreground: var(--app-accent-foreground);
   --destructive: #be4039;
   --destructive-foreground: #ffffff;
   --border: #e1e5ea;
@@ -93,6 +97,10 @@
   --color-ranz-red: var(--ranz-red);
   --color-ranz-yellow: var(--ranz-yellow);
   --color-ranz-silver: var(--ranz-silver);
+
+  /* App-specific accent */
+  --color-app-accent: var(--app-accent);
+  --color-app-accent-foreground: var(--app-accent-foreground);
 
   /* Legacy blue scale */
   --color-ranz-blue-50: var(--ranz-blue-50);
