@@ -20,6 +20,7 @@ export * from './types';
 export {
   getAuthUser,
   getUserLookupField,
+  getUserWhereClause,
   getAuthMode,
   type AuthUser,
 } from './helpers';

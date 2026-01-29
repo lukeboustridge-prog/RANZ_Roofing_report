@@ -57,6 +57,28 @@ export function getUserLookupField(): 'id' | 'clerkId' {
 }
 
 /**
+ * Build a type-safe where clause for Prisma user lookup.
+ * Handles the computed property name issue with Prisma's generated types.
+ *
+ * @param userId - The user ID from getAuthUser()
+ * @returns Object suitable for prisma.user.findUnique({ where: ... })
+ *
+ * @example
+ * const authUser = await getAuthUser(request);
+ * if (authUser) {
+ *   const user = await prisma.user.findUnique({
+ *     where: getUserWhereClause(authUser.userId)
+ *   });
+ * }
+ */
+export function getUserWhereClause(userId: string): { id: string } | { clerkId: string } {
+  if (AUTH_MODE === 'custom') {
+    return { id: userId };
+  }
+  return { clerkId: userId };
+}
+
+/**
  * Get the current AUTH_MODE setting.
  * Useful for conditional logic in route handlers.
  */
