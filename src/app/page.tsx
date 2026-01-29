@@ -1,12 +1,26 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import Link from "next/link";
 
+const AUTH_MODE = process.env.AUTH_MODE || 'clerk';
+
 export default async function Home() {
-  const { userId } = await auth();
+  let isAuthenticated = false;
+
+  if (AUTH_MODE === 'custom') {
+    // In custom auth mode, check for session cookie from Quality Program
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('ranz_session');
+    isAuthenticated = !!sessionCookie?.value;
+  } else {
+    // Clerk mode
+    const { auth } = await import("@clerk/nextjs/server");
+    const { userId } = await auth();
+    isAuthenticated = !!userId;
+  }
 
   // If user is signed in, redirect to dashboard
-  if (userId) {
+  if (isAuthenticated) {
     redirect("/dashboard");
   }
 
