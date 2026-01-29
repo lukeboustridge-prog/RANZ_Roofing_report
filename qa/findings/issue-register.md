@@ -10,12 +10,12 @@
 
 ## Summary
 
-| Severity | Count | Must Fix |
-|----------|-------|----------|
-| Critical | 0 | Yes |
-| High | 2 | Yes |
-| Medium | 5 | If time |
-| Low | 5 | Defer |
+| Severity | Count | Open | Closed | Must Fix |
+|----------|-------|------|--------|----------|
+| Critical | 0 | 0 | 0 | Yes |
+| High | 2 | 0 | 2 | Yes |
+| Medium | 5 | 5 | 0 | If time |
+| Low | 5 | 5 | 0 | Defer |
 
 **Overall Assessment:** Application is production-ready with strong evidence integrity architecture. Court-ready for Evidence Act 2006 compliance.
 
@@ -39,7 +39,10 @@ None identified.
   npm update next@^15.5.10
   ```
 - **Estimated Effort:** Small (1-2 hours)
-- **Status:** [ ] Open
+- **Status:** [x] Closed
+- **Fix Applied:** 2026-01-29 - Updated Next.js from 15.5.9 to 15.5.11
+- **Files Modified:** package.json, package-lock.json
+- **Verified:** npm audit no longer reports GHSA-h25m-26qc-wcjf
 
 ### QCTL-RR-002: Add HTTP Security Headers
 - **Category:** security
@@ -51,7 +54,10 @@ None identified.
   - X-Frame-Options: DENY
   - X-Content-Type-Options: nosniff
 - **Estimated Effort:** Small (2-4 hours)
-- **Status:** [ ] Open
+- **Status:** [x] Closed (Pre-existing)
+- **Fix Applied:** Already present in next.config.ts - security headers were implemented during initial development
+- **Files Modified:** N/A (already configured)
+- **Verified:** next.config.ts contains comprehensive securityHeaders array with CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS
 
 ---
 
