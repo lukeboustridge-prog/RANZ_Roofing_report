@@ -8,11 +8,36 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    console.error("[DB] DATABASE_URL environment variable is not set");
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+
+  // Create pool with SSL configuration for Neon/cloud databases
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
+    ssl: {
+      rejectUnauthorized: false, // Required for Neon serverless
+    },
+    max: 10, // Maximum connections in the pool
+    idleTimeoutMillis: 30000, // Close idle connections after 30s
+    connectionTimeoutMillis: 10000, // Fail if connection takes > 10s
   });
+
+  // Log connection errors
+  pool.on('error', (err) => {
+    console.error('[DB] Unexpected pool error:', err);
+  });
+
   const adapter = new PrismaPg(pool);
-  return new PrismaClient({ adapter });
+  return new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === 'development'
+      ? ['query', 'error', 'warn']
+      : ['error'],
+  });
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();

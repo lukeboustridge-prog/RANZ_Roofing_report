@@ -1,4 +1,4 @@
-import { getAuthUser, getUserLookupField } from "@/lib/auth";
+import { getAuthUser, getUserWhereClause } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { InspectionType } from "@prisma/client";
@@ -16,10 +16,8 @@ export async function GET(
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { [lookupField]: userId },
+      where: getUserWhereClause(userId),
     });
 
     if (!user) {
@@ -57,10 +55,8 @@ export async function PUT(
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { [lookupField]: userId },
+      where: getUserWhereClause(userId),
     });
 
     if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
@@ -124,10 +120,8 @@ export async function DELETE(
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { [lookupField]: userId },
+      where: getUserWhereClause(userId),
     });
 
     if (!user || user.role !== "SUPER_ADMIN") {

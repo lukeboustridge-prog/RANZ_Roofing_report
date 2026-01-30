@@ -1,4 +1,4 @@
-import { getAuthUser, getUserLookupField } from "@/lib/auth";
+import { getAuthUser, getUserWhereClause } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { z } from "zod";
@@ -36,10 +36,8 @@ export async function GET(
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { [lookupField]: userId },
+      where: getUserWhereClause(userId),
     });
 
     if (!user) {
@@ -87,10 +85,8 @@ export async function PATCH(
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { [lookupField]: userId },
+      where: getUserWhereClause(userId),
     });
 
     if (!user) {
@@ -175,10 +171,8 @@ export async function DELETE(
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { [lookupField]: userId },
+      where: getUserWhereClause(userId),
     });
 
     if (!user) {

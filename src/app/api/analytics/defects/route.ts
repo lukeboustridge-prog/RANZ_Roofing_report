@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser, getUserLookupField } from "@/lib/auth";
+import { getAuthUser, getUserWhereClause } from "@/lib/auth";
 import prisma from "@/lib/db";
 
 /**
@@ -16,9 +16,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify admin role
-    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { [lookupField]: userId },
+      where: getUserWhereClause(userId),
       select: { role: true },
     });
 

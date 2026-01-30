@@ -1,4 +1,4 @@
-import { getAuthUser, getUserLookupField, getAuthMode } from "@/lib/auth";
+import { getAuthUser, getUserWhereClause, getAuthMode } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
@@ -21,10 +21,8 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ user: null }, { status: 200 });
     }
-
-    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { [lookupField]: userId },
+      where: getUserWhereClause(userId),
       select: {
         id: true,
         email: true,

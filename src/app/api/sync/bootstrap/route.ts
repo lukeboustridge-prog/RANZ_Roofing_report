@@ -4,7 +4,7 @@
  * Returns user profile, checklists, templates, and recent reports
  */
 
-import { getAuthUser, getUserLookupField } from "@/lib/auth";
+import { getAuthUser, getUserWhereClause } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
@@ -23,9 +23,8 @@ export async function GET(request: NextRequest) {
     const lastSyncDate = lastSyncAt ? new Date(lastSyncAt) : null;
 
     // Get user with profile info
-    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { [lookupField]: userId },
+      where: getUserWhereClause(userId),
       select: {
         id: true,
         clerkId: true,

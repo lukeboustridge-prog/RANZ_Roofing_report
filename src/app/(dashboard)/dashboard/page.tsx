@@ -38,57 +38,62 @@ const statusLabels: Record<ReportStatus, string> = {
 };
 
 async function getDashboardData(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
 
-  if (!user) {
-    return null;
-  }
+    if (!user) {
+      return null;
+    }
 
-  const [stats, recentReports] = await Promise.all([
-    prisma.report.groupBy({
-      by: ["status"],
-      where: { inspectorId: user.id },
-      _count: true,
-    }),
-    prisma.report.findMany({
-      where: { inspectorId: user.id },
-      orderBy: { updatedAt: "desc" },
-      take: 5,
-      select: {
-        id: true,
-        reportNumber: true,
-        propertyAddress: true,
-        propertyCity: true,
-        status: true,
-        inspectionDate: true,
-        updatedAt: true,
+    const [stats, recentReports] = await Promise.all([
+      prisma.report.groupBy({
+        by: ["status"],
+        where: { inspectorId: user.id },
+        _count: true,
+      }),
+      prisma.report.findMany({
+        where: { inspectorId: user.id },
+        orderBy: { updatedAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          reportNumber: true,
+          propertyAddress: true,
+          propertyCity: true,
+          status: true,
+          inspectionDate: true,
+          updatedAt: true,
+        },
+      }),
+    ]);
+
+    const statusCounts = stats.reduce(
+      (acc, { status, _count }) => {
+        acc[status] = _count;
+        return acc;
       },
-    }),
-  ]);
+      {} as Record<ReportStatus, number>
+    );
 
-  const statusCounts = stats.reduce(
-    (acc, { status, _count }) => {
-      acc[status] = _count;
-      return acc;
-    },
-    {} as Record<ReportStatus, number>
-  );
-
-  return {
-    totalReports:
-      (statusCounts.DRAFT || 0) +
-      (statusCounts.IN_PROGRESS || 0) +
-      (statusCounts.PENDING_REVIEW || 0) +
-      (statusCounts.APPROVED || 0) +
-      (statusCounts.FINALISED || 0),
-    draftReports: statusCounts.DRAFT || 0,
-    inProgressReports: statusCounts.IN_PROGRESS || 0,
-    pendingReviewReports: statusCounts.PENDING_REVIEW || 0,
-    completedReports: (statusCounts.APPROVED || 0) + (statusCounts.FINALISED || 0),
-    recentReports,
-  };
+    return {
+      totalReports:
+        (statusCounts.DRAFT || 0) +
+        (statusCounts.IN_PROGRESS || 0) +
+        (statusCounts.PENDING_REVIEW || 0) +
+        (statusCounts.APPROVED || 0) +
+        (statusCounts.FINALISED || 0),
+      draftReports: statusCounts.DRAFT || 0,
+      inProgressReports: statusCounts.IN_PROGRESS || 0,
+      pendingReviewReports: statusCounts.PENDING_REVIEW || 0,
+      completedReports: (statusCounts.APPROVED || 0) + (statusCounts.FINALISED || 0),
+      recentReports,
+    };
+  } catch (error) {
+    console.error("[Dashboard] Error fetching dashboard data:", error);
+    throw error; // Re-throw to trigger error boundary
+  }
 }
 
 export default async function DashboardPage() {

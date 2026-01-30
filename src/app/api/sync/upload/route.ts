@@ -4,7 +4,7 @@
  * Handles reports, elements, defects, compliance, and photo metadata
  */
 
-import { getAuthUser, getUserLookupField } from "@/lib/auth";
+import { getAuthUser, getUserWhereClause } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { getPresignedUploadUrl, generatePhotoKey } from "@/lib/r2";
@@ -296,9 +296,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user from database
-    const lookupField = getUserLookupField();
     const user = await prisma.user.findUnique({
-      where: { [lookupField]: userId },
+      where: getUserWhereClause(userId),
     });
 
     if (!user) {

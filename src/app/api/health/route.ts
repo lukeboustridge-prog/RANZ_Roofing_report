@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
   };
 
   // Check database connectivity
+  let dbError: string | undefined;
   try {
     const dbStart = Date.now();
     await prisma.$queryRaw`SELECT 1`;
@@ -44,8 +45,10 @@ export async function GET(request: NextRequest) {
       status: "up",
       latency: Date.now() - dbStart,
     };
-  } catch {
+  } catch (error) {
     checks.database = { status: "down" };
+    dbError = error instanceof Error ? error.message : String(error);
+    console.error("[Health] Database check failed:", error);
   }
 
   // Check memory usage

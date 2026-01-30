@@ -1,6 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import type { NextRequest, NextFetchEvent } from "next/server";
 
 // Import from the auth module created in this plan
 import { verifyTokenStateless, parseSessionCookie, AUTH_CONFIG } from '@/lib/auth';
@@ -38,23 +38,22 @@ const isPublicRoute = createRouteMatcher([
 const isApiRoute = createRouteMatcher(["/api(.*)"]);
 
 export default async function middleware(req: NextRequest) {
-  const url = req.nextUrl.clone();
-
-  // Public routes: allow without auth
-  if (isPublicRoute(req)) {
-    return NextResponse.next();
-  }
-
-  // API routes: let them handle their own authentication
-  if (isApiRoute(req)) {
-    return NextResponse.next();
-  }
-
+  // For custom auth mode, handle authentication ourselves
   if (AUTH_MODE === 'custom') {
+    // Public routes: allow without auth
+    if (isPublicRoute(req)) {
+      return NextResponse.next();
+    }
+    // API routes: let them handle their own authentication
+    if (isApiRoute(req)) {
+      return NextResponse.next();
+    }
     return customAuthMiddleware(req);
-  } else {
-    return clerkMiddlewareHandler(req);
   }
+
+  // For Clerk mode, ALWAYS run Clerk middleware (it handles public routes internally)
+  // This is required because auth() in Server Components needs the middleware context
+  return clerkMiddlewareHandler(req);
 }
 
 async function customAuthMiddleware(req: NextRequest): Promise<NextResponse> {
@@ -114,7 +113,12 @@ function clerkMiddlewareHandler(req: NextRequest) {
   return clerkMiddleware(async (auth, request) => {
     const url = request.nextUrl.clone();
 
-    // All non-public routes require authentication
+    // Public routes and API routes: allow without protection
+    if (isPublicRoute(request) || isApiRoute(request)) {
+      return NextResponse.next();
+    }
+
+    // Protected routes require authentication
     await auth.protect();
 
     // Get session info after protection
@@ -141,7 +145,7 @@ function clerkMiddlewareHandler(req: NextRequest) {
     }
 
     return NextResponse.next();
-  })(req, {} as any);
+  })(req, {} as NextFetchEvent);
 }
 
 export const config = {
