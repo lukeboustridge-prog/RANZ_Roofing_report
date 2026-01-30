@@ -124,10 +124,15 @@ function clerkMiddlewareHandler(req: NextRequest) {
     // Get session info after protection
     const { userId, sessionClaims } = await auth();
 
-    // Check onboarding status
-    const onboardingCompleted =
+    // Check onboarding status from Clerk session claims
+    const onboardingCompletedInClaims =
       (sessionClaims?.publicMetadata as { onboardingCompleted?: boolean })
         ?.onboardingCompleted === true;
+
+    // Also check for bypass flag (set after onboarding API completes)
+    // This handles the race condition where Clerk claims haven't refreshed yet
+    const onboardingBypassCookie = request.cookies.get('onboarding_completed')?.value === 'true';
+    const onboardingCompleted = onboardingCompletedInClaims || onboardingBypassCookie;
 
     // Onboarding page access
     if (isOnboardingRoute(request)) {

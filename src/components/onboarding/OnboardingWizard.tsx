@@ -172,18 +172,18 @@ export function OnboardingWizard({
         description: "Welcome to RANZ. Redirecting to your dashboard...",
       });
 
-      // Force Clerk to refresh the session token with updated publicMetadata
-      // This is required because the JWT contains cached claims that include
-      // onboardingCompleted=false. Without this refresh, the middleware will
-      // redirect back to onboarding even though Clerk's server-side data was updated.
+      // Set a bypass cookie that middleware will check
+      // This handles the race condition where Clerk JWT claims haven't refreshed yet
+      document.cookie = "onboarding_completed=true; path=/; max-age=3600; SameSite=Lax";
+
+      // Also try to refresh the Clerk token (may help future requests)
       try {
         await getToken({ skipCache: true });
       } catch (tokenError) {
         console.warn("Failed to refresh session token:", tokenError);
-        // Continue anyway - the page reload below may still work
       }
 
-      // Use full page reload to ensure middleware reads the fresh token
+      // Redirect to dashboard
       setTimeout(() => {
         window.location.href = "/dashboard";
       }, 1500);
@@ -223,14 +223,17 @@ export function OnboardingWizard({
         console.error("Failed to save skip state");
       }
 
-      // Force Clerk to refresh the session token with updated publicMetadata
+      // Set a bypass cookie that middleware will check
+      document.cookie = "onboarding_completed=true; path=/; max-age=3600; SameSite=Lax";
+
+      // Also try to refresh the Clerk token
       try {
         await getToken({ skipCache: true });
       } catch (tokenError) {
         console.warn("Failed to refresh session token:", tokenError);
       }
 
-      // Use full page reload to ensure middleware reads the fresh token
+      // Redirect to dashboard
       window.location.href = "/dashboard";
     } catch (error) {
       console.error("Skip error:", error);
