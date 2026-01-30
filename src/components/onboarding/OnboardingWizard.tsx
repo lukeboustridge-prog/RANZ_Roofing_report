@@ -11,6 +11,7 @@ import { Check, ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@clerk/nextjs";
 
 // Step components
 import { WelcomeStep } from "./steps/WelcomeStep";
@@ -76,6 +77,7 @@ export function OnboardingWizard({
   clerkUser,
 }: OnboardingWizardProps) {
   const { toast } = useToast();
+  const { getToken } = useAuth();
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -170,9 +172,18 @@ export function OnboardingWizard({
         description: "Welcome to RANZ. Redirecting to your dashboard...",
       });
 
-      // Use full page reload to ensure session claims are refreshed
-      // router.push doesn't refresh Clerk session tokens, causing
-      // middleware to redirect back to onboarding
+      // Force Clerk to refresh the session token with updated publicMetadata
+      // This is required because the JWT contains cached claims that include
+      // onboardingCompleted=false. Without this refresh, the middleware will
+      // redirect back to onboarding even though Clerk's server-side data was updated.
+      try {
+        await getToken({ skipCache: true });
+      } catch (tokenError) {
+        console.warn("Failed to refresh session token:", tokenError);
+        // Continue anyway - the page reload below may still work
+      }
+
+      // Use full page reload to ensure middleware reads the fresh token
       setTimeout(() => {
         window.location.href = "/dashboard";
       }, 1500);
@@ -212,7 +223,14 @@ export function OnboardingWizard({
         console.error("Failed to save skip state");
       }
 
-      // Use full page reload to refresh session claims
+      // Force Clerk to refresh the session token with updated publicMetadata
+      try {
+        await getToken({ skipCache: true });
+      } catch (tokenError) {
+        console.warn("Failed to refresh session token:", tokenError);
+      }
+
+      // Use full page reload to ensure middleware reads the fresh token
       window.location.href = "/dashboard";
     } catch (error) {
       console.error("Skip error:", error);
