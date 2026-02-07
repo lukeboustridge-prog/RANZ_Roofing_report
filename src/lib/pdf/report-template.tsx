@@ -15,6 +15,7 @@ import { TableOfContents } from "./sections/toc";
 import { Declaration } from "./sections/declaration";
 import { EvidenceCertificate } from "./sections/evidence-certificate";
 import { PhotoAppendix } from "./sections/photo-appendix";
+import { MethodologySection } from "./sections/methodology";
 
 // RANZ brand colors - From Brand Guidelines 2025
 const colors = {
@@ -1163,7 +1164,9 @@ export function ReportPDF({ report }: ReportPDFProps) {
             <View style={{ marginLeft: 15, marginTop: 3 }}>
               <Text style={{ fontSize: 8, color: colors.mediumGray }}>3.1 Inspection Process</Text>
               <Text style={{ fontSize: 8, color: colors.mediumGray }}>3.2 Equipment Used</Text>
-              <Text style={{ fontSize: 8, color: colors.mediumGray }}>3.3 Weather Conditions</Text>
+              <Text style={{ fontSize: 8, color: colors.mediumGray }}>3.3 Access Method</Text>
+              <Text style={{ fontSize: 8, color: colors.mediumGray }}>3.4 Weather Conditions</Text>
+              <Text style={{ fontSize: 8, color: colors.mediumGray }}>3.5 Limitations &amp; Restrictions</Text>
             </View>
           </View>
           <View style={{ marginBottom: 5, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderGray }}>
@@ -1582,6 +1585,18 @@ export function ReportPDF({ report }: ReportPDFProps) {
           </View>
         </Page>
       )}
+
+      {/* Section 3: Methodology (ISO 17020 Required) */}
+      <MethodologySection
+        reportNumber={report.reportNumber}
+        methodology={report.methodology}
+        equipment={report.equipment}
+        accessMethod={report.accessMethod}
+        weatherConditions={report.weatherConditions}
+        inspectionType={report.inspectionType}
+        inspectionDate={new Date(report.inspectionDate)}
+        limitations={report.limitations}
+      />
 
       {/* Section 5: Factual Observations - Roof Elements */}
       {report.roofElements && report.roofElements.length > 0 && (
