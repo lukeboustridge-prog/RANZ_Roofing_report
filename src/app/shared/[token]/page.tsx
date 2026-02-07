@@ -119,6 +119,7 @@ export default function SharedReportPage() {
   const [error, setError] = useState("");
   const [requiresPassword, setRequiresPassword] = useState(false);
   const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [data, setData] = useState<SharedReport | null>(null);
 
@@ -126,6 +127,7 @@ export default function SharedReportPage() {
     try {
       setLoading(true);
       setError("");
+      setPasswordError("");
 
       const url = pwd
         ? `/api/shared/${token}?password=${encodeURIComponent(pwd)}`
@@ -138,6 +140,10 @@ export default function SharedReportPage() {
         if (result.requiresPassword) {
           setRequiresPassword(true);
           setLoading(false);
+          // If a password was provided but failed, show error
+          if (pwd) {
+            setPasswordError("Invalid password. Please try again.");
+          }
           return;
         }
         throw new Error(result.error || "Failed to load report");
@@ -200,6 +206,9 @@ export default function SharedReportPage() {
             <p className="text-center text-muted-foreground mb-6">
               This report is protected. Please enter the password to view.
             </p>
+            {passwordError && (
+              <p className="text-sm text-destructive text-center mb-4">{passwordError}</p>
+            )}
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="password">Password</Label>
