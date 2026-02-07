@@ -27,10 +27,10 @@ Requirements for pre-pilot hardening. Each maps to roadmap phases.
 
 ### Search & Filtering
 
-- [ ] **SRCH-01**: User can filter reports by defect severity level
-- [ ] **SRCH-02**: User can filter reports by compliance assessment status
-- [ ] **SRCH-03**: User can filter reports by assigned inspector
-- [ ] **SRCH-04**: User can filter reports by date range (creation, inspection, review dates)
+- [x] **SRCH-01**: User can filter reports by defect severity level
+- [x] **SRCH-02**: User can filter reports by compliance assessment status
+- [x] **SRCH-03**: User can filter reports by assigned inspector
+- [x] **SRCH-04**: User can filter reports by date range (creation, inspection, review dates)
 
 ### Sharing & Access
 
@@ -38,7 +38,7 @@ Requirements for pre-pilot hardening. Each maps to roadmap phases.
 
 ### Templates & Workflow
 
-- [ ] **TMPL-01**: User can select and apply a saved template when creating a new report
+- [x] **TMPL-01**: User can select and apply a saved template when creating a new report
 
 ### API Documentation
 
@@ -100,12 +100,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NOTIF-03 | Phase 7 | Complete |
 | NOTIF-04 | Phase 9 | Pending |
 | NOTIF-05 | Phase 9 | Pending |
-| SRCH-01 | Phase 8 | Pending |
-| SRCH-02 | Phase 8 | Pending |
-| SRCH-03 | Phase 8 | Pending |
-| SRCH-04 | Phase 8 | Pending |
+| SRCH-01 | Phase 8 | Complete |
+| SRCH-02 | Phase 8 | Complete |
+| SRCH-03 | Phase 8 | Complete |
+| SRCH-04 | Phase 8 | Complete |
 | SHARE-01 | Phase 7 | Complete |
-| TMPL-01 | Phase 8 | Pending |
+| TMPL-01 | Phase 8 | Complete |
 | API-01 | Phase 9 | Pending |
 
 **Coverage:**
@@ -115,4 +115,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-07*
-*Last updated: 2026-02-07 after Phase 7 completion (NOTIF-01..03, SHARE-01 → Complete)*
+*Last updated: 2026-02-07 after Phase 8 completion (SRCH-01..04, TMPL-01 → Complete)*

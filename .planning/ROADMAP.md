@@ -13,7 +13,7 @@
 
 - [x] **Phase 6: PDF Court-Readiness** - ISO 17020 sections and compliance results in PDF output
 - [x] **Phase 7: Notifications & Sharing** - Email notifications, web push sending, and shared report security
-- [ ] **Phase 8: Search, Filtering & Templates** - Report filtering by severity, compliance, inspector, date; template wiring
+- [x] **Phase 8: Search, Filtering & Templates** - Report filtering by severity, compliance, inspector, date; template wiring
 - [ ] **Phase 9: Export, Bulk & Admin** - Evidence ZIP export, bulk PDF generation, notification management, API docs
 
 ## Phase Details
@@ -62,8 +62,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 08-01-PLAN.md -- Add severity, compliance, inspector, and date field filters to report list API and UI
-- [ ] 08-02-PLAN.md -- Wire template selection into report creation wizard
+- [x] 08-01-PLAN.md -- Add severity, compliance, inspector, and date field filters to report list API and UI
+- [x] 08-02-PLAN.md -- Wire template selection into report creation wizard
 
 ### Phase 9: Export, Bulk & Admin
 **Goal**: Admins have production-ready tools for evidence packaging, bulk operations, notification lifecycle management, and API documentation
@@ -91,5 +91,5 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9
 |-------|-----------|----------------|--------|-----------|
 | 6. PDF Court-Readiness | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 7. Notifications & Sharing | v1.1 | 2/2 | Complete | 2026-02-07 |
-| 8. Search, Filtering & Templates | v1.1 | 0/2 | Planning complete | - |
+| 8. Search, Filtering & Templates | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 9. Export, Bulk & Admin | v1.1 | 0/TBD | Not started | - |
