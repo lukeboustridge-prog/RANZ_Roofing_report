@@ -3,11 +3,11 @@
 ## Milestones
 
 - **v1.0 MVP** - Phases 1-5 (shipped)
-- **v1.1 Pre-Pilot Hardening** - Phases 6-10 (in progress)
+- **v1.1 Pre-Pilot Hardening** - Phases 6-10 (complete)
 
 ## Phases
 
-### v1.1 Pre-Pilot Hardening (In Progress)
+### v1.1 Pre-Pilot Hardening (Complete)
 
 **Milestone Goal:** Close all functional gaps identified in the codebase audit before UAT with real inspectors. Court-ready PDF output, complete notification pipeline, advanced filtering, and admin tooling.
 
@@ -15,7 +15,7 @@
 - [x] **Phase 7: Notifications & Sharing** - Email notifications, web push sending, and shared report security
 - [x] **Phase 8: Search, Filtering & Templates** - Report filtering by severity, compliance, inspector, date; template wiring
 - [x] **Phase 9: Export, Bulk & Admin** - Evidence ZIP export, bulk PDF generation, notification management, API docs
-- [ ] **Phase 10: Admin Polish & Email Template Wire-Up** - Wire email templates into senders, admin nav links, admin report filters
+- [x] **Phase 10: Admin Polish & Email Template Wire-Up** - Wire email templates into senders, admin nav links, admin report filters
 
 ## Phase Details
 
@@ -96,8 +96,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 10-01-PLAN.md -- Wire all 8 email functions to use emailTemplateService.renderTemplate() with hardcoded fallback
-- [ ] 10-02-PLAN.md -- Add 3 admin dashboard quick action cards + refactor admin reports to use ReportSearch with batch PDF
+- [x] 10-01-PLAN.md -- Wire all 8 email functions to use emailTemplateService.renderTemplate() with hardcoded fallback
+- [x] 10-02-PLAN.md -- Add 3 admin dashboard quick action cards + refactor admin reports to use ReportSearch with batch PDF
 
 ## Progress
 
@@ -110,4 +110,4 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 | 7. Notifications & Sharing | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 8. Search, Filtering & Templates | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 9. Export, Bulk & Admin | v1.1 | 4/4 | Complete | 2026-02-07 |
-| 10. Admin Polish & Email Wire-Up | v1.1 | 0/2 | In progress | - |
+| 10. Admin Polish & Email Wire-Up | v1.1 | 2/2 | Complete | 2026-02-08 |
