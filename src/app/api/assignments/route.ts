@@ -2,6 +2,8 @@ import { getAuthUser, getUserWhereClause } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { z } from "zod";
+import { createAndPushNotification } from "@/lib/notifications/push-service";
+import { sendAssignmentConfirmationEmail, sendInspectorAssignmentEmail } from "@/lib/email";
 
 const createAssignmentSchema = z.object({
   inspectorId: z.string(),
@@ -169,6 +171,51 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    });
+
+    // Send notifications (non-blocking, failures won't break assignment creation)
+
+    // 1. In-app + push notification to inspector
+    createAndPushNotification(data.inspectorId, {
+      type: "NEW_ASSIGNMENT",
+      title: "New Inspection Assignment",
+      message: `Inspection requested for ${data.propertyAddress}`,
+      link: `/assignments/${assignment.id}`,
+      assignmentId: assignment.id,
+      metadata: {
+        urgency: data.urgency,
+        requestType: data.requestType,
+      },
+    }).catch(err => {
+      console.error("[Assignment] Failed to send in-app notification:", err);
+    });
+
+    // 2. Email to inspector
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reports.ranz.org.nz";
+    sendInspectorAssignmentEmail(inspector.email, {
+      inspectorName: inspector.name || "Inspector",
+      clientName: data.clientName,
+      clientEmail: data.clientEmail,
+      propertyAddress: data.propertyAddress,
+      requestType: data.requestType,
+      urgency: data.urgency,
+      scheduledDate: data.scheduledDate || undefined,
+      assignmentUrl: `${baseUrl}/assignments/${assignment.id}`,
+      notes: data.notes || undefined,
+    }).catch(err => {
+      console.error("[Assignment] Failed to send inspector email:", err);
+    });
+
+    // 3. Confirmation email to client
+    sendAssignmentConfirmationEmail(data.clientEmail, {
+      clientName: data.clientName,
+      propertyAddress: data.propertyAddress,
+      inspectorName: inspector.name || "RANZ Inspector",
+      requestType: data.requestType,
+      urgency: data.urgency,
+      scheduledDate: data.scheduledDate || undefined,
+    }).catch(err => {
+      console.error("[Assignment] Failed to send client confirmation:", err);
     });
 
     return NextResponse.json(assignment, { status: 201 });
