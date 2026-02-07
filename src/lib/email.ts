@@ -4,6 +4,7 @@
  */
 
 import { isEmailConfigured } from "./env";
+import { emailTemplateService } from "@/services/email-template-service";
 
 interface EmailOptions {
   to: string;
@@ -121,7 +122,19 @@ export async function sendReportSubmittedNotification(
   reviewerEmail: string,
   report: ReportInfo
 ): Promise<SendResult> {
-  const content = `
+  const variables = {
+    reportNumber: report.reportNumber,
+    propertyAddress: report.propertyAddress,
+    inspectorName: report.inspectorName,
+    reportUrl: report.reportUrl,
+  };
+
+  let rendered: { subject: string; html: string; text: string };
+  try {
+    rendered = await emailTemplateService.renderTemplate("REPORT_SUBMITTED", variables);
+  } catch (error) {
+    console.warn("[Email] Template service failed for REPORT_SUBMITTED, using hardcoded fallback:", error instanceof Error ? error.message : error);
+    const content = `
     <h2 style="color: #111827; margin: 0 0 16px 0; font-size: 18px;">Report Submitted for Review</h2>
 
     <p style="margin: 0 0 16px 0;">A new report has been submitted and requires your review.</p>
@@ -136,12 +149,18 @@ export async function sendReportSubmittedNotification(
       Review Report
     </a>
   `;
+    rendered = {
+      subject: `[Review Required] Report ${report.reportNumber} - ${report.propertyAddress}`,
+      text: `Report ${report.reportNumber} for ${report.propertyAddress} has been submitted by ${report.inspectorName} and requires your review. View at: ${report.reportUrl}`,
+      html: wrapInTemplate(content, "Report Submitted for Review"),
+    };
+  }
 
   return sendEmail({
     to: reviewerEmail,
-    subject: `[Review Required] Report ${report.reportNumber} - ${report.propertyAddress}`,
-    text: `Report ${report.reportNumber} for ${report.propertyAddress} has been submitted by ${report.inspectorName} and requires your review. View at: ${report.reportUrl}`,
-    html: wrapInTemplate(content, "Report Submitted for Review"),
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
   });
 }
 
@@ -152,7 +171,19 @@ export async function sendReportApprovedNotification(
   report: ReportInfo,
   reviewerName: string
 ): Promise<SendResult> {
-  const content = `
+  const variables = {
+    reportNumber: report.reportNumber,
+    propertyAddress: report.propertyAddress,
+    reviewerName,
+    reportUrl: report.reportUrl,
+  };
+
+  let rendered: { subject: string; html: string; text: string };
+  try {
+    rendered = await emailTemplateService.renderTemplate("REPORT_APPROVED", variables);
+  } catch (error) {
+    console.warn("[Email] Template service failed for REPORT_APPROVED, using hardcoded fallback:", error instanceof Error ? error.message : error);
+    const content = `
     <h2 style="color: #16a34a; margin: 0 0 16px 0; font-size: 18px;">Report Approved</h2>
 
     <p style="margin: 0 0 16px 0;">Great news! Your report has been approved and is ready for finalisation.</p>
@@ -171,12 +202,18 @@ export async function sendReportApprovedNotification(
       You can now generate the final PDF for delivery to your client.
     </p>
   `;
+    rendered = {
+      subject: `[Approved] Report ${report.reportNumber} - ${report.propertyAddress}`,
+      text: `Your report ${report.reportNumber} for ${report.propertyAddress} has been approved by ${reviewerName}. View at: ${report.reportUrl}`,
+      html: wrapInTemplate(content, "Report Approved"),
+    };
+  }
 
   return sendEmail({
     to: report.inspectorEmail,
-    subject: `[Approved] Report ${report.reportNumber} - ${report.propertyAddress}`,
-    text: `Your report ${report.reportNumber} for ${report.propertyAddress} has been approved by ${reviewerName}. View at: ${report.reportUrl}`,
-    html: wrapInTemplate(content, "Report Approved"),
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
   });
 }
 
@@ -194,21 +231,39 @@ export async function sendRevisionRequiredNotification(
     commentsSummary.note +
     commentsSummary.suggestion;
 
-  let commentList = "";
-  if (commentsSummary.critical > 0) {
-    commentList += `<li style="color: #dc2626;">${commentsSummary.critical} Critical issue(s)</li>`;
-  }
-  if (commentsSummary.issue > 0) {
-    commentList += `<li style="color: #ea580c;">${commentsSummary.issue} Issue(s)</li>`;
-  }
-  if (commentsSummary.note > 0) {
-    commentList += `<li style="color: #2563eb;">${commentsSummary.note} Note(s)</li>`;
-  }
-  if (commentsSummary.suggestion > 0) {
-    commentList += `<li style="color: #7c3aed;">${commentsSummary.suggestion} Suggestion(s)</li>`;
-  }
+  const variables = {
+    reportNumber: report.reportNumber,
+    propertyAddress: report.propertyAddress,
+    reviewerName,
+    reportUrl: report.reportUrl,
+    criticalCount: commentsSummary.critical.toString(),
+    issueCount: commentsSummary.issue.toString(),
+    noteCount: commentsSummary.note.toString(),
+    suggestionCount: commentsSummary.suggestion.toString(),
+    totalComments: totalComments.toString(),
+  };
 
-  const content = `
+  let rendered: { subject: string; html: string; text: string };
+  try {
+    rendered = await emailTemplateService.renderTemplate("REVISION_REQUIRED", variables);
+  } catch (error) {
+    console.warn("[Email] Template service failed for REVISION_REQUIRED, using hardcoded fallback:", error instanceof Error ? error.message : error);
+
+    let commentList = "";
+    if (commentsSummary.critical > 0) {
+      commentList += `<li style="color: #dc2626;">${commentsSummary.critical} Critical issue(s)</li>`;
+    }
+    if (commentsSummary.issue > 0) {
+      commentList += `<li style="color: #ea580c;">${commentsSummary.issue} Issue(s)</li>`;
+    }
+    if (commentsSummary.note > 0) {
+      commentList += `<li style="color: #2563eb;">${commentsSummary.note} Note(s)</li>`;
+    }
+    if (commentsSummary.suggestion > 0) {
+      commentList += `<li style="color: #7c3aed;">${commentsSummary.suggestion} Suggestion(s)</li>`;
+    }
+
+    const content = `
     <h2 style="color: #ea580c; margin: 0 0 16px 0; font-size: 18px;">Revision Required</h2>
 
     <p style="margin: 0 0 16px 0;">Your report has been reviewed and requires some changes before it can be approved.</p>
@@ -235,12 +290,18 @@ export async function sendRevisionRequiredNotification(
       Please address the feedback and resubmit your report for another review.
     </p>
   `;
+    rendered = {
+      subject: `[Revision Required] Report ${report.reportNumber} - ${totalComments} feedback items`,
+      text: `Your report ${report.reportNumber} for ${report.propertyAddress} requires revision. ${totalComments} feedback items have been added by ${reviewerName}. View at: ${report.reportUrl}/revisions`,
+      html: wrapInTemplate(content, "Revision Required"),
+    };
+  }
 
   return sendEmail({
     to: report.inspectorEmail,
-    subject: `[Revision Required] Report ${report.reportNumber} - ${totalComments} feedback items`,
-    text: `Your report ${report.reportNumber} for ${report.propertyAddress} requires revision. ${totalComments} feedback items have been added by ${reviewerName}. View at: ${report.reportUrl}/revisions`,
-    html: wrapInTemplate(content, "Revision Required"),
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
   });
 }
 
@@ -252,7 +313,20 @@ export async function sendNewCommentsNotification(
   reviewerName: string,
   newCommentCount: number
 ): Promise<SendResult> {
-  const content = `
+  const variables = {
+    reportNumber: report.reportNumber,
+    propertyAddress: report.propertyAddress,
+    reviewerName,
+    commentCount: newCommentCount.toString(),
+    reportUrl: report.reportUrl,
+  };
+
+  let rendered: { subject: string; html: string; text: string };
+  try {
+    rendered = await emailTemplateService.renderTemplate("NEW_COMMENTS", variables);
+  } catch (error) {
+    console.warn("[Email] Template service failed for NEW_COMMENTS, using hardcoded fallback:", error instanceof Error ? error.message : error);
+    const content = `
     <h2 style="color: #2563eb; margin: 0 0 16px 0; font-size: 18px;">New Review Comments</h2>
 
     <p style="margin: 0 0 16px 0;">${reviewerName} has added ${newCommentCount} new comment${newCommentCount !== 1 ? "s" : ""} to your report.</p>
@@ -266,12 +340,18 @@ export async function sendNewCommentsNotification(
       View Comments
     </a>
   `;
+    rendered = {
+      subject: `[New Comments] Report ${report.reportNumber} - ${newCommentCount} new comment${newCommentCount !== 1 ? "s" : ""}`,
+      text: `${reviewerName} has added ${newCommentCount} new comment(s) to your report ${report.reportNumber}. View at: ${report.reportUrl}/revisions`,
+      html: wrapInTemplate(content, "New Review Comments"),
+    };
+  }
 
   return sendEmail({
     to: report.inspectorEmail,
-    subject: `[New Comments] Report ${report.reportNumber} - ${newCommentCount} new comment${newCommentCount !== 1 ? "s" : ""}`,
-    text: `${reviewerName} has added ${newCommentCount} new comment(s) to your report ${report.reportNumber}. View at: ${report.reportUrl}/revisions`,
-    html: wrapInTemplate(content, "New Review Comments"),
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
   });
 }
 
