@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { DuplicateReportButton } from "@/components/reports/DuplicateReportButton";
 import { ShareReportButton } from "@/components/reports/ShareReportButton";
+import { ExportEvidenceButton } from "@/components/reports/ExportEvidenceButton";
 import type { ReportStatus, DefectSeverity, DefectClass, ConditionRating } from "@prisma/client";
 
 const statusBadgeVariants: Record<ReportStatus, "draft" | "inProgress" | "pendingReview" | "approved" | "finalised"> = {
@@ -152,10 +153,13 @@ export default async function ReportDetailPage({
             reportNumber={report.reportNumber}
           />
           {["FINALISED", "APPROVED"].includes(report.status) && (
-            <ShareReportButton
-              reportId={report.id}
-              reportNumber={report.reportNumber}
-            />
+            <>
+              <ShareReportButton
+                reportId={report.id}
+                reportNumber={report.reportNumber}
+              />
+              <ExportEvidenceButton reportId={report.id} />
+            </>
           )}
           <Button variant="outline" asChild>
             <Link href={`/reports/${report.id}/pdf`}>
