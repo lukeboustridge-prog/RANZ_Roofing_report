@@ -1,54 +1,37 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/db";
-import { AdminReportsContent } from "./admin-reports-content";
+import { ReportSearch } from "@/components/reports/ReportSearch";
+import { BatchPdfPanel } from "./admin-reports-content";
 
-async function getAllReports(userId: string) {
+async function checkAdminAccess(userId: string) {
   const user = await prisma.user.findUnique({
     where: { clerkId: userId },
   });
 
   if (!user || !["REVIEWER", "ADMIN", "SUPER_ADMIN"].includes(user.role)) {
-    return null;
+    return false;
   }
 
+  return true;
+}
+
+async function getReportLabels() {
   const reports = await prisma.report.findMany({
+    select: {
+      id: true,
+      reportNumber: true,
+      propertyAddress: true,
+      propertyCity: true,
+    },
     orderBy: { createdAt: "desc" },
     take: 100,
-    include: {
-      inspector: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      _count: {
-        select: {
-          photos: true,
-          defects: true,
-        },
-      },
-    },
   });
-
-  // Get status counts
-  const statusCounts = await prisma.report.groupBy({
-    by: ["status"],
-    _count: { status: true },
-  });
-
-  return {
-    reports,
-    statusCounts: statusCounts.reduce(
-      (acc, item) => {
-        acc[item.status] = item._count.status;
-        return acc;
-      },
-      {} as Record<string, number>
-    ),
-    total: await prisma.report.count(),
-  };
+  return reports.map((r) => ({
+    id: r.id,
+    reportNumber: r.reportNumber,
+    address: `${r.propertyAddress}${r.propertyCity ? `, ${r.propertyCity}` : ""}`,
+  }));
 }
 
 export default async function AdminReportsPage() {
@@ -58,34 +41,28 @@ export default async function AdminReportsPage() {
     redirect("/sign-in");
   }
 
-  const data = await getAllReports(userId);
+  const hasAccess = await checkAdminAccess(userId);
 
-  if (!data) {
+  if (!hasAccess) {
     redirect("/dashboard");
   }
 
-  const { reports, statusCounts, total } = data;
-
-  // Serialize dates to strings for client component
-  const serializedReports = reports.map((report) => ({
-    id: report.id,
-    reportNumber: report.reportNumber,
-    status: report.status,
-    inspectionType: report.inspectionType,
-    propertyAddress: report.propertyAddress,
-    propertyCity: report.propertyCity,
-    createdAt: report.createdAt.toISOString(),
-    submittedAt: report.submittedAt?.toISOString() ?? null,
-    approvedAt: report.approvedAt?.toISOString() ?? null,
-    inspector: report.inspector,
-    _count: report._count,
-  }));
+  const reportLabels = await getReportLabels();
 
   return (
-    <AdminReportsContent
-      reports={serializedReports}
-      statusCounts={statusCounts}
-      total={total}
-    />
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">All Reports</h1>
+        <p className="text-muted-foreground">
+          Search, filter, and manage all inspection reports
+        </p>
+      </div>
+
+      {/* Batch PDF generation panel (self-contained with own report checklist) */}
+      <BatchPdfPanel reportLabels={reportLabels} />
+
+      {/* Full search, filter, and report list */}
+      <ReportSearch />
+    </div>
   );
 }

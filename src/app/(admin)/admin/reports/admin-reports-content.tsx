@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -17,80 +21,32 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  FileText,
-  MapPin,
-  User,
-  Camera,
-  AlertTriangle,
-  ArrowRight,
-  Files,
-  Loader2,
-} from "lucide-react";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Files, Loader2, ChevronDown, ChevronRight, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { ReportStatus } from "@prisma/client";
 
-const statusConfig: Record<
-  ReportStatus,
-  { label: string; variant: "default" | "secondary" | "outline" | "destructive" }
-> = {
-  DRAFT: { label: "Draft", variant: "outline" },
-  IN_PROGRESS: { label: "In Progress", variant: "outline" },
-  PENDING_REVIEW: { label: "Pending Review", variant: "secondary" },
-  UNDER_REVIEW: { label: "Under Review", variant: "secondary" },
-  REVISION_REQUIRED: { label: "Revision Required", variant: "destructive" },
-  APPROVED: { label: "Approved", variant: "default" },
-  FINALISED: { label: "Finalised", variant: "default" },
-  ARCHIVED: { label: "Archived", variant: "outline" },
-};
-
-interface ReportItem {
+interface ReportLabel {
   id: string;
   reportNumber: string;
-  status: ReportStatus;
-  inspectionType: string;
-  propertyAddress: string;
-  propertyCity: string;
-  createdAt: string;
-  submittedAt: string | null;
-  approvedAt: string | null;
-  inspector: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  _count: {
-    photos: number;
-    defects: number;
-  };
+  address: string;
 }
 
-interface AdminReportsContentProps {
-  reports: ReportItem[];
-  statusCounts: Record<string, number>;
-  total: number;
+interface BatchPdfPanelProps {
+  reportLabels: ReportLabel[];
 }
 
-function formatDate(date: string | Date): string {
-  return new Date(date).toLocaleDateString("en-NZ", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-export function AdminReportsContent({
-  reports: initialReports,
-  statusCounts,
-  total,
-}: AdminReportsContentProps) {
-  const [reports] = useState(initialReports);
+export function BatchPdfPanel({ reportLabels }: BatchPdfPanelProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isGenerating, setIsGenerating] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
-  const allSelected = reports.length > 0 && selectedIds.size === reports.length;
-  const someSelected = selectedIds.size > 0 && selectedIds.size < reports.length;
+  const allSelected =
+    reportLabels.length > 0 && selectedIds.size === reportLabels.length;
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -108,9 +64,9 @@ export function AdminReportsContent({
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(reports.map((r) => r.id)));
+      setSelectedIds(new Set(reportLabels.map((r) => r.id)));
     }
-  }, [allSelected, reports]);
+  }, [allSelected, reportLabels]);
 
   const handleGeneratePdfs = useCallback(async () => {
     setShowConfirmDialog(false);
@@ -157,82 +113,109 @@ export function AdminReportsContent({
     }
   }, [selectedIds, toast]);
 
+  if (reportLabels.length === 0) return null;
+
   return (
-    <div className="space-y-8">
-      {/* Page header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">All Reports</h1>
-        <p className="text-muted-foreground">
-          View and manage all inspection reports ({total} total)
-        </p>
-      </div>
+    <>
+      <Card>
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">
+                  Batch PDF Generation
+                </CardTitle>
+                <CardDescription>
+                  Select reports and generate PDFs in bulk ({reportLabels.length}{" "}
+                  reports available)
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedIds.size > 0 && (
+                  <Button
+                    onClick={() => setShowConfirmDialog(true)}
+                    disabled={isGenerating}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Files className="mr-2 h-4 w-4" />
+                    )}
+                    {isGenerating
+                      ? "Generating..."
+                      : `Generate PDFs (${selectedIds.size})`}
+                  </Button>
+                )}
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    {isOpen ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                    <span className="ml-1 text-sm">
+                      {isOpen ? "Hide" : "Select reports"}
+                    </span>
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+            </div>
+          </CardHeader>
 
-      {/* Status filter */}
-      <div className="flex gap-2 flex-wrap">
-        {Object.entries(statusCounts).map(([status, count]) => (
-          <Badge
-            key={status}
-            variant={
-              statusConfig[status as ReportStatus]?.variant || "outline"
-            }
-            className="px-3 py-1.5"
-          >
-            {statusConfig[status as ReportStatus]?.label || status}: {count}
-          </Badge>
-        ))}
-      </div>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              {/* Select all toggle */}
+              <div className="flex items-center gap-2 pb-3 border-b mb-3">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Select all reports for PDF generation"
+                />
+                <span className="text-sm font-medium">
+                  {allSelected
+                    ? "Deselect all"
+                    : `Select all ${reportLabels.length} reports`}
+                </span>
+                {selectedIds.size > 0 && !allSelected && (
+                  <span className="text-sm text-muted-foreground">
+                    ({selectedIds.size} selected)
+                  </span>
+                )}
+              </div>
 
-      {/* Batch action bar */}
-      {reports.length > 0 && (
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              checked={allSelected}
-              ref={(el) => {
-                if (el) {
-                  // Set indeterminate state for "some selected"
-                  const input = el.querySelector("button");
-                  if (input) {
-                    (input as HTMLButtonElement).dataset.state = someSelected
-                      ? "indeterminate"
-                      : allSelected
-                        ? "checked"
-                        : "unchecked";
-                  }
-                }
-              }}
-              onCheckedChange={toggleSelectAll}
-              aria-label="Select all reports"
-            />
-            <span className="text-sm text-muted-foreground">
-              {selectedIds.size > 0
-                ? `${selectedIds.size} selected`
-                : "Select all"}
-            </span>
-          </div>
+              {/* Scrollable report checklist */}
+              <div className="max-h-64 overflow-y-auto space-y-1">
+                {reportLabels.map((report) => (
+                  <label
+                    key={report.id}
+                    className="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-muted/50 cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={selectedIds.has(report.id)}
+                      onCheckedChange={() => toggleSelect(report.id)}
+                      aria-label={`Select report ${report.reportNumber}`}
+                    />
+                    <span className="text-sm font-medium">
+                      {report.reportNumber}
+                    </span>
+                    <span className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      {report.address}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
 
-          {selectedIds.size > 0 && (
-            <Button
-              onClick={() => setShowConfirmDialog(true)}
-              disabled={isGenerating}
-              variant="outline"
-              size="sm"
-            >
-              {isGenerating ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Files className="mr-2 h-4 w-4" />
-              )}
-              {isGenerating
-                ? "Generating..."
-                : `Generate PDFs (${selectedIds.size})`}
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* Confirmation dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+      <AlertDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Generate PDFs</AlertDialogTitle>
@@ -249,107 +232,6 @@ export function AdminReportsContent({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Reports list */}
-      {reports.length === 0 ? (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">No reports yet</h3>
-              <p className="mt-2 text-muted-foreground">
-                Reports will appear here once inspectors create them.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {reports.map((report) => (
-            <Card
-              key={report.id}
-              className={`hover:shadow-md transition-shadow ${
-                selectedIds.has(report.id) ? "ring-2 ring-primary" : ""
-              }`}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  {/* Checkbox */}
-                  <div className="pt-1">
-                    <Checkbox
-                      checked={selectedIds.has(report.id)}
-                      onCheckedChange={() => toggleSelect(report.id)}
-                      aria-label={`Select report ${report.reportNumber}`}
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0 space-y-3">
-                    {/* Header */}
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="font-semibold text-lg">
-                        {report.reportNumber}
-                      </span>
-                      <Badge
-                        variant={
-                          statusConfig[report.status]?.variant || "outline"
-                        }
-                      >
-                        {statusConfig[report.status]?.label || report.status}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {report.inspectionType.replace(/_/g, " ")}
-                      </Badge>
-                    </div>
-
-                    {/* Property */}
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4 shrink-0" />
-                      <span>
-                        {report.propertyAddress}, {report.propertyCity}
-                      </span>
-                    </div>
-
-                    {/* Inspector */}
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <User className="h-4 w-4 shrink-0" />
-                        <span>{report.inspector.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Camera className="h-4 w-4" />
-                        <span>{report._count.photos} photos</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <AlertTriangle className="h-4 w-4" />
-                        <span>{report._count.defects} defects</span>
-                      </div>
-                    </div>
-
-                    {/* Dates */}
-                    <div className="text-xs text-muted-foreground">
-                      Created: {formatDate(report.createdAt)}
-                      {report.submittedAt &&
-                        ` | Submitted: ${formatDate(report.submittedAt)}`}
-                      {report.approvedAt &&
-                        ` | Approved: ${formatDate(report.approvedAt)}`}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="shrink-0">
-                    <Button variant="outline" asChild>
-                      <Link href={`/admin/reviews/${report.id}`}>
-                        View
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+    </>
   );
 }
