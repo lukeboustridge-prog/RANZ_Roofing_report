@@ -385,3 +385,101 @@ export async function sendReportRejectedNotification(
     html: wrapInTemplate(content, "Report Rejected"),
   });
 }
+
+// ============================================
+// Assignment Notification Templates
+// ============================================
+
+interface AssignmentDetails {
+  clientName: string;
+  propertyAddress: string;
+  inspectorName: string;
+  requestType: string;
+  urgency: string;
+  scheduledDate?: string;
+}
+
+interface InspectorAssignmentDetails {
+  inspectorName: string;
+  clientName: string;
+  clientEmail: string;
+  propertyAddress: string;
+  requestType: string;
+  urgency: string;
+  scheduledDate?: string;
+  assignmentUrl: string;
+  notes?: string;
+}
+
+/**
+ * Send confirmation email to client when assignment is created
+ */
+export async function sendAssignmentConfirmationEmail(
+  clientEmail: string,
+  details: AssignmentDetails
+): Promise<SendResult> {
+  const requestTypeFormatted = details.requestType.replace(/_/g, " ");
+
+  const content = `
+    <h2 style="color: #2d5c8f; margin: 0 0 16px 0; font-size: 18px;">Inspection Request Confirmed</h2>
+
+    <p style="margin: 0 0 16px 0;">Dear ${details.clientName},</p>
+
+    <p style="margin: 0 0 16px 0;">Your inspection request has been received and an inspector has been assigned.</p>
+
+    <div style="background-color: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 0 0 16px 0;">
+      <p style="margin: 0 0 8px 0;"><strong>Property Address:</strong> ${details.propertyAddress}</p>
+      <p style="margin: 0 0 8px 0;"><strong>Request Type:</strong> ${requestTypeFormatted}</p>
+      <p style="margin: 0 0 8px 0;"><strong>Urgency Level:</strong> ${details.urgency}</p>
+      ${details.scheduledDate ? `<p style="margin: 0 0 8px 0;"><strong>Scheduled Date:</strong> ${details.scheduledDate}</p>` : ""}
+      <p style="margin: 0;"><strong>Inspector:</strong> ${details.inspectorName}</p>
+    </div>
+
+    <p style="margin: 0 0 16px 0;">
+      Your inspector will be in contact to arrange access to the property. If you have any questions, please contact RANZ.
+    </p>
+  `;
+
+  return sendEmail({
+    to: clientEmail,
+    subject: `Inspection Request Confirmed - ${details.propertyAddress}`,
+    text: `Dear ${details.clientName}, your inspection request for ${details.propertyAddress} has been received. Inspector ${details.inspectorName} has been assigned and will contact you to arrange access. Request type: ${requestTypeFormatted}, Urgency: ${details.urgency}${details.scheduledDate ? `, Scheduled: ${details.scheduledDate}` : ""}.`,
+    html: wrapInTemplate(content, "Inspection Request Confirmed"),
+  });
+}
+
+/**
+ * Send assignment notification email to inspector
+ */
+export async function sendInspectorAssignmentEmail(
+  inspectorEmail: string,
+  details: InspectorAssignmentDetails
+): Promise<SendResult> {
+  const requestTypeFormatted = details.requestType.replace(/_/g, " ");
+
+  const content = `
+    <h2 style="color: #2d5c8f; margin: 0 0 16px 0; font-size: 18px;">New Inspection Assignment</h2>
+
+    <p style="margin: 0 0 16px 0;">You have been assigned a new inspection.</p>
+
+    <div style="background-color: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 0 0 16px 0;">
+      <p style="margin: 0 0 8px 0;"><strong>Property Address:</strong> ${details.propertyAddress}</p>
+      <p style="margin: 0 0 8px 0;"><strong>Client Name:</strong> ${details.clientName}</p>
+      <p style="margin: 0 0 8px 0;"><strong>Request Type:</strong> ${requestTypeFormatted}</p>
+      <p style="margin: 0 0 8px 0;"><strong>Urgency:</strong> ${details.urgency}</p>
+      ${details.scheduledDate ? `<p style="margin: 0 0 8px 0;"><strong>Scheduled Date:</strong> ${details.scheduledDate}</p>` : ""}
+      ${details.notes ? `<p style="margin: 0;"><strong>Notes:</strong> ${details.notes}</p>` : ""}
+    </div>
+
+    <a href="${details.assignmentUrl}" style="display: inline-block; background-color: #2d5c8f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500;">
+      View Assignment
+    </a>
+  `;
+
+  return sendEmail({
+    to: inspectorEmail,
+    subject: `[New Assignment] ${details.propertyAddress} - ${requestTypeFormatted}`,
+    text: `New assignment: ${requestTypeFormatted} inspection for ${details.propertyAddress}. Client: ${details.clientName} (${details.clientEmail}). Urgency: ${details.urgency}${details.scheduledDate ? `, Scheduled: ${details.scheduledDate}` : ""}${details.notes ? `. Notes: ${details.notes}` : ""}. View details at: ${details.assignmentUrl}`,
+    html: wrapInTemplate(content, "New Inspection Assignment"),
+  });
+}
