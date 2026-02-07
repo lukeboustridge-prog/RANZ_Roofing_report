@@ -93,6 +93,11 @@ Plans:
   1. Email-sending functions use emailTemplateService.renderTemplate() so admin template edits affect actual emails
   2. Admin dashboard has quick action cards linking to Email Templates, API Docs, and All Reports pages
   3. Admin reports page supports filtering by severity, compliance status, inspector, and date range
+**Plans:** 2 plans
+
+Plans:
+- [ ] 10-01-PLAN.md -- Wire all 8 email functions to use emailTemplateService.renderTemplate() with hardcoded fallback
+- [ ] 10-02-PLAN.md -- Add 3 admin dashboard quick action cards + refactor admin reports to use ReportSearch with batch PDF
 
 ## Progress
 
@@ -105,4 +110,4 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 | 7. Notifications & Sharing | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 8. Search, Filtering & Templates | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 9. Export, Bulk & Admin | v1.1 | 4/4 | Complete | 2026-02-07 |
-| 10. Admin Polish & Email Wire-Up | v1.1 | 0/0 | Not started | - |
+| 10. Admin Polish & Email Wire-Up | v1.1 | 0/2 | In progress | - |
