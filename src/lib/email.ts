@@ -364,8 +364,21 @@ export async function sendReportFinalizedNotification(
 ): Promise<SendResult[]> {
   const results: SendResult[] = [];
 
-  // Notify inspector
-  const inspectorContent = `
+  // Notify inspector (uses template service)
+  const inspectorVariables = {
+    reportNumber: report.reportNumber,
+    propertyAddress: report.propertyAddress,
+    inspectorName: report.inspectorName,
+    inspectorEmail: report.inspectorEmail,
+    reportUrl: report.reportUrl,
+  };
+
+  let inspectorRendered: { subject: string; html: string; text: string };
+  try {
+    inspectorRendered = await emailTemplateService.renderTemplate("REPORT_FINALIZED", inspectorVariables);
+  } catch (error) {
+    console.warn("[Email] Template service failed for REPORT_FINALIZED, using hardcoded fallback:", error instanceof Error ? error.message : error);
+    const inspectorContent = `
     <h2 style="color: #16a34a; margin: 0 0 16px 0; font-size: 18px;">Report Finalized</h2>
 
     <p style="margin: 0 0 16px 0;">Your report has been finalized and is ready for delivery to your client.</p>
@@ -383,17 +396,23 @@ export async function sendReportFinalizedNotification(
       This report has been locked and can no longer be edited.
     </p>
   `;
+    inspectorRendered = {
+      subject: `[Finalized] Report ${report.reportNumber} - Ready for Delivery`,
+      text: `Your report ${report.reportNumber} for ${report.propertyAddress} has been finalized. Download PDF at: ${report.reportUrl}/pdf`,
+      html: wrapInTemplate(inspectorContent, "Report Finalized"),
+    };
+  }
 
   results.push(
     await sendEmail({
       to: report.inspectorEmail,
-      subject: `[Finalized] Report ${report.reportNumber} - Ready for Delivery`,
-      text: `Your report ${report.reportNumber} for ${report.propertyAddress} has been finalized. Download PDF at: ${report.reportUrl}/pdf`,
-      html: wrapInTemplate(inspectorContent, "Report Finalized"),
+      subject: inspectorRendered.subject,
+      text: inspectorRendered.text,
+      html: inspectorRendered.html,
     })
   );
 
-  // Optionally notify client if email provided
+  // Optionally notify client if email provided (no template type -- stays hardcoded)
   if (clientEmail) {
     const clientContent = `
       <h2 style="color: #2d5c8f; margin: 0 0 16px 0; font-size: 18px;">Your Roofing Inspection Report is Ready</h2>
@@ -433,7 +452,20 @@ export async function sendReportRejectedNotification(
   reviewerName: string,
   reason: string
 ): Promise<SendResult> {
-  const content = `
+  const variables = {
+    reportNumber: report.reportNumber,
+    propertyAddress: report.propertyAddress,
+    reviewerName,
+    reason,
+    reportUrl: report.reportUrl,
+  };
+
+  let rendered: { subject: string; html: string; text: string };
+  try {
+    rendered = await emailTemplateService.renderTemplate("REPORT_REJECTED", variables);
+  } catch (error) {
+    console.warn("[Email] Template service failed for REPORT_REJECTED, using hardcoded fallback:", error instanceof Error ? error.message : error);
+    const content = `
     <h2 style="color: #dc2626; margin: 0 0 16px 0; font-size: 18px;">Report Rejected</h2>
 
     <p style="margin: 0 0 16px 0;">Unfortunately, your report has been rejected and cannot proceed in its current form.</p>
@@ -457,12 +489,18 @@ export async function sendReportRejectedNotification(
       Please review the feedback and consider starting a new inspection if necessary.
     </p>
   `;
+    rendered = {
+      subject: `[Rejected] Report ${report.reportNumber} - ${report.propertyAddress}`,
+      text: `Your report ${report.reportNumber} for ${report.propertyAddress} has been rejected by ${reviewerName}. Reason: ${reason}. View at: ${report.reportUrl}`,
+      html: wrapInTemplate(content, "Report Rejected"),
+    };
+  }
 
   return sendEmail({
     to: report.inspectorEmail,
-    subject: `[Rejected] Report ${report.reportNumber} - ${report.propertyAddress}`,
-    text: `Your report ${report.reportNumber} for ${report.propertyAddress} has been rejected by ${reviewerName}. Reason: ${reason}. View at: ${report.reportUrl}`,
-    html: wrapInTemplate(content, "Report Rejected"),
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
   });
 }
 
@@ -500,7 +538,21 @@ export async function sendAssignmentConfirmationEmail(
 ): Promise<SendResult> {
   const requestTypeFormatted = details.requestType.replace(/_/g, " ");
 
-  const content = `
+  const variables = {
+    clientName: details.clientName,
+    propertyAddress: details.propertyAddress,
+    requestType: requestTypeFormatted,
+    urgency: details.urgency,
+    scheduledDate: details.scheduledDate || "",
+    inspectorName: details.inspectorName,
+  };
+
+  let rendered: { subject: string; html: string; text: string };
+  try {
+    rendered = await emailTemplateService.renderTemplate("ASSIGNMENT_CONFIRMATION", variables);
+  } catch (error) {
+    console.warn("[Email] Template service failed for ASSIGNMENT_CONFIRMATION, using hardcoded fallback:", error instanceof Error ? error.message : error);
+    const content = `
     <h2 style="color: #2d5c8f; margin: 0 0 16px 0; font-size: 18px;">Inspection Request Confirmed</h2>
 
     <p style="margin: 0 0 16px 0;">Dear ${details.clientName},</p>
@@ -519,12 +571,18 @@ export async function sendAssignmentConfirmationEmail(
       Your inspector will be in contact to arrange access to the property. If you have any questions, please contact RANZ.
     </p>
   `;
+    rendered = {
+      subject: `Inspection Request Confirmed - ${details.propertyAddress}`,
+      text: `Dear ${details.clientName}, your inspection request for ${details.propertyAddress} has been received. Inspector ${details.inspectorName} has been assigned and will contact you to arrange access. Request type: ${requestTypeFormatted}, Urgency: ${details.urgency}${details.scheduledDate ? `, Scheduled: ${details.scheduledDate}` : ""}.`,
+      html: wrapInTemplate(content, "Inspection Request Confirmed"),
+    };
+  }
 
   return sendEmail({
     to: clientEmail,
-    subject: `Inspection Request Confirmed - ${details.propertyAddress}`,
-    text: `Dear ${details.clientName}, your inspection request for ${details.propertyAddress} has been received. Inspector ${details.inspectorName} has been assigned and will contact you to arrange access. Request type: ${requestTypeFormatted}, Urgency: ${details.urgency}${details.scheduledDate ? `, Scheduled: ${details.scheduledDate}` : ""}.`,
-    html: wrapInTemplate(content, "Inspection Request Confirmed"),
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
   });
 }
 
@@ -537,7 +595,24 @@ export async function sendInspectorAssignmentEmail(
 ): Promise<SendResult> {
   const requestTypeFormatted = details.requestType.replace(/_/g, " ");
 
-  const content = `
+  const variables = {
+    inspectorName: details.inspectorName,
+    clientName: details.clientName,
+    clientEmail: details.clientEmail,
+    propertyAddress: details.propertyAddress,
+    requestType: requestTypeFormatted,
+    urgency: details.urgency,
+    scheduledDate: details.scheduledDate || "",
+    notes: details.notes || "",
+    assignmentUrl: details.assignmentUrl,
+  };
+
+  let rendered: { subject: string; html: string; text: string };
+  try {
+    rendered = await emailTemplateService.renderTemplate("INSPECTOR_ASSIGNMENT", variables);
+  } catch (error) {
+    console.warn("[Email] Template service failed for INSPECTOR_ASSIGNMENT, using hardcoded fallback:", error instanceof Error ? error.message : error);
+    const content = `
     <h2 style="color: #2d5c8f; margin: 0 0 16px 0; font-size: 18px;">New Inspection Assignment</h2>
 
     <p style="margin: 0 0 16px 0;">You have been assigned a new inspection.</p>
@@ -555,11 +630,17 @@ export async function sendInspectorAssignmentEmail(
       View Assignment
     </a>
   `;
+    rendered = {
+      subject: `[New Assignment] ${details.propertyAddress} - ${requestTypeFormatted}`,
+      text: `New assignment: ${requestTypeFormatted} inspection for ${details.propertyAddress}. Client: ${details.clientName} (${details.clientEmail}). Urgency: ${details.urgency}${details.scheduledDate ? `, Scheduled: ${details.scheduledDate}` : ""}${details.notes ? `. Notes: ${details.notes}` : ""}. View details at: ${details.assignmentUrl}`,
+      html: wrapInTemplate(content, "New Inspection Assignment"),
+    };
+  }
 
   return sendEmail({
     to: inspectorEmail,
-    subject: `[New Assignment] ${details.propertyAddress} - ${requestTypeFormatted}`,
-    text: `New assignment: ${requestTypeFormatted} inspection for ${details.propertyAddress}. Client: ${details.clientName} (${details.clientEmail}). Urgency: ${details.urgency}${details.scheduledDate ? `, Scheduled: ${details.scheduledDate}` : ""}${details.notes ? `. Notes: ${details.notes}` : ""}. View details at: ${details.assignmentUrl}`,
-    html: wrapInTemplate(content, "New Inspection Assignment"),
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
   });
 }
