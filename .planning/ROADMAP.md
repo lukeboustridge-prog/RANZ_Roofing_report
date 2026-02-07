@@ -3,18 +3,18 @@
 ## Milestones
 
 - **v1.0 MVP** - Phases 1-5 (shipped)
-- **v1.1 Pre-Pilot Hardening** - Phases 6-9 (in progress)
+- **v1.1 Pre-Pilot Hardening** - Phases 6-9 (complete)
 
 ## Phases
 
-### v1.1 Pre-Pilot Hardening (In Progress)
+### v1.1 Pre-Pilot Hardening (Complete)
 
 **Milestone Goal:** Close all functional gaps identified in the codebase audit before UAT with real inspectors. Court-ready PDF output, complete notification pipeline, advanced filtering, and admin tooling.
 
 - [x] **Phase 6: PDF Court-Readiness** - ISO 17020 sections and compliance results in PDF output
 - [x] **Phase 7: Notifications & Sharing** - Email notifications, web push sending, and shared report security
 - [x] **Phase 8: Search, Filtering & Templates** - Report filtering by severity, compliance, inspector, date; template wiring
-- [ ] **Phase 9: Export, Bulk & Admin** - Evidence ZIP export, bulk PDF generation, notification management, API docs
+- [x] **Phase 9: Export, Bulk & Admin** - Evidence ZIP export, bulk PDF generation, notification management, API docs
 
 ## Phase Details
 
@@ -78,10 +78,10 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 09-01-PLAN.md -- Evidence package ZIP export (service + API + UI button)
-- [ ] 09-02-PLAN.md -- Bulk PDF generation + notification archiving
-- [ ] 09-03-PLAN.md -- Email template model, rendering service, and CRUD API
-- [ ] 09-04-PLAN.md -- Email template admin UI + OpenAPI/Swagger documentation
+- [x] 09-01-PLAN.md -- Evidence package ZIP export (service + API + UI button)
+- [x] 09-02-PLAN.md -- Bulk PDF generation + notification archiving
+- [x] 09-03-PLAN.md -- Email template model, rendering service, and CRUD API
+- [x] 09-04-PLAN.md -- Email template admin UI + OpenAPI/Swagger documentation
 
 ## Progress
 
@@ -93,4 +93,4 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9
 | 6. PDF Court-Readiness | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 7. Notifications & Sharing | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 8. Search, Filtering & Templates | v1.1 | 2/2 | Complete | 2026-02-07 |
-| 9. Export, Bulk & Admin | v1.1 | 0/4 | Not started | - |
+| 9. Export, Bulk & Admin | v1.1 | 4/4 | Complete | 2026-02-07 |

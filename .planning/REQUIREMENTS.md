@@ -14,16 +14,16 @@ Requirements for pre-pilot hardening. Each maps to roadmap phases.
 - [x] **PDF-03**: PDF includes limitations section documenting access restrictions and caveats
 - [x] **PDF-04**: PDF includes access method section describing how roof was accessed
 - [x] **PDF-05**: PDF includes compliance assessment results (B2/E2/COP analysis with pass/fail/NA)
-- [ ] **PDF-06**: User can export evidence package as ZIP (report PDF + original photos + chain of custody certificates)
-- [ ] **PDF-07**: Admin can generate PDFs for multiple reports in a single batch operation
+- [x] **PDF-06**: User can export evidence package as ZIP (report PDF + original photos + chain of custody certificates)
+- [x] **PDF-07**: Admin can generate PDFs for multiple reports in a single batch operation
 
 ### Notifications & Emails
 
 - [x] **NOTIF-01**: Client receives confirmation email when inspection request is created
 - [x] **NOTIF-02**: Inspector receives notification when assigned to an inspection request
 - [x] **NOTIF-03**: Web push notifications are sent to subscribed users for relevant events
-- [ ] **NOTIF-04**: Notifications older than a configurable threshold are automatically archived
-- [ ] **NOTIF-05**: Admin can view and customise email notification templates
+- [x] **NOTIF-04**: Notifications older than a configurable threshold are automatically archived
+- [x] **NOTIF-05**: Admin can view and customise email notification templates
 
 ### Search & Filtering
 
@@ -42,7 +42,7 @@ Requirements for pre-pilot hardening. Each maps to roadmap phases.
 
 ### API Documentation
 
-- [ ] **API-01**: OpenAPI/Swagger specification is generated from API routes and served at a documentation endpoint
+- [x] **API-01**: OpenAPI/Swagger specification is generated from API routes and served at a documentation endpoint
 
 ## v2 Requirements
 
@@ -93,20 +93,20 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PDF-03 | Phase 6 | Complete |
 | PDF-04 | Phase 6 | Complete |
 | PDF-05 | Phase 6 | Complete |
-| PDF-06 | Phase 9 | Pending |
-| PDF-07 | Phase 9 | Pending |
+| PDF-06 | Phase 9 | Complete |
+| PDF-07 | Phase 9 | Complete |
 | NOTIF-01 | Phase 7 | Complete |
 | NOTIF-02 | Phase 7 | Complete |
 | NOTIF-03 | Phase 7 | Complete |
-| NOTIF-04 | Phase 9 | Pending |
-| NOTIF-05 | Phase 9 | Pending |
+| NOTIF-04 | Phase 9 | Complete |
+| NOTIF-05 | Phase 9 | Complete |
 | SRCH-01 | Phase 8 | Complete |
 | SRCH-02 | Phase 8 | Complete |
 | SRCH-03 | Phase 8 | Complete |
 | SRCH-04 | Phase 8 | Complete |
 | SHARE-01 | Phase 7 | Complete |
 | TMPL-01 | Phase 8 | Complete |
-| API-01 | Phase 9 | Pending |
+| API-01 | Phase 9 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 19 total
@@ -115,4 +115,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-07*
-*Last updated: 2026-02-07 after Phase 8 completion (SRCH-01..04, TMPL-01 → Complete)*
+*Last updated: 2026-02-07 after Phase 9 completion (PDF-06, PDF-07, NOTIF-04, NOTIF-05, API-01 → Complete)*
