@@ -68,6 +68,8 @@ interface FormData {
   inspectionDate: string;
   inspectionType: string;
   weatherConditions: string;
+  methodology: string;
+  equipment: string;
   accessMethod: string;
   limitations: string;
   clientName: string;
@@ -97,6 +99,8 @@ export default function EditReportPage() {
         ...data,
         buildingAge: data.buildingAge ? parseInt(data.buildingAge) : null,
         inspectionDate: new Date(data.inspectionDate).toISOString(),
+        methodology: data.methodology || null,
+        equipment: data.equipment ? data.equipment.split(/[,\n]/).map((s: string) => s.trim()).filter(Boolean) : null,
       }),
     });
 
@@ -137,6 +141,8 @@ export default function EditReportPage() {
           : "",
         inspectionType: data.inspectionType || "FULL_INSPECTION",
         weatherConditions: data.weatherConditions || "",
+        methodology: typeof data.methodology === 'string' ? data.methodology : (data.methodology ? JSON.stringify(data.methodology) : ""),
+        equipment: Array.isArray(data.equipment) ? data.equipment.join(", ") : (typeof data.equipment === 'string' ? data.equipment : ""),
         accessMethod: data.accessMethod || "",
         limitations: data.limitations || "",
         clientName: data.clientName || "",
@@ -174,6 +180,8 @@ export default function EditReportPage() {
           ...formData,
           buildingAge: formData.buildingAge ? parseInt(formData.buildingAge) : null,
           inspectionDate: new Date(formData.inspectionDate).toISOString(),
+          methodology: formData.methodology || null,
+          equipment: formData.equipment ? formData.equipment.split(/[,\n]/).map(s => s.trim()).filter(Boolean) : null,
         }),
       });
 
@@ -415,6 +423,36 @@ export default function EditReportPage() {
                 disabled={isFinalised}
                 placeholder="Fine, 18°C, light wind"
               />
+            </div>
+
+            <div>
+              <Label htmlFor="methodology">Inspection Methodology</Label>
+              <Textarea
+                id="methodology"
+                value={formData.methodology}
+                onChange={(e) => updateField("methodology", e.target.value)}
+                disabled={isFinalised}
+                placeholder="Describe the inspection approach, process, and standards followed..."
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                ISO 17020 required. Describe the inspection process and standards referenced.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="equipment">Equipment Used</Label>
+              <Textarea
+                id="equipment"
+                value={formData.equipment}
+                onChange={(e) => updateField("equipment", e.target.value)}
+                disabled={isFinalised}
+                placeholder="List instruments used, separated by commas or new lines (e.g., moisture meter, drone, thermal camera...)"
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                ISO 17020 required. List all instruments and tools used during inspection.
+              </p>
             </div>
 
             <div>

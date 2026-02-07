@@ -92,6 +92,7 @@ export const UpdateReportSchema = CreateReportSchema.partial().extend({
   engagingParty: z.string().max(200).optional().nullable(),
   scopeOfWorks: z.unknown().optional(),
   methodology: z.unknown().optional(),
+  equipment: z.union([z.array(z.string()), z.unknown()]).optional().nullable(),
   findings: z.unknown().optional(),
   conclusions: z.unknown().optional(),
   recommendations: z.unknown().optional(),
