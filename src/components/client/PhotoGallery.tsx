@@ -3,6 +3,7 @@
 /**
  * Photo Gallery Component
  * Grid display with lightbox for viewing photos
+ * Includes sync status indicators for mobile-captured photos
  */
 
 import { useState, useCallback, useEffect } from "react";
@@ -15,10 +16,15 @@ import {
   ZoomOut,
   Download,
   Maximize2,
+  ImageOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  SyncStatusBadge,
+  deriveSyncStatus,
+} from "@/components/reports/sync-status-badge";
 
 export interface Photo {
   id: string;
@@ -26,6 +32,14 @@ export interface Photo {
   thumbnailUrl?: string | null;
   caption?: string | null;
   photoType?: string;
+  /** Whether the photo hash has been verified on the server */
+  hashVerified?: boolean;
+  /** When the photo was uploaded to the server */
+  uploadedAt?: Date | string | null;
+  /** Optional sync error flag */
+  syncError?: boolean;
+  /** Optional offline flag */
+  isOffline?: boolean;
 }
 
 interface PhotoGalleryProps {
@@ -113,42 +127,87 @@ export function PhotoGallery({
     <>
       {/* Grid */}
       <div className={cn(`grid gap-4 ${columnClasses[columns]}`, className)}>
-        {photos.map((photo, index) => (
-          <button
-            key={photo.id}
-            onClick={() => openLightbox(index)}
-            className="group relative aspect-square rounded-lg overflow-hidden bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-          >
-            <Image
-              src={photo.thumbnailUrl || photo.url}
-              alt={photo.caption || `Photo ${index + 1}`}
-              fill
-              className="object-cover transition-transform group-hover:scale-105"
-            />
-            {/* Overlay on hover */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-              <Maximize2 className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            {/* Caption overlay */}
-            {photo.caption && (
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                <p className="text-white text-xs truncate">{photo.caption}</p>
+        {photos.map((photo, index) => {
+          const syncStatus = deriveSyncStatus(photo);
+          const isPending = syncStatus === "pending" || syncStatus === "syncing";
+          const hasUrl = !!photo.url;
+
+          return (
+            <button
+              key={photo.id}
+              onClick={() => hasUrl && openLightbox(index)}
+              className={cn(
+                "group relative aspect-square rounded-lg overflow-hidden bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                isPending && "opacity-70 cursor-not-allowed",
+                !hasUrl && "cursor-not-allowed"
+              )}
+              disabled={!hasUrl}
+              aria-label={
+                !hasUrl
+                  ? `Photo ${index + 1} - pending upload`
+                  : photo.caption || `Photo ${index + 1}`
+              }
+            >
+              {/* Photo or placeholder */}
+              {hasUrl ? (
+                <Image
+                  src={photo.thumbnailUrl || photo.url}
+                  alt={photo.caption || `Photo ${index + 1}`}
+                  fill
+                  className={cn(
+                    "object-cover transition-transform",
+                    !isPending && "group-hover:scale-105"
+                  )}
+                />
+              ) : (
+                /* Placeholder for pending photos without URL */
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800">
+                  <ImageOff className="w-8 h-8 text-slate-400 mb-2" />
+                  <span className="text-xs text-slate-500">Pending Upload</span>
+                </div>
+              )}
+
+              {/* Overlay on hover - only for synced photos */}
+              {hasUrl && !isPending && (
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                  <Maximize2 className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              )}
+
+              {/* Caption overlay */}
+              {photo.caption && (
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                  <p className="text-white text-xs truncate">{photo.caption}</p>
+                </div>
+              )}
+
+              {/* Photo type badge - top left */}
+              {photo.photoType && (
+                <div className="absolute top-2 left-2">
+                  <Badge variant="secondary" className="text-xs bg-black/50 text-white border-0">
+                    {photo.photoType.replace(/_/g, " ")}
+                  </Badge>
+                </div>
+              )}
+
+              {/* Sync status badge - top right */}
+              <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+                <SyncStatusBadge
+                  status={syncStatus}
+                  hashVerified={photo.hashVerified}
+                  size="sm"
+                  showLabel={false}
+                />
               </div>
-            )}
-            {/* Photo type badge */}
-            {photo.photoType && (
-              <div className="absolute top-2 left-2">
-                <Badge variant="secondary" className="text-xs bg-black/50 text-white border-0">
-                  {photo.photoType.replace(/_/g, " ")}
-                </Badge>
-              </div>
-            )}
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
 
       {/* Lightbox */}
-      {lightboxOpen && currentPhoto && (
+      {lightboxOpen && currentPhoto && (() => {
+        const currentSyncStatus = deriveSyncStatus(currentPhoto);
+        return (
         <div
           className="fixed inset-0 z-50 bg-black/95 flex flex-col"
           onClick={closeLightbox}
@@ -164,6 +223,15 @@ export function PhotoGallery({
                   {currentPhoto.caption}
                 </span>
               )}
+              {/* Sync status in lightbox header */}
+              <div onClick={(e) => e.stopPropagation()}>
+                <SyncStatusBadge
+                  status={currentSyncStatus}
+                  hashVerified={currentPhoto.hashVerified}
+                  size="sm"
+                  showLabel={true}
+                />
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -291,7 +359,8 @@ export function PhotoGallery({
             </div>
           )}
         </div>
-      )}
+        );
+      })()}
     </>
   );
 }
