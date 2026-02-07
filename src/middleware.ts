@@ -150,6 +150,10 @@ function clerkMiddlewareHandler(req: NextRequest) {
     }
 
     return NextResponse.next();
+  }, {
+    domain: process.env.NEXT_PUBLIC_CLERK_DOMAIN,
+    isSatellite: process.env.NEXT_PUBLIC_CLERK_IS_SATELLITE === "true",
+    signInUrl: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL,
   })(req, {} as NextFetchEvent);
 }
 

@@ -30,13 +30,26 @@ export const viewport: Viewport = {
   ],
 };
 
+const isSatellite = process.env.NEXT_PUBLIC_CLERK_IS_SATELLITE === "true";
+const satelliteProps = isSatellite && process.env.NEXT_PUBLIC_CLERK_DOMAIN
+  ? {
+      isSatellite: true as const,
+      domain: process.env.NEXT_PUBLIC_CLERK_DOMAIN,
+      signInUrl: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL,
+      signUpUrl: process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL,
+      signInFallbackRedirectUrl: "/dashboard" as const,
+    }
+  : {};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      {...satelliteProps}
+    >
       <html
         lang="en"
         style={
