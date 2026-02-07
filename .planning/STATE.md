@@ -10,24 +10,24 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 6 of 9 (PDF Court-Readiness)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-07 -- Roadmap created for v1.1 Pre-Pilot Hardening
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-07 -- Completed 06-01-PLAN.md (methodology and equipment form fields)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0 (v1.1)
-- Average duration: -
-- Total execution time: -
+- Total plans completed: 1 (v1.1)
+- Average duration: 3min
+- Total execution time: 3min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 06-pdf-court-readiness | 1/2 | 3min | 3min |
 
 *Updated after each plan completion*
 
@@ -44,6 +44,9 @@ Recent decisions affecting current work:
 - Landing page uses cookies() + dynamic auth -- can't be force-static
 - Admin analytics is a Server Component -- no dynamic import needed
 - Not-found pages already existed -- check before creating
+- Equipment stored as string[] in DB, displayed as comma-separated text in form (06-01)
+- Methodology stored as plain string for simple textarea round-trip (06-01)
+- Equipment validation uses z.union for backward compatibility with existing JSON data (06-01)
 
 ### Pending Todos
 
@@ -51,10 +54,10 @@ None yet.
 
 ### Blockers/Concerns
 
-None yet.
+- Pre-existing type errors in src/lib/validation.test.ts (unrelated to current work, existed before phase 6)
 
 ## Session Continuity
 
 Last session: 2026-02-07
-Stopped at: Roadmap created for v1.1 milestone (4 phases, 19 requirements mapped)
+Stopped at: Completed 06-01-PLAN.md (methodology and equipment form fields)
 Resume file: None
