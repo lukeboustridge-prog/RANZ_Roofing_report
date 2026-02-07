@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 9 of 9 (Export, Bulk & Admin)
-Plan: 09-02 complete (09-02, 09-03 done; 09-01, 09-04 remaining)
+Plan: 09-01 complete (09-01, 09-02, 09-03 done; 09-04 remaining)
 Status: In progress
-Last activity: 2026-02-07 -- Completed 09-02-PLAN.md (batch PDF, notification archive)
+Last activity: 2026-02-07 -- Completed 09-01-PLAN.md (evidence export package)
 
-Progress: [████████░░] 80% (8/10 plans)
+Progress: [█████████░] 90% (9/10 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8 (v1.1)
-- Average duration: 6.75min
-- Total execution time: 54min
+- Total plans completed: 9 (v1.1)
+- Average duration: 7.1min
+- Total execution time: 64min
 
 **By Phase:**
 
@@ -30,7 +30,7 @@ Progress: [████████░░] 80% (8/10 plans)
 | 06-pdf-court-readiness | 2/2 | 9min | 4.5min |
 | 07-notifications-sharing | 2/2 | 12min | 6min |
 | 08-search-filtering-templates | 2/2 | 13min | 6.5min |
-| 09-export-bulk-admin | 2/4 | 20min | 10min |
+| 09-export-bulk-admin | 3/4 | 30min | 10min |
 
 *Updated after each plan completion*
 
@@ -66,6 +66,10 @@ Recent decisions affecting current work:
 - Admin reports page split into Server Component (data fetch) + client content component (interactive list) (09-02)
 - PDF modules loaded once per batch request, not per report (09-02)
 - Notification archive only targets read+non-dismissed notifications for safety (09-02)
+- EVIDENCE_EXPORTED added to AuditAction enum for dedicated evidence export audit trail (09-01)
+- PDF generation error in evidence export adds error notice file rather than failing entire package (09-01)
+- Export button uses inline error tooltip, not toast (dashboard layout has no Toaster) (09-01)
+- Compression level 6 for evidence ZIP (speed/size balance vs level 9 for LBP packages) (09-01)
 
 ### Pending Todos
 
@@ -77,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-07
-Stopped at: Completed 09-02-PLAN.md
+Last session: 2026-02-07T06:36:19Z
+Stopped at: Completed 09-01-PLAN.md
 Resume file: None
