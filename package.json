@@ -39,6 +39,8 @@
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-switch": "^1.2.6",
     "@react-pdf/renderer": "^4.3.2",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.36.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cookie": "^1.1.1",
@@ -69,6 +71,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@clerk/testing": "^1.13.35",
     "@eslint/eslintrc": "^3.3.3",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.58.0",

@@ -39,6 +39,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    // Validate file size (max 50MB)
+    const MAX_DOC_SIZE = 50 * 1024 * 1024;
+    if (file.size > MAX_DOC_SIZE) {
+      return NextResponse.json(
+        { error: "File too large. Maximum document size is 50MB." },
+        { status: 400 }
+      );
+    }
+
+    // Validate MIME type
+    const ALLOWED_DOC_TYPES = [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/tiff",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    if (!ALLOWED_DOC_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { error: "Invalid file type. Allowed: PDF, images, Word documents." },
+        { status: 400 }
+      );
+    }
+
     const metadata = metadataStr ? JSON.parse(metadataStr) : {};
     const { reportId, documentType, title } = metadata;
 

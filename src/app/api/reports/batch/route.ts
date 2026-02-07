@@ -16,7 +16,7 @@ const batchActionSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   // Apply rate limiting
-  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.strict);
+  const rateLimitResult = await rateLimit(request, RATE_LIMIT_PRESETS.strict);
   if (rateLimitResult) return rateLimitResult;
 
   try {

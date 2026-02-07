@@ -19,7 +19,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   // Apply strict rate limiting for PDF generation (expensive operation)
-  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.pdf);
+  const rateLimitResult = await rateLimit(request, RATE_LIMIT_PRESETS.pdf);
   if (rateLimitResult) return rateLimitResult;
 
   try {

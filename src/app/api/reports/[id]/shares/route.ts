@@ -97,7 +97,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   // Apply rate limiting
-  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.standard);
+  const rateLimitResult = await rateLimit(request, RATE_LIMIT_PRESETS.standard);
   if (rateLimitResult) return rateLimitResult;
 
   try {

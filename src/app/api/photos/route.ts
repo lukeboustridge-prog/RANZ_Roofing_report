@@ -17,7 +17,7 @@ const uploadSchema = z.object({
 // POST /api/photos - Upload photo
 export async function POST(request: NextRequest) {
   // Apply rate limiting for photo uploads
-  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.upload);
+  const rateLimitResult = await rateLimit(request, RATE_LIMIT_PRESETS.upload);
   if (rateLimitResult) return rateLimitResult;
 
   try {
@@ -41,6 +41,30 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    // Validate file size (max 25MB)
+    const MAX_PHOTO_SIZE = 25 * 1024 * 1024;
+    if (file.size > MAX_PHOTO_SIZE) {
+      return NextResponse.json(
+        { error: "File too large. Maximum photo size is 25MB." },
+        { status: 400 }
+      );
+    }
+
+    // Validate MIME type
+    const ALLOWED_PHOTO_TYPES = [
+      "image/jpeg",
+      "image/png",
+      "image/heic",
+      "image/heif",
+      "image/webp",
+    ];
+    if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { error: "Invalid file type. Allowed: JPEG, PNG, HEIC, WebP." },
+        { status: 400 }
+      );
     }
 
     if (!metadata) {

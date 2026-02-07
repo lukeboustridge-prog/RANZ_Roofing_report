@@ -9,7 +9,7 @@ import { rateLimit, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
  */
 export async function GET(request: NextRequest) {
   // Apply rate limiting
-  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.standard);
+  const rateLimitResult = await rateLimit(request, RATE_LIMIT_PRESETS.standard);
   if (rateLimitResult) return rateLimitResult;
 
   try {

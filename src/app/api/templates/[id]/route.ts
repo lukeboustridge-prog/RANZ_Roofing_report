@@ -43,7 +43,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   // Apply rate limiting
-  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.standard);
+  const rateLimitResult = await rateLimit(request, RATE_LIMIT_PRESETS.standard);
   if (rateLimitResult) return rateLimitResult;
 
   try {
@@ -84,7 +84,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   // Apply rate limiting
-  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.standard);
+  const rateLimitResult = await rateLimit(request, RATE_LIMIT_PRESETS.standard);
   if (rateLimitResult) return rateLimitResult;
 
   try {
@@ -192,7 +192,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   // Apply rate limiting
-  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.standard);
+  const rateLimitResult = await rateLimit(request, RATE_LIMIT_PRESETS.standard);
   if (rateLimitResult) return rateLimitResult;
 
   try {

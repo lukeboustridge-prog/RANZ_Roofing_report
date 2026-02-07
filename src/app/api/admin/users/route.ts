@@ -23,7 +23,7 @@ const createUserSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   // Apply rate limiting
-  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.standard);
+  const rateLimitResult = await rateLimit(request, RATE_LIMIT_PRESETS.standard);
   if (rateLimitResult) return rateLimitResult;
 
   try {

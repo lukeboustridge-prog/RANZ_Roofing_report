@@ -197,7 +197,7 @@ export async function GET(request: NextRequest) {
 // POST /api/reports - Create report
 export async function POST(request: NextRequest) {
   // Apply rate limiting - standard limit for report creation
-  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.standard);
+  const rateLimitResult = await rateLimit(request, RATE_LIMIT_PRESETS.standard);
   if (rateLimitResult) return rateLimitResult;
 
   try {

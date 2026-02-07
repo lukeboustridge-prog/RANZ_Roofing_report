@@ -29,6 +29,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    // Validate file size (max 500MB)
+    const MAX_VIDEO_SIZE = 500 * 1024 * 1024;
+    if (file.size > MAX_VIDEO_SIZE) {
+      return NextResponse.json(
+        { error: "File too large. Maximum video size is 500MB." },
+        { status: 400 }
+      );
+    }
+
+    // Validate MIME type
+    if (!file.type.startsWith("video/")) {
+      return NextResponse.json(
+        { error: "Invalid file type. Only video files are accepted." },
+        { status: 400 }
+      );
+    }
+
     const metadata = metadataStr ? JSON.parse(metadataStr) : {};
     const { reportId, title, description } = metadata;
 

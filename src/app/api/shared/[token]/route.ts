@@ -17,7 +17,7 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   // Apply rate limiting (stricter for public endpoints)
-  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.strict);
+  const rateLimitResult = await rateLimit(request, RATE_LIMIT_PRESETS.strict);
   if (rateLimitResult) return rateLimitResult;
 
   try {
@@ -184,7 +184,7 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   // Apply rate limiting
-  const rateLimitResult = rateLimit(request, RATE_LIMIT_PRESETS.strict);
+  const rateLimitResult = await rateLimit(request, RATE_LIMIT_PRESETS.strict);
   if (rateLimitResult) return rateLimitResult;
 
   try {
