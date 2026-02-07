@@ -41,8 +41,9 @@ export default function OnboardingPage() {
         if (response.ok) {
           const data = await response.json();
 
-          // If onboarding is already completed, redirect to dashboard
+          // If onboarding is already completed, set the cookie (in case it expired) and redirect
           if (data.onboardingCompleted) {
+            document.cookie = "onboarding_completed=true; path=/; max-age=31536000; SameSite=Lax";
             router.push("/dashboard");
             return;
           }

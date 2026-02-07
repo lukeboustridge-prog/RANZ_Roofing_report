@@ -174,7 +174,8 @@ export function OnboardingWizard({
 
       // Set a bypass cookie that middleware will check
       // This handles the race condition where Clerk JWT claims haven't refreshed yet
-      document.cookie = "onboarding_completed=true; path=/; max-age=3600; SameSite=Lax";
+      // Long-lived (1 year) - the database is the source of truth; this just prevents middleware redirect loops
+      document.cookie = "onboarding_completed=true; path=/; max-age=31536000; SameSite=Lax";
 
       // Also try to refresh the Clerk token (may help future requests)
       try {
@@ -219,12 +220,13 @@ export function OnboardingWizard({
       });
 
       if (!response.ok) {
-        // If API fails, show error but still try to navigate
-        console.error("Failed to save skip state");
+        const error = await response.json().catch(() => ({ error: "Failed to skip onboarding" }));
+        throw new Error(error.error || "Failed to skip onboarding");
       }
 
       // Set a bypass cookie that middleware will check
-      document.cookie = "onboarding_completed=true; path=/; max-age=3600; SameSite=Lax";
+      // Long-lived (1 year) - only set after confirmed API success
+      document.cookie = "onboarding_completed=true; path=/; max-age=31536000; SameSite=Lax";
 
       // Also try to refresh the Clerk token
       try {
@@ -237,8 +239,14 @@ export function OnboardingWizard({
       window.location.href = "/dashboard";
     } catch (error) {
       console.error("Skip error:", error);
-      // Still try to navigate even if save failed
-      window.location.href = "/dashboard";
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to skip onboarding. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }

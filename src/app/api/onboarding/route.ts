@@ -165,11 +165,23 @@ export async function POST(request: NextRequest) {
       console.log("User preferences not saved - model may not exist yet");
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: updatedUser,
       message: "Onboarding completed successfully",
     });
+
+    // Set server-side cookie so middleware can reliably check onboarding status
+    // This avoids race conditions with Clerk JWT claim refresh
+    response.cookies.set('onboarding_completed', 'true', {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: false, // Readable by client JS for redundancy
+    });
+
+    return response;
   } catch (error) {
     console.error("Error completing onboarding:", error);
 
