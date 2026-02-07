@@ -3,11 +3,11 @@
 ## Milestones
 
 - **v1.0 MVP** - Phases 1-5 (shipped)
-- **v1.1 Pre-Pilot Hardening** - Phases 6-9 (complete)
+- **v1.1 Pre-Pilot Hardening** - Phases 6-10 (in progress)
 
 ## Phases
 
-### v1.1 Pre-Pilot Hardening (Complete)
+### v1.1 Pre-Pilot Hardening (In Progress)
 
 **Milestone Goal:** Close all functional gaps identified in the codebase audit before UAT with real inspectors. Court-ready PDF output, complete notification pipeline, advanced filtering, and admin tooling.
 
@@ -15,6 +15,7 @@
 - [x] **Phase 7: Notifications & Sharing** - Email notifications, web push sending, and shared report security
 - [x] **Phase 8: Search, Filtering & Templates** - Report filtering by severity, compliance, inspector, date; template wiring
 - [x] **Phase 9: Export, Bulk & Admin** - Evidence ZIP export, bulk PDF generation, notification management, API docs
+- [ ] **Phase 10: Admin Polish & Email Template Wire-Up** - Wire email templates into senders, admin nav links, admin report filters
 
 ## Phase Details
 
@@ -83,10 +84,20 @@ Plans:
 - [x] 09-03-PLAN.md -- Email template model, rendering service, and CRUD API
 - [x] 09-04-PLAN.md -- Email template admin UI + OpenAPI/Swagger documentation
 
+### Phase 10: Admin Polish & Email Template Wire-Up
+**Goal**: Admin email template edits take effect on actual emails sent, admin dashboard provides full navigation, and admin reports page supports filtering
+**Depends on**: Phase 9 (email template service and admin pages must exist)
+**Requirements**: None (gap closure — all requirements already satisfied)
+**Gap Closure**: Closes 3 integration gaps from v1.1 audit
+**Success Criteria** (what must be TRUE):
+  1. Email-sending functions use emailTemplateService.renderTemplate() so admin template edits affect actual emails
+  2. Admin dashboard has quick action cards linking to Email Templates, API Docs, and All Reports pages
+  3. Admin reports page supports filtering by severity, compliance status, inspector, and date range
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 6 -> 7 -> 8 -> 9
+Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -94,3 +105,4 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9
 | 7. Notifications & Sharing | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 8. Search, Filtering & Templates | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 9. Export, Bulk & Admin | v1.1 | 4/4 | Complete | 2026-02-07 |
+| 10. Admin Polish & Email Wire-Up | v1.1 | 0/0 | Not started | - |
