@@ -9,3 +9,4 @@ export { TableOfContents } from "./toc";
 export { Declaration } from "./declaration";
 export { EvidenceCertificate } from "./evidence-certificate";
 export { PhotoAppendix } from "./photo-appendix";
+export { MethodologySection } from "./methodology";
