@@ -86,6 +86,27 @@ const propertyTypeLabels: Record<PropertyType, string> = {
   INDUSTRIAL: "Industrial",
 };
 
+const severityLabels: Record<string, string> = {
+  CRITICAL: "Critical",
+  HIGH: "High",
+  MEDIUM: "Medium",
+  LOW: "Low",
+};
+
+const complianceStatusLabels: Record<string, string> = {
+  pass: "Pass",
+  fail: "Fail",
+  partial: "Partial",
+  na: "N/A",
+};
+
+const dateFieldLabels: Record<string, string> = {
+  inspectionDate: "Inspection Date",
+  createdAt: "Created Date",
+  submittedAt: "Submitted Date",
+  approvedAt: "Approved Date",
+};
+
 interface Report {
   id: string;
   reportNumber: string;
@@ -123,6 +144,10 @@ interface SearchFilters {
   propertyType: string;
   dateFrom: string;
   dateTo: string;
+  severity: string;
+  complianceStatus: string;
+  inspectorId: string;
+  dateField: string;
   sortBy: string;
   sortOrder: "asc" | "desc";
 }
@@ -134,6 +159,10 @@ const defaultFilters: SearchFilters = {
   propertyType: "",
   dateFrom: "",
   dateTo: "",
+  severity: "",
+  complianceStatus: "",
+  inspectorId: "",
+  dateField: "inspectionDate",
   sortBy: "createdAt",
   sortOrder: "desc",
 };
@@ -149,6 +178,25 @@ export function ReportSearch() {
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [inspectors, setInspectors] = useState<Array<{ id: string; name: string }>>([]);
+
+  // Load inspectors for filter dropdown (admin users only)
+  useEffect(() => {
+    async function loadInspectors() {
+      try {
+        // Fetch all users to populate inspector dropdown
+        // This endpoint is admin-only, will gracefully fail for non-admin users
+        const res = await fetch("/api/admin/users?role=INSPECTOR&limit=100");
+        if (res.ok) {
+          const data = await res.json();
+          setInspectors(data.users?.map((u: any) => ({ id: u.id, name: u.name })) || []);
+        }
+      } catch {
+        // Inspector filter won't show options for non-admin users
+      }
+    }
+    loadInspectors();
+  }, []);
 
   // Fetch reports from API
   const fetchReports = useCallback(
@@ -164,8 +212,14 @@ export function ReportSearch() {
       if (filters.status) params.set("status", filters.status);
       if (filters.inspectionType) params.set("inspectionType", filters.inspectionType);
       if (filters.propertyType) params.set("propertyType", filters.propertyType);
+      if (filters.severity) params.set("severity", filters.severity);
+      if (filters.complianceStatus) params.set("complianceStatus", filters.complianceStatus);
+      if (filters.inspectorId) params.set("inspectorId", filters.inspectorId);
       if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
       if (filters.dateTo) params.set("dateTo", filters.dateTo);
+      if (filters.dateField && filters.dateField !== "inspectionDate") {
+        params.set("dateField", filters.dateField);
+      }
       params.set("sortBy", filters.sortBy);
       params.set("sortOrder", filters.sortOrder);
 
@@ -215,6 +269,9 @@ export function ReportSearch() {
     filters.status ||
     filters.inspectionType ||
     filters.propertyType ||
+    filters.severity ||
+    filters.complianceStatus ||
+    filters.inspectorId ||
     filters.dateFrom ||
     filters.dateTo;
 
@@ -245,8 +302,14 @@ export function ReportSearch() {
     if (filters.status) params.set("status", filters.status);
     if (filters.inspectionType) params.set("inspectionType", filters.inspectionType);
     if (filters.propertyType) params.set("propertyType", filters.propertyType);
+    if (filters.severity) params.set("severity", filters.severity);
+    if (filters.complianceStatus) params.set("complianceStatus", filters.complianceStatus);
+    if (filters.inspectorId) params.set("inspectorId", filters.inspectorId);
     if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
     if (filters.dateTo) params.set("dateTo", filters.dateTo);
+    if (filters.dateField && filters.dateField !== "inspectionDate") {
+      params.set("dateField", filters.dateField);
+    }
 
     try {
       const response = await fetch(`/api/reports/export?${params.toString()}`);
@@ -503,6 +566,85 @@ export function ReportSearch() {
                   <SelectContent>
                     <SelectItem value="">All properties</SelectItem>
                     {Object.entries(propertyTypeLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Defect Severity</label>
+                <Select
+                  value={filters.severity}
+                  onValueChange={(v) => updateFilter("severity", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All severities" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All severities</SelectItem>
+                    {Object.entries(severityLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Compliance Status</label>
+                <Select
+                  value={filters.complianceStatus}
+                  onValueChange={(v) => updateFilter("complianceStatus", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All statuses</SelectItem>
+                    {Object.entries(complianceStatusLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Inspector</label>
+                <Select
+                  value={filters.inspectorId}
+                  onValueChange={(v) => updateFilter("inspectorId", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All inspectors" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All inspectors</SelectItem>
+                    {inspectors.map((inspector) => (
+                      <SelectItem key={inspector.id} value={inspector.id}>
+                        {inspector.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Date Field</label>
+                <Select
+                  value={filters.dateField}
+                  onValueChange={(v) => updateFilter("dateField", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select date field" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(dateFieldLabels).map(([value, label]) => (
                       <SelectItem key={value} value={value}>
                         {label}
                       </SelectItem>
