@@ -75,12 +75,13 @@ Plans:
   3. Notifications older than a configurable threshold are automatically archived and no longer appear in the active notification list
   4. Admin can view and customise email notification templates from the admin panel
   5. An OpenAPI/Swagger specification is generated from API routes and accessible at a documentation endpoint
-**Plans**: TBD
+**Plans:** 4 plans
 
 Plans:
-- [ ] 09-01: TBD
-- [ ] 09-02: TBD
-- [ ] 09-03: TBD
+- [ ] 09-01-PLAN.md -- Evidence package ZIP export (service + API + UI button)
+- [ ] 09-02-PLAN.md -- Bulk PDF generation + notification archiving
+- [ ] 09-03-PLAN.md -- Email template model, rendering service, and CRUD API
+- [ ] 09-04-PLAN.md -- Email template admin UI + OpenAPI/Swagger documentation
 
 ## Progress
 
@@ -92,4 +93,4 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9
 | 6. PDF Court-Readiness | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 7. Notifications & Sharing | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 8. Search, Filtering & Templates | v1.1 | 2/2 | Complete | 2026-02-07 |
-| 9. Export, Bulk & Admin | v1.1 | 0/TBD | Not started | - |
+| 9. Export, Bulk & Admin | v1.1 | 0/4 | Not started | - |
