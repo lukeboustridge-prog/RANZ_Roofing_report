@@ -5,7 +5,7 @@ import { generateReportNumber } from "@/lib/report-number";
 import { ZodError } from "zod";
 import { CreateReportSchema, formatZodError } from "@/lib/validations";
 import { rateLimit, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
-import type { Prisma, ReportStatus, InspectionType, PropertyType } from "@prisma/client";
+import type { Prisma, ReportStatus, InspectionType, PropertyType, DefectSeverity } from "@prisma/client";
 
 // Valid sort fields and orders
 const VALID_SORT_FIELDS = [
@@ -43,6 +43,9 @@ export async function GET(request: NextRequest) {
     const propertyType = url.searchParams.get("propertyType");
     const dateFrom = url.searchParams.get("dateFrom");
     const dateTo = url.searchParams.get("dateTo");
+    const severity = url.searchParams.get("severity");
+    const complianceStatus = url.searchParams.get("complianceStatus");
+    const dateField = url.searchParams.get("dateField") || "inspectionDate";
     const sortBy = url.searchParams.get("sortBy") || "createdAt";
     const sortOrder = url.searchParams.get("sortOrder") || "desc";
     const page = parseInt(url.searchParams.get("page") || "1");
@@ -104,14 +107,40 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Date range filter (for inspection date)
+    // Defect severity filter (SRCH-01) - finds reports with at least one defect of this severity
+    if (severity) {
+      where.defects = {
+        some: {
+          severity: severity as DefectSeverity
+        }
+      };
+    }
+
+    // Date range filter with dynamic field selection (SRCH-04)
     if (dateFrom || dateTo) {
-      where.inspectionDate = {};
+      const dateFilter: { gte?: Date; lte?: Date } = {};
       if (dateFrom) {
-        where.inspectionDate.gte = new Date(dateFrom);
+        dateFilter.gte = new Date(dateFrom);
       }
       if (dateTo) {
-        where.inspectionDate.lte = new Date(dateTo);
+        // Set to end of day for inclusive range
+        const endDate = new Date(dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        dateFilter.lte = endDate;
+      }
+
+      // Map dateField to correct Prisma field
+      const validDateFields = ["createdAt", "inspectionDate", "submittedAt", "approvedAt"] as const;
+      const selectedField = validDateFields.includes(dateField as any) ? dateField : "inspectionDate";
+
+      if (selectedField === "createdAt") {
+        where.createdAt = dateFilter;
+      } else if (selectedField === "submittedAt") {
+        where.submittedAt = dateFilter;
+      } else if (selectedField === "approvedAt") {
+        where.approvedAt = dateFilter;
+      } else {
+        where.inspectionDate = dateFilter;
       }
     }
 
@@ -129,6 +158,9 @@ export async function GET(request: NextRequest) {
 
     // Calculate pagination
     const skip = (page - 1) * limit;
+
+    // Compliance status filter (SRCH-02) - requires post-fetch filtering due to nested JSON
+    const needsComplianceFilter = !!complianceStatus;
 
     // Execute queries in parallel
     const [reports, totalCount] = await Promise.all([
@@ -152,22 +184,48 @@ export async function GET(request: NextRequest) {
               roofElements: true,
             },
           },
+          ...(needsComplianceFilter ? { complianceAssessment: true } : {}),
         },
       }),
       prisma.report.count({ where }),
     ]);
 
+    // Post-fetch compliance status filtering
+    let filteredReports = reports;
+    let filteredCount = totalCount;
+
+    if (complianceStatus && needsComplianceFilter) {
+      filteredReports = reports.filter(report => {
+        const assessment = (report as any).complianceAssessment;
+        if (!assessment?.checklistResults) return false;
+        const results = assessment.checklistResults as Record<string, Record<string, string>>;
+        for (const checklist of Object.values(results)) {
+          for (const status of Object.values(checklist)) {
+            if (status === complianceStatus) return true;
+          }
+        }
+        return false;
+      });
+      filteredCount = filteredReports.length;
+
+      // Strip complianceAssessment from response to avoid leaking extra data
+      filteredReports = filteredReports.map(report => {
+        const { complianceAssessment, ...rest } = report as any;
+        return rest;
+      });
+    }
+
     // Calculate pagination metadata
-    const totalPages = Math.ceil(totalCount / limit);
+    const totalPages = Math.ceil(filteredCount / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
 
     return NextResponse.json({
-      reports,
+      reports: filteredReports,
       pagination: {
         page,
         limit,
-        totalCount,
+        totalCount: filteredCount,
         totalPages,
         hasNextPage,
         hasPrevPage,
@@ -177,8 +235,11 @@ export async function GET(request: NextRequest) {
         status: status || null,
         inspectionType: inspectionType || null,
         propertyType: propertyType || null,
+        severity: severity || null,
+        complianceStatus: complianceStatus || null,
         dateFrom: dateFrom || null,
         dateTo: dateTo || null,
+        dateField: dateField || "inspectionDate",
       },
       sort: {
         field: validSortBy,
