@@ -1,3 +1,8 @@
+/**
+ * Hand-maintained OpenAPI 3.0 specification for RANZ Roofing Report API.
+ * Run `npm run verify:api-docs` to check this spec against actual route files.
+ */
+
 import { getAuthUser, getUserWhereClause } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";

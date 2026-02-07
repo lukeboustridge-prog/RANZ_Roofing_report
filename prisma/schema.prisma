@@ -196,6 +196,12 @@ model Report {
   shares               ReportShare[]
   lbpComplaints        LBPComplaint[]
 
+  // Denormalized compliance status (computed from ComplianceAssessment.checklistResults)
+  complianceStatus ComplianceStatus @default(NOT_ASSESSED)
+
+  // Full-text search vector (auto-populated via PostgreSQL trigger)
+  searchVector Unsupported("tsvector")?
+
   // Revision tracking
   revisionRound Int @default(0) // 0 = initial submission, 1+ = resubmissions
 
@@ -204,6 +210,7 @@ model Report {
   @@index([status])
   @@index([inspectionDate])
   @@index([createdAt])
+  @@index([complianceStatus])
 }
 
 enum ReportStatus {
@@ -215,6 +222,13 @@ enum ReportStatus {
   APPROVED
   FINALISED
   ARCHIVED
+}
+
+enum ComplianceStatus {
+  PASS
+  FAIL
+  PARTIAL
+  NOT_ASSESSED
 }
 
 enum PropertyType {
@@ -957,4 +971,24 @@ model EmailTemplate {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// EMAIL EVENTS (Resend webhook delivery tracking)
+// ============================================
+
+model EmailEvent {
+  id        String   @id @default(cuid())
+  messageId String   // Resend message ID
+  type      String   // "email.sent", "email.delivered", "email.bounced", "email.complained", etc.
+  email     String   // Recipient email address
+  timestamp DateTime // When the event occurred
+  metadata  Json?    // Additional event data from Resend
+
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
+  @@index([email])
+  @@index([type])
+  @@index([timestamp])
 }

@@ -153,21 +153,42 @@ export async function POST(
       ? (validatedData.wizardData as Prisma.InputJsonValue)
       : Prisma.JsonNull;
 
-    // Upsert compliance assessment
-    const assessment = await prisma.complianceAssessment.upsert({
-      where: { reportId },
-      create: {
-        reportId,
-        checklistResults: validatedData.checklistResults as Prisma.InputJsonValue,
-        nonComplianceSummary: validatedData.nonComplianceSummary,
-        wizardData: wizardDataValue,
-      },
-      update: {
-        checklistResults: validatedData.checklistResults as Prisma.InputJsonValue,
-        nonComplianceSummary: validatedData.nonComplianceSummary,
-        wizardData: wizardDataValue,
-      },
-    });
+    // Compute denormalized compliance status
+    const allStatuses: string[] = [];
+    for (const checklist of Object.values(validatedData.checklistResults)) {
+      for (const status of Object.values(checklist)) {
+        allStatuses.push(status.toLowerCase());
+      }
+    }
+    const assessedStatuses = allStatuses.filter(s => s !== "na");
+    let complianceStatus: "PASS" | "FAIL" | "PARTIAL" | "NOT_ASSESSED" = "NOT_ASSESSED";
+    if (assessedStatuses.length > 0) {
+      if (allStatuses.includes("fail")) complianceStatus = "FAIL";
+      else if (allStatuses.includes("partial")) complianceStatus = "PARTIAL";
+      else complianceStatus = "PASS";
+    }
+
+    // Upsert compliance assessment and update denormalized status in parallel
+    const [assessment] = await Promise.all([
+      prisma.complianceAssessment.upsert({
+        where: { reportId },
+        create: {
+          reportId,
+          checklistResults: validatedData.checklistResults as Prisma.InputJsonValue,
+          nonComplianceSummary: validatedData.nonComplianceSummary,
+          wizardData: wizardDataValue,
+        },
+        update: {
+          checklistResults: validatedData.checklistResults as Prisma.InputJsonValue,
+          nonComplianceSummary: validatedData.nonComplianceSummary,
+          wizardData: wizardDataValue,
+        },
+      }),
+      prisma.report.update({
+        where: { id: reportId },
+        data: { complianceStatus },
+      }),
+    ]);
 
     // Create audit log
     await prisma.auditLog.create({

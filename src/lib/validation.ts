@@ -100,7 +100,8 @@ export function combineValidators<T>(
 // Validate an entire form object
 export function validateForm<T extends Record<string, unknown>>(
   data: T,
-  schema: Partial<Record<keyof T, FieldValidator<unknown>>>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  schema: Partial<Record<keyof T, FieldValidator<any>>>
 ): { valid: boolean; errors: Partial<Record<keyof T, string>> } {
   const errors: Partial<Record<keyof T, string>> = {};
   let valid = true;

@@ -5,7 +5,7 @@ import { generateReportNumber } from "@/lib/report-number";
 import { ZodError } from "zod";
 import { CreateReportSchema, formatZodError } from "@/lib/validations";
 import { rateLimit, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
-import type { Prisma, ReportStatus, InspectionType, PropertyType, DefectSeverity } from "@prisma/client";
+import type { Prisma, ReportStatus, InspectionType, PropertyType, DefectSeverity, ComplianceStatus } from "@prisma/client";
 
 // Valid sort fields and orders
 const VALID_SORT_FIELDS = [
@@ -66,15 +66,38 @@ export async function GET(request: NextRequest) {
       where.inspectorId = user.id;
     }
 
-    // Text search (report number, address, client name)
+    // Text search - use tsvector full-text search, with LIKE fallback
     if (search.trim()) {
-      where.OR = [
-        { reportNumber: { contains: search, mode: "insensitive" } },
-        { propertyAddress: { contains: search, mode: "insensitive" } },
-        { propertyCity: { contains: search, mode: "insensitive" } },
-        { clientName: { contains: search, mode: "insensitive" } },
-        { clientEmail: { contains: search, mode: "insensitive" } },
-      ];
+      try {
+        // Use PostgreSQL full-text search via tsvector for better relevance
+        const tsQuery = search.trim().split(/\s+/).map(w => w + ":*").join(" & ");
+        const matchingIds = await prisma.$queryRaw<{ id: string }[]>`
+          SELECT id FROM "Report"
+          WHERE "searchVector" @@ to_tsquery('english', ${tsQuery})
+          LIMIT 1000
+        `;
+        if (matchingIds.length > 0) {
+          where.id = { in: matchingIds.map(r => r.id) };
+        } else {
+          // tsvector returned nothing — fall back to LIKE search
+          where.OR = [
+            { reportNumber: { contains: search, mode: "insensitive" } },
+            { propertyAddress: { contains: search, mode: "insensitive" } },
+            { propertyCity: { contains: search, mode: "insensitive" } },
+            { clientName: { contains: search, mode: "insensitive" } },
+            { clientEmail: { contains: search, mode: "insensitive" } },
+          ];
+        }
+      } catch {
+        // tsvector not available (e.g., searchVector column not yet populated) — fall back to LIKE
+        where.OR = [
+          { reportNumber: { contains: search, mode: "insensitive" } },
+          { propertyAddress: { contains: search, mode: "insensitive" } },
+          { propertyCity: { contains: search, mode: "insensitive" } },
+          { clientName: { contains: search, mode: "insensitive" } },
+          { clientEmail: { contains: search, mode: "insensitive" } },
+        ];
+      }
     }
 
     // Status filter (supports comma-separated values)
@@ -144,6 +167,26 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Compliance status filter (SRCH-02) - now uses denormalized field
+    if (complianceStatus) {
+      // Map UI values to enum values
+      const statusMap: Record<string, string> = {
+        pass: "PASS",
+        fail: "FAIL",
+        partial: "PARTIAL",
+        "n/a": "NOT_ASSESSED",
+        Pass: "PASS",
+        Fail: "FAIL",
+        Partial: "PARTIAL",
+        PASS: "PASS",
+        FAIL: "FAIL",
+        PARTIAL: "PARTIAL",
+        NOT_ASSESSED: "NOT_ASSESSED",
+      };
+      const mappedStatus = statusMap[complianceStatus] || complianceStatus;
+      where.complianceStatus = mappedStatus as ComplianceStatus;
+    }
+
     // Validate and build sort
     const validSortBy = VALID_SORT_FIELDS.includes(sortBy as typeof VALID_SORT_FIELDS[number])
       ? sortBy
@@ -158,9 +201,6 @@ export async function GET(request: NextRequest) {
 
     // Calculate pagination
     const skip = (page - 1) * limit;
-
-    // Compliance status filter (SRCH-02) - requires post-fetch filtering due to nested JSON
-    const needsComplianceFilter = !!complianceStatus;
 
     // Execute queries in parallel
     const [reports, totalCount] = await Promise.all([
@@ -184,48 +224,22 @@ export async function GET(request: NextRequest) {
               roofElements: true,
             },
           },
-          ...(needsComplianceFilter ? { complianceAssessment: true } : {}),
         },
       }),
       prisma.report.count({ where }),
     ]);
 
-    // Post-fetch compliance status filtering
-    let filteredReports = reports;
-    let filteredCount = totalCount;
-
-    if (complianceStatus && needsComplianceFilter) {
-      filteredReports = reports.filter(report => {
-        const assessment = (report as any).complianceAssessment;
-        if (!assessment?.checklistResults) return false;
-        const results = assessment.checklistResults as Record<string, Record<string, string>>;
-        for (const checklist of Object.values(results)) {
-          for (const status of Object.values(checklist)) {
-            if (status === complianceStatus) return true;
-          }
-        }
-        return false;
-      });
-      filteredCount = filteredReports.length;
-
-      // Strip complianceAssessment from response to avoid leaking extra data
-      filteredReports = filteredReports.map(report => {
-        const { complianceAssessment, ...rest } = report as any;
-        return rest;
-      });
-    }
-
     // Calculate pagination metadata
-    const totalPages = Math.ceil(filteredCount / limit);
+    const totalPages = Math.ceil(totalCount / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
 
     return NextResponse.json({
-      reports: filteredReports,
+      reports,
       pagination: {
         page,
         limit,
-        totalCount: filteredCount,
+        totalCount,
         totalPages,
         hasNextPage,
         hasPrevPage,
