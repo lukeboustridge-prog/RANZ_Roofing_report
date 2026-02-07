@@ -88,31 +88,31 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PDF-01 | — | Pending |
-| PDF-02 | — | Pending |
-| PDF-03 | — | Pending |
-| PDF-04 | — | Pending |
-| PDF-05 | — | Pending |
-| PDF-06 | — | Pending |
-| PDF-07 | — | Pending |
-| NOTIF-01 | — | Pending |
-| NOTIF-02 | — | Pending |
-| NOTIF-03 | — | Pending |
-| NOTIF-04 | — | Pending |
-| NOTIF-05 | — | Pending |
-| SRCH-01 | — | Pending |
-| SRCH-02 | — | Pending |
-| SRCH-03 | — | Pending |
-| SRCH-04 | — | Pending |
-| SHARE-01 | — | Pending |
-| TMPL-01 | — | Pending |
-| API-01 | — | Pending |
+| PDF-01 | Phase 6 | Pending |
+| PDF-02 | Phase 6 | Pending |
+| PDF-03 | Phase 6 | Pending |
+| PDF-04 | Phase 6 | Pending |
+| PDF-05 | Phase 6 | Pending |
+| PDF-06 | Phase 9 | Pending |
+| PDF-07 | Phase 9 | Pending |
+| NOTIF-01 | Phase 7 | Pending |
+| NOTIF-02 | Phase 7 | Pending |
+| NOTIF-03 | Phase 7 | Pending |
+| NOTIF-04 | Phase 9 | Pending |
+| NOTIF-05 | Phase 9 | Pending |
+| SRCH-01 | Phase 8 | Pending |
+| SRCH-02 | Phase 8 | Pending |
+| SRCH-03 | Phase 8 | Pending |
+| SRCH-04 | Phase 8 | Pending |
+| SHARE-01 | Phase 7 | Pending |
+| TMPL-01 | Phase 8 | Pending |
+| API-01 | Phase 9 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 19 total
-- Mapped to phases: 0
-- Unmapped: 19
+- Mapped to phases: 19
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-07*
-*Last updated: 2026-02-07 after initial definition*
+*Last updated: 2026-02-07 after roadmap creation (v1.1 phases 6-9)*
