@@ -19,9 +19,9 @@ Requirements for pre-pilot hardening. Each maps to roadmap phases.
 
 ### Notifications & Emails
 
-- [ ] **NOTIF-01**: Client receives confirmation email when inspection request is created
-- [ ] **NOTIF-02**: Inspector receives notification when assigned to an inspection request
-- [ ] **NOTIF-03**: Web push notifications are sent to subscribed users for relevant events
+- [x] **NOTIF-01**: Client receives confirmation email when inspection request is created
+- [x] **NOTIF-02**: Inspector receives notification when assigned to an inspection request
+- [x] **NOTIF-03**: Web push notifications are sent to subscribed users for relevant events
 - [ ] **NOTIF-04**: Notifications older than a configurable threshold are automatically archived
 - [ ] **NOTIF-05**: Admin can view and customise email notification templates
 
@@ -34,7 +34,7 @@ Requirements for pre-pilot hardening. Each maps to roadmap phases.
 
 ### Sharing & Access
 
-- [ ] **SHARE-01**: Shared report with password requires password entry before granting access
+- [x] **SHARE-01**: Shared report with password requires password entry before granting access
 
 ### Templates & Workflow
 
@@ -95,16 +95,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PDF-05 | Phase 6 | Complete |
 | PDF-06 | Phase 9 | Pending |
 | PDF-07 | Phase 9 | Pending |
-| NOTIF-01 | Phase 7 | Pending |
-| NOTIF-02 | Phase 7 | Pending |
-| NOTIF-03 | Phase 7 | Pending |
+| NOTIF-01 | Phase 7 | Complete |
+| NOTIF-02 | Phase 7 | Complete |
+| NOTIF-03 | Phase 7 | Complete |
 | NOTIF-04 | Phase 9 | Pending |
 | NOTIF-05 | Phase 9 | Pending |
 | SRCH-01 | Phase 8 | Pending |
 | SRCH-02 | Phase 8 | Pending |
 | SRCH-03 | Phase 8 | Pending |
 | SRCH-04 | Phase 8 | Pending |
-| SHARE-01 | Phase 7 | Pending |
+| SHARE-01 | Phase 7 | Complete |
 | TMPL-01 | Phase 8 | Pending |
 | API-01 | Phase 9 | Pending |
 
@@ -115,4 +115,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-07*
-*Last updated: 2026-02-07 after Phase 6 completion (PDF-01..05 → Complete)*
+*Last updated: 2026-02-07 after Phase 7 completion (NOTIF-01..03, SHARE-01 → Complete)*

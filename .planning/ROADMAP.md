@@ -12,7 +12,7 @@
 **Milestone Goal:** Close all functional gaps identified in the codebase audit before UAT with real inspectors. Court-ready PDF output, complete notification pipeline, advanced filtering, and admin tooling.
 
 - [x] **Phase 6: PDF Court-Readiness** - ISO 17020 sections and compliance results in PDF output
-- [ ] **Phase 7: Notifications & Sharing** - Email notifications, web push sending, and shared report security
+- [x] **Phase 7: Notifications & Sharing** - Email notifications, web push sending, and shared report security
 - [ ] **Phase 8: Search, Filtering & Templates** - Report filtering by severity, compliance, inspector, date; template wiring
 - [ ] **Phase 9: Export, Bulk & Admin** - Evidence ZIP export, bulk PDF generation, notification management, API docs
 
@@ -46,8 +46,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md -- Wire assignment notifications (client confirmation email + inspector in-app/push/email)
-- [ ] 07-02-PLAN.md -- Wire review decision notifications + harden shared report password protection
+- [x] 07-01-PLAN.md -- Wire assignment notifications (client confirmation email + inspector in-app/push/email)
+- [x] 07-02-PLAN.md -- Wire review decision notifications + harden shared report password protection
 
 ### Phase 8: Search, Filtering & Templates
 **Goal**: Users can efficiently find reports using multiple filter criteria and apply saved templates when creating new reports
@@ -90,6 +90,6 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 6. PDF Court-Readiness | v1.1 | 2/2 | Complete | 2026-02-07 |
-| 7. Notifications & Sharing | v1.1 | 0/2 | Planned | - |
+| 7. Notifications & Sharing | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 8. Search, Filtering & Templates | v1.1 | 0/TBD | Not started | - |
 | 9. Export, Bulk & Admin | v1.1 | 0/TBD | Not started | - |
