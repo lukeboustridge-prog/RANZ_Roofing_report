@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 9 of 9 (Export, Bulk & Admin)
-Plan: 09-03 complete (1 of 4 in phase)
+Plan: 09-02 complete (09-02, 09-03 done; 09-01, 09-04 remaining)
 Status: In progress
-Last activity: 2026-02-07 -- Completed 09-03-PLAN.md (email template model, service, CRUD API)
+Last activity: 2026-02-07 -- Completed 09-02-PLAN.md (batch PDF, notification archive)
 
-Progress: [███████░░░] 70% (7/10 plans)
+Progress: [████████░░] 80% (8/10 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7 (v1.1)
-- Average duration: 6.29min
-- Total execution time: 44min
+- Total plans completed: 8 (v1.1)
+- Average duration: 6.75min
+- Total execution time: 54min
 
 **By Phase:**
 
@@ -30,7 +30,7 @@ Progress: [███████░░░] 70% (7/10 plans)
 | 06-pdf-court-readiness | 2/2 | 9min | 4.5min |
 | 07-notifications-sharing | 2/2 | 12min | 6min |
 | 08-search-filtering-templates | 2/2 | 13min | 6.5min |
-| 09-export-bulk-admin | 1/4 | 10min | 10min |
+| 09-export-bulk-admin | 2/4 | 20min | 10min |
 
 *Updated after each plan completion*
 
@@ -63,6 +63,9 @@ Recent decisions affecting current work:
 - Seed endpoint uses upsert on type for idempotent template seeding (09-03)
 - PUT warns but does not block when required variables missing from bodyHtml (09-03)
 - Email template type field is immutable after creation (09-03)
+- Admin reports page split into Server Component (data fetch) + client content component (interactive list) (09-02)
+- PDF modules loaded once per batch request, not per report (09-02)
+- Notification archive only targets read+non-dismissed notifications for safety (09-02)
 
 ### Pending Todos
 
@@ -75,5 +78,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-07
-Stopped at: Completed 09-03-PLAN.md
+Stopped at: Completed 09-02-PLAN.md
 Resume file: None
