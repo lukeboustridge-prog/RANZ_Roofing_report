@@ -16,6 +16,8 @@ import {
   ArrowRight,
   ScrollText,
   LayoutTemplate,
+  Mail,
+  Code,
 } from "lucide-react";
 
 async function getAdminDashboardData(userId: string) {
@@ -291,6 +293,66 @@ export default async function AdminDashboardPage() {
             <Button asChild variant="outline" className="w-full">
               <Link href="/admin/audit-logs">
                 View Logs
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-indigo-500" />
+              Email Templates
+            </CardTitle>
+            <CardDescription>
+              Customise email notification templates
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/admin/email-templates">
+                Manage Templates
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Code className="h-5 w-5 text-teal-500" />
+              API Documentation
+            </CardTitle>
+            <CardDescription>
+              View API endpoints and integration docs
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/admin/api-docs">
+                View Docs
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-slate-500" />
+              All Reports
+            </CardTitle>
+            <CardDescription>
+              Search and filter all inspection reports
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/admin/reports">
+                Browse Reports
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
