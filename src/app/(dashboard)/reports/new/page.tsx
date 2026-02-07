@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { TemplateSelector } from "@/components/reports/TemplateSelector";
 
 const PROPERTY_TYPES = [
   { value: "RESIDENTIAL_1", label: "Residential - 1 storey" },
@@ -91,6 +92,7 @@ export default function NewReportPage() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   const updateField = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -126,6 +128,17 @@ export default function NewReportPage() {
         throw new Error(data.error || "Failed to create report");
       }
 
+      // Apply template if selected (fire-and-forget)
+      if (selectedTemplateId) {
+        fetch(`/api/templates/${selectedTemplateId}/apply`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reportId: data.id }),
+        }).catch((err) => {
+          console.error("Failed to apply template:", err);
+        });
+      }
+
       router.push(`/reports/${data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -136,6 +149,9 @@ export default function NewReportPage() {
 
   const canProceed = () => {
     if (step === 1) {
+      return true; // Template selection is optional
+    }
+    if (step === 2) {
       return (
         formData.propertyAddress &&
         formData.propertyCity &&
@@ -144,13 +160,20 @@ export default function NewReportPage() {
         formData.propertyType
       );
     }
-    if (step === 2) {
+    if (step === 3) {
       return formData.inspectionDate && formData.inspectionType;
     }
-    if (step === 3) {
+    if (step === 4) {
       return formData.clientName;
     }
     return true;
+  };
+
+  const handleTemplateSelect = (templateId: string | null, inspectionType?: string) => {
+    setSelectedTemplateId(templateId);
+    if (inspectionType) {
+      updateField("inspectionType", inspectionType);
+    }
   };
 
   return (
@@ -165,7 +188,7 @@ export default function NewReportPage() {
 
       {/* Progress indicator */}
       <div className="flex items-center justify-between">
-        {[1, 2, 3].map((s) => (
+        {[1, 2, 3, 4].map((s) => (
           <div key={s} className="flex items-center">
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -179,9 +202,9 @@ export default function NewReportPage() {
               {s}
             </div>
             <span className="ml-2 text-sm font-medium">
-              {s === 1 ? "Property" : s === 2 ? "Inspection" : "Client"}
+              {s === 1 ? "Template" : s === 2 ? "Property" : s === 3 ? "Inspection" : "Client"}
             </span>
-            {s < 3 && (
+            {s < 4 && (
               <div
                 className={`w-16 h-0.5 mx-4 ${
                   s < step ? "bg-green-500" : "bg-secondary"
@@ -198,8 +221,26 @@ export default function NewReportPage() {
         </div>
       )}
 
-      {/* Step 1: Property Details */}
+      {/* Step 1: Template Selection */}
       {step === 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Select Template (Optional)</CardTitle>
+            <CardDescription>
+              Choose a template to pre-fill report fields, or skip to start with a blank report.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TemplateSelector
+              selectedTemplateId={selectedTemplateId}
+              onSelect={handleTemplateSelect}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 2: Property Details */}
+      {step === 2 && (
         <Card>
           <CardHeader>
             <CardTitle>Property Details</CardTitle>
@@ -285,8 +326,8 @@ export default function NewReportPage() {
         </Card>
       )}
 
-      {/* Step 2: Inspection Details */}
-      {step === 2 && (
+      {/* Step 3: Inspection Details */}
+      {step === 3 && (
         <Card>
           <CardHeader>
             <CardTitle>Inspection Details</CardTitle>
@@ -355,8 +396,8 @@ export default function NewReportPage() {
         </Card>
       )}
 
-      {/* Step 3: Client Information */}
-      {step === 3 && (
+      {/* Step 4: Client Information */}
+      {step === 4 && (
         <Card>
           <CardHeader>
             <CardTitle>Client Information</CardTitle>
@@ -411,7 +452,7 @@ export default function NewReportPage() {
           Back
         </Button>
 
-        {step < 3 ? (
+        {step < 4 ? (
           <Button onClick={() => setStep((s) => s + 1)} disabled={!canProceed()}>
             Next
             <ChevronRight className="ml-2 h-4 w-4" />
