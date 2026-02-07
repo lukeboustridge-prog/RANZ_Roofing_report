@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-07)
 
 **Core value:** Court-admissible roofing reports with tamper-evident evidence chains and ISO 17020 compliance
-**Current focus:** Phase 10 - Admin Polish & Email Template Wire-Up
+**Current focus:** Phase 10 - Admin Polish & Email Template Wire-Up (COMPLETE)
 
 ## Current Position
 
 Phase: 10 of 10 (Admin Polish & Email Template Wire-Up)
-Plan: 1 of 2 complete
-Status: In progress
-Last activity: 2026-02-08 -- Completed 10-01-PLAN.md (Email Template Service Wire-Up)
+Plan: 2 of 2 complete
+Status: Phase complete
+Last activity: 2026-02-08 -- Completed 10-02-PLAN.md (Admin Dashboard Cards & Reports Refactor)
 
-Progress: [█████░░░░░] 50%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11 (v1.1 + 10-01)
-- Average duration: 6.9min
-- Total execution time: 76min
+- Total plans completed: 12 (v1.1 + Phase 10)
+- Average duration: 6.8min
+- Total execution time: 81min
 
 **By Phase:**
 
@@ -31,7 +31,7 @@ Progress: [█████░░░░░] 50%
 | 07-notifications-sharing | 2/2 | 12min | 6min |
 | 08-search-filtering-templates | 2/2 | 13min | 6.5min |
 | 09-export-bulk-admin | 4/4 | 37min | 9.3min |
-| 10-admin-polish-email-wireup | 1/2 | 5min | 5min |
+| 10-admin-polish-email-wireup | 2/2 | 10min | 5min |
 
 *Updated after each plan completion*
 
@@ -78,6 +78,9 @@ Recent decisions affecting current work:
 - Client email in sendReportFinalizedNotification stays hardcoded -- no template type in service (10-01)
 - renderTemplate() result used directly, wrapInTemplate() only in fallback paths to avoid double-wrapping (10-01)
 - Optional template variables (scheduledDate, notes) default to empty string (10-01)
+- BatchPdfPanel is fully self-contained -- receives reportLabels from server, no dependency on ReportSearch state (10-02)
+- Collapsible panel collapsed by default to reduce visual clutter on page load (10-02)
+- Report labels include reportNumber and address for meaningful checklist identification (10-02)
 
 ### Pending Todos
 
@@ -90,5 +93,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 10-01-PLAN.md (Email Template Service Wire-Up)
+Stopped at: Completed 10-02-PLAN.md (Admin Dashboard Cards & Reports Refactor) -- Phase 10 complete
 Resume file: None
