@@ -9,3 +9,6 @@ export { lbpComplaintService, LBPComplaintService } from "./lbp-complaint-servic
 export { lbpComplaintPDFService, LBPComplaintPDFService } from "./lbp-complaint-pdf-service";
 export { lbpEvidencePackageService, LBPEvidencePackageService } from "./lbp-evidence-package-service";
 export { lbpComplaintEmailService, LBPComplaintEmailService } from "./lbp-complaint-email-service";
+
+// Evidence Export Service
+export { evidenceExportService, EvidenceExportService } from "./evidence-export-service";

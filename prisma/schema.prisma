@@ -543,6 +543,7 @@ enum AuditAction {
   PDF_GENERATED
   DOWNLOADED
   SHARED
+  EVIDENCE_EXPORTED
 }
 
 // ============================================
