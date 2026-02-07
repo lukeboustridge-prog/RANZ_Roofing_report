@@ -28,11 +28,11 @@
   3. PDF output includes a limitations section documenting access restrictions and caveats
   4. PDF output includes an access method section describing how the roof was accessed
   5. PDF output includes compliance assessment results showing B2/E2/COP analysis with pass/fail/NA status for each clause
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
+- [ ] 06-01-PLAN.md -- Add methodology and equipment form fields to report edit page
+- [ ] 06-02-PLAN.md -- Create PDF methodology section component and wire into report template
 
 ### Phase 7: Notifications & Sharing
 **Goal**: Users receive timely email and push notifications for inspection workflow events, and shared reports enforce password protection
@@ -89,7 +89,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 6. PDF Court-Readiness | v1.1 | 0/TBD | Not started | - |
+| 6. PDF Court-Readiness | v1.1 | 0/2 | Planned | - |
 | 7. Notifications & Sharing | v1.1 | 0/TBD | Not started | - |
 | 8. Search, Filtering & Templates | v1.1 | 0/TBD | Not started | - |
 | 9. Export, Bulk & Admin | v1.1 | 0/TBD | Not started | - |
