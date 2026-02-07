@@ -59,11 +59,11 @@ Plans:
   3. User can filter the report list by assigned inspector
   4. User can filter the report list by date range (creation date, inspection date, or review date)
   5. User can select a saved template during report creation and have its fields pre-populated
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
+- [ ] 08-01-PLAN.md -- Add severity, compliance, inspector, and date field filters to report list API and UI
+- [ ] 08-02-PLAN.md -- Wire template selection into report creation wizard
 
 ### Phase 9: Export, Bulk & Admin
 **Goal**: Admins have production-ready tools for evidence packaging, bulk operations, notification lifecycle management, and API documentation
@@ -91,5 +91,5 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9
 |-------|-----------|----------------|--------|-----------|
 | 6. PDF Court-Readiness | v1.1 | 2/2 | Complete | 2026-02-07 |
 | 7. Notifications & Sharing | v1.1 | 2/2 | Complete | 2026-02-07 |
-| 8. Search, Filtering & Templates | v1.1 | 0/TBD | Not started | - |
+| 8. Search, Filtering & Templates | v1.1 | 0/2 | Planning complete | - |
 | 9. Export, Bulk & Admin | v1.1 | 0/TBD | Not started | - |
