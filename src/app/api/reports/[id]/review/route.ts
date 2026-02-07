@@ -2,6 +2,12 @@ import { getAuthUser, getUserWhereClause } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { z } from "zod";
+import { createAndPushNotification } from "@/lib/notifications/push-service";
+import {
+  sendReportApprovedNotification,
+  sendRevisionRequiredNotification,
+  sendReportRejectedNotification,
+} from "@/lib/email";
 
 const reviewDecisionSchema = z.object({
   decision: z.enum(["APPROVE", "REJECT", "REQUEST_REVISION"]),
@@ -371,6 +377,75 @@ export async function PATCH(
           severity: decision === "REQUEST_REVISION" ? "ISSUE" : "NOTE",
         },
       });
+    }
+
+    // --- Notify inspector of review decision ---
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reports.ranz.org.nz";
+
+    if (report.inspector?.id) {
+      // 1. In-app + push notification (for all decisions)
+      const notificationTypeMap: Record<string, import("@prisma/client").NotificationType> = {
+        APPROVE: "REPORT_APPROVED",
+        REJECT: "REPORT_REJECTED",
+        REQUEST_REVISION: "REPORT_COMMENTS",
+      };
+
+      const notificationTitleMap: Record<string, string> = {
+        APPROVE: "Report Approved",
+        REJECT: "Report Rejected",
+        REQUEST_REVISION: "Revision Required",
+      };
+
+      const notificationMessageMap: Record<string, string> = {
+        APPROVE: `Report ${report.reportNumber} has been approved by ${user.name}`,
+        REJECT: `Report ${report.reportNumber} has been rejected by ${user.name}`,
+        REQUEST_REVISION: `Report ${report.reportNumber} requires revision - feedback from ${user.name}`,
+      };
+
+      createAndPushNotification(report.inspector.id, {
+        type: notificationTypeMap[decision],
+        title: notificationTitleMap[decision],
+        message: notificationMessageMap[decision],
+        link: `/reports/${id}`,
+        reportId: id,
+        metadata: {
+          decision,
+          reviewerName: user.name,
+        },
+      }).catch(err => {
+        console.error("[Review] Failed to send in-app notification:", err);
+      });
+
+      // 2. Email notification (decision-specific template)
+      if (report.inspector.email) {
+        const reportInfo = {
+          reportNumber: report.reportNumber || "",
+          propertyAddress: report.propertyAddress || "",
+          inspectorName: report.inspector.name || "",
+          inspectorEmail: report.inspector.email,
+          reportUrl: `${baseUrl}/reports/${id}`,
+        };
+
+        if (decision === "APPROVE") {
+          sendReportApprovedNotification(reportInfo, user.name || "Reviewer").catch(err => {
+            console.error("[Review] Failed to send approval email:", err);
+          });
+        } else if (decision === "REQUEST_REVISION") {
+          const commentsSummary = {
+            critical: 0,
+            issue: decision === "REQUEST_REVISION" ? 1 : 0,
+            note: 0,
+            suggestion: 0,
+          };
+          sendRevisionRequiredNotification(reportInfo, user.name || "Reviewer", commentsSummary).catch(err => {
+            console.error("[Review] Failed to send revision email:", err);
+          });
+        } else if (decision === "REJECT") {
+          sendReportRejectedNotification(reportInfo, user.name || "Reviewer", comment || "No reason provided").catch(err => {
+            console.error("[Review] Failed to send rejection email:", err);
+          });
+        }
+      }
     }
 
     // Build response message
