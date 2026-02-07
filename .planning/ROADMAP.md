@@ -43,11 +43,11 @@ Plans:
   2. Inspector receives a notification (email or in-app) when assigned to an inspection request
   3. Subscribed users receive web push notifications for relevant events (assignment, review status changes)
   4. Shared report with password protection requires password entry before displaying any report content
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 07-01: TBD
-- [ ] 07-02: TBD
+- [ ] 07-01-PLAN.md -- Wire assignment notifications (client confirmation email + inspector in-app/push/email)
+- [ ] 07-02-PLAN.md -- Wire review decision notifications + harden shared report password protection
 
 ### Phase 8: Search, Filtering & Templates
 **Goal**: Users can efficiently find reports using multiple filter criteria and apply saved templates when creating new reports
@@ -90,6 +90,6 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 6. PDF Court-Readiness | v1.1 | 2/2 | Complete | 2026-02-07 |
-| 7. Notifications & Sharing | v1.1 | 0/TBD | Not started | - |
+| 7. Notifications & Sharing | v1.1 | 0/2 | Planned | - |
 | 8. Search, Filtering & Templates | v1.1 | 0/TBD | Not started | - |
 | 9. Export, Bulk & Admin | v1.1 | 0/TBD | Not started | - |
