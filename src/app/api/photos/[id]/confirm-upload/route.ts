@@ -4,11 +4,11 @@
  *
  * After mobile app uploads directly to R2, this endpoint:
  * 1. Fetches the image from the public URL
- * 2. Computes SHA-256 hash and compares with stored originalHash
- * 3. Generates a 200x200 JPEG thumbnail
+ * 2. Processes photo in single pass (hash, thumbnail, metadata)
+ * 3. Compares SHA-256 hash with stored originalHash (case-insensitive)
  * 4. Uploads thumbnail to R2
- * 5. Updates photo record with url, thumbnailUrl, hashVerified, uploadedAt
- * 6. Creates audit log entry
+ * 5. Updates photo record with url, thumbnailUrl, hashVerified, uploadedAt, metadata
+ * 6. Creates audit log entry with full details
  *
  * Note: Hash mismatch is logged but does NOT fail the request (fail-safe approach).
  */
@@ -17,8 +17,7 @@ import { getAuthUser, getUserWhereClause } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { uploadToR2, generateThumbnailKey } from "@/lib/r2";
-import crypto from "crypto";
-import sharp from "sharp";
+import { processPhotoForStorage } from "@/lib/photo-processing";
 
 interface ConfirmUploadBody {
   publicUrl: string;
@@ -80,6 +79,21 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Idempotent: if already confirmed, return existing data
+    if (photo.url && photo.uploadedAt) {
+      return NextResponse.json({
+        success: true,
+        photo: {
+          id: photo.id,
+          url: photo.url,
+          thumbnailUrl: photo.thumbnailUrl,
+          hashVerified: photo.hashVerified,
+          uploadedAt: photo.uploadedAt,
+        },
+        alreadyConfirmed: true,
+      });
+    }
+
     // Fetch the uploaded image from R2
     let imageBuffer: Buffer;
     try {
@@ -100,18 +114,21 @@ export async function POST(
       );
     }
 
-    // Compute SHA-256 hash of uploaded file
-    const computedHash = crypto
-      .createHash("sha256")
-      .update(imageBuffer)
-      .digest("hex");
+    // Process photo in single pass: hash, thumbnail, metadata
+    const processingResult = await processPhotoForStorage(
+      imageBuffer,
+      photo.originalHash ?? undefined
+    );
 
-    // Compare with original hash - log mismatch but don't fail (fail-safe)
-    const hashMatch = computedHash === photo.originalHash;
-    if (!hashMatch) {
+    // Log hash mismatch with full details (fail-safe: don't fail request)
+    if (!processingResult.hashVerified && photo.originalHash) {
       console.warn(
-        `Hash mismatch for photo ${photoId}: expected ${photo.originalHash}, got ${computedHash}`
+        `Hash mismatch for photo ${photoId}:`,
+        `expected=${photo.originalHash}`,
+        `computed=${processingResult.hash}`,
+        `metadata=${JSON.stringify(processingResult.metadata)}`
       );
+
       // Create audit log for hash mismatch
       await prisma.auditLog.create({
         data: {
@@ -122,31 +139,34 @@ export async function POST(
             photoId,
             event: "hash_mismatch",
             expectedHash: photo.originalHash,
-            computedHash,
+            computedHash: processingResult.hash,
             publicUrl,
+            metadata: {
+              width: processingResult.metadata.width,
+              height: processingResult.metadata.height,
+              format: processingResult.metadata.format,
+              size: processingResult.metadata.size,
+            },
             source: "mobile_confirm_upload",
           },
         },
       });
     }
 
-    // Generate thumbnail using Sharp
+    // Upload thumbnail to R2 if generated
     let thumbnailUrl: string | null = null;
-    try {
-      const thumbnailBuffer = await sharp(imageBuffer)
-        .resize(200, 200, {
-          fit: "cover",
-          position: "centre",
-        })
-        .jpeg({ quality: 70 })
-        .toBuffer();
-
-      // Upload thumbnail to R2
-      const thumbnailKey = generateThumbnailKey(photo.filename);
-      thumbnailUrl = await uploadToR2(thumbnailBuffer, thumbnailKey, "image/jpeg");
-    } catch (thumbnailError) {
-      console.error("Failed to generate thumbnail:", thumbnailError);
-      // Continue without thumbnail - not critical
+    if (processingResult.thumbnail) {
+      try {
+        const thumbnailKey = generateThumbnailKey(photo.filename);
+        thumbnailUrl = await uploadToR2(
+          processingResult.thumbnail.buffer,
+          thumbnailKey,
+          "image/jpeg"
+        );
+      } catch (thumbnailUploadError) {
+        console.error("Failed to upload thumbnail:", thumbnailUploadError);
+        // Continue without thumbnail - not critical
+      }
     }
 
     // Update photo record
@@ -156,7 +176,7 @@ export async function POST(
       data: {
         url: publicUrl,
         thumbnailUrl,
-        hashVerified: hashMatch,
+        hashVerified: processingResult.hashVerified,
         uploadedAt: now,
       },
     });
@@ -172,7 +192,14 @@ export async function POST(
           filename: photo.originalFilename,
           publicUrl,
           thumbnailUrl,
-          hashVerified: hashMatch,
+          hashVerified: processingResult.hashVerified,
+          computedHash: processingResult.hash,
+          metadata: {
+            width: processingResult.metadata.width,
+            height: processingResult.metadata.height,
+            format: processingResult.metadata.format,
+            size: processingResult.metadata.size,
+          },
           source: "mobile_confirm_upload",
         },
       },
@@ -186,6 +213,12 @@ export async function POST(
         thumbnailUrl: updatedPhoto.thumbnailUrl,
         hashVerified: updatedPhoto.hashVerified,
         uploadedAt: updatedPhoto.uploadedAt,
+        metadata: {
+          width: processingResult.metadata.width,
+          height: processingResult.metadata.height,
+          format: processingResult.metadata.format,
+          size: processingResult.metadata.size,
+        },
       },
     });
   } catch (error) {
