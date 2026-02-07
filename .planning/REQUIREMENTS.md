@@ -9,11 +9,11 @@ Requirements for pre-pilot hardening. Each maps to roadmap phases.
 
 ### PDF & Report Output
 
-- [ ] **PDF-01**: PDF includes methodology section describing inspection approach
-- [ ] **PDF-02**: PDF includes equipment/tools section listing instruments used
-- [ ] **PDF-03**: PDF includes limitations section documenting access restrictions and caveats
-- [ ] **PDF-04**: PDF includes access method section describing how roof was accessed
-- [ ] **PDF-05**: PDF includes compliance assessment results (B2/E2/COP analysis with pass/fail/NA)
+- [x] **PDF-01**: PDF includes methodology section describing inspection approach
+- [x] **PDF-02**: PDF includes equipment/tools section listing instruments used
+- [x] **PDF-03**: PDF includes limitations section documenting access restrictions and caveats
+- [x] **PDF-04**: PDF includes access method section describing how roof was accessed
+- [x] **PDF-05**: PDF includes compliance assessment results (B2/E2/COP analysis with pass/fail/NA)
 - [ ] **PDF-06**: User can export evidence package as ZIP (report PDF + original photos + chain of custody certificates)
 - [ ] **PDF-07**: Admin can generate PDFs for multiple reports in a single batch operation
 
@@ -88,11 +88,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PDF-01 | Phase 6 | Pending |
-| PDF-02 | Phase 6 | Pending |
-| PDF-03 | Phase 6 | Pending |
-| PDF-04 | Phase 6 | Pending |
-| PDF-05 | Phase 6 | Pending |
+| PDF-01 | Phase 6 | Complete |
+| PDF-02 | Phase 6 | Complete |
+| PDF-03 | Phase 6 | Complete |
+| PDF-04 | Phase 6 | Complete |
+| PDF-05 | Phase 6 | Complete |
 | PDF-06 | Phase 9 | Pending |
 | PDF-07 | Phase 9 | Pending |
 | NOTIF-01 | Phase 7 | Pending |
@@ -115,4 +115,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-07*
-*Last updated: 2026-02-07 after roadmap creation (v1.1 phases 6-9)*
+*Last updated: 2026-02-07 after Phase 6 completion (PDF-01..05 → Complete)*
