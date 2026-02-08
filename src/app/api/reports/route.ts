@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
 
       // Map dateField to correct Prisma field
       const validDateFields = ["createdAt", "inspectionDate", "submittedAt", "approvedAt"] as const;
-      const selectedField = validDateFields.includes(dateField as any) ? dateField : "inspectionDate";
+      const selectedField = validDateFields.includes(dateField as typeof validDateFields[number]) ? dateField : "inspectionDate";
 
       if (selectedField === "createdAt") {
         where.createdAt = dateFilter;
