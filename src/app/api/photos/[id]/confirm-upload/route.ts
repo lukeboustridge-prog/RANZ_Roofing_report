@@ -16,7 +16,7 @@
 import { getAuthUser, getUserWhereClause } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { uploadToR2, generateThumbnailKey } from "@/lib/r2";
+import { uploadToR2, generateThumbnailKey, downloadFromR2, getPublicUrl } from "@/lib/r2";
 import { processPhotoForStorage } from "@/lib/photo-processing";
 
 interface ConfirmUploadBody {
@@ -79,6 +79,10 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Reconstruct the R2 key and correct public URL from photo metadata
+    const photoKey = `reports/${photo.reportId}/photos/${photo.filename}`;
+    const correctPublicUrl = getPublicUrl(photoKey);
+
     // Idempotent: if already confirmed, return existing data
     if (photo.url && photo.uploadedAt) {
       return NextResponse.json({
@@ -94,20 +98,12 @@ export async function POST(
       });
     }
 
-    // Fetch the uploaded image from R2
+    // Download the uploaded image from R2 using authenticated S3 access
     let imageBuffer: Buffer;
     try {
-      const response = await fetch(publicUrl);
-      if (!response.ok) {
-        return NextResponse.json(
-          { error: `Failed to fetch image: ${response.statusText}` },
-          { status: 400 }
-        );
-      }
-      const arrayBuffer = await response.arrayBuffer();
-      imageBuffer = Buffer.from(arrayBuffer);
+      imageBuffer = await downloadFromR2(photoKey);
     } catch (fetchError) {
-      console.error("Failed to fetch uploaded image:", fetchError);
+      console.error("Failed to download image from R2:", fetchError);
       return NextResponse.json(
         { error: "Failed to fetch uploaded image from storage" },
         { status: 400 }
@@ -140,7 +136,7 @@ export async function POST(
             event: "hash_mismatch",
             expectedHash: photo.originalHash,
             computedHash: processingResult.hash,
-            publicUrl,
+            publicUrl: correctPublicUrl,
             metadata: {
               width: processingResult.metadata.width,
               height: processingResult.metadata.height,
@@ -157,7 +153,7 @@ export async function POST(
     let thumbnailUrl: string | null = null;
     if (processingResult.thumbnail) {
       try {
-        const thumbnailKey = generateThumbnailKey(photo.filename);
+        const thumbnailKey = generateThumbnailKey(photoKey);
         thumbnailUrl = await uploadToR2(
           processingResult.thumbnail.buffer,
           thumbnailKey,
@@ -174,7 +170,7 @@ export async function POST(
     const updatedPhoto = await prisma.photo.update({
       where: { id: photoId },
       data: {
-        url: publicUrl,
+        url: correctPublicUrl,
         thumbnailUrl,
         hashVerified: processingResult.hashVerified,
         uploadedAt: now,
@@ -190,7 +186,7 @@ export async function POST(
         details: {
           photoId,
           filename: photo.originalFilename,
-          publicUrl,
+          publicUrl: correctPublicUrl,
           thumbnailUrl,
           hashVerified: processingResult.hashVerified,
           computedHash: processingResult.hash,

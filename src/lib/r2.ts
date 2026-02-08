@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import fs from "fs/promises";
 import path from "path";
@@ -69,6 +69,30 @@ export async function deleteFromR2(key: string): Promise<void> {
       Key: key,
     })
   );
+}
+
+export async function downloadFromR2(key: string): Promise<Buffer> {
+  if (isLocalStorage) {
+    const filePath = path.join(LOCAL_UPLOAD_DIR, key);
+    return fs.readFile(filePath);
+  }
+
+  const response = await r2!.send(
+    new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: key,
+    })
+  );
+
+  const bytes = await response.Body!.transformToByteArray();
+  return Buffer.from(bytes);
+}
+
+export function getPublicUrl(key: string): string {
+  if (isLocalStorage) {
+    return `/uploads/${key}`;
+  }
+  return `${process.env.R2_PUBLIC_URL}/${key}`;
 }
 
 export function generatePhotoKey(reportId: string, filename: string): string {
