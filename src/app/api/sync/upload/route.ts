@@ -456,6 +456,18 @@ async function processReport(
     }
   }
 
+  // Pre-compute photo keys so the same key is used in the transaction (filename)
+  // and outside it (presigned URL). generatePhotoKey uses Date.now() so calling
+  // it twice would produce different keys.
+  const photoKeyMap = new Map<string, string>();
+  if (reportData.photoMetadata) {
+    for (const photo of reportData.photoMetadata) {
+      if (photo.needsUpload && !photo._deleted) {
+        photoKeyMap.set(photo.id, generatePhotoKey(reportData.id, photo.originalFilename));
+      }
+    }
+  }
+
   // Process in transaction
   await prisma.$transaction(async (tx) => {
     // Upsert report
@@ -656,7 +668,7 @@ async function processReport(
           } else if (photo.needsUpload) {
             // New photo - create record with placeholder URL
             // Binary upload will happen via presigned URL
-            const photoKey = generatePhotoKey(reportData.id, photo.originalFilename);
+            const photoKey = photoKeyMap.get(photo.id)!;
 
             await tx.photo.create({
               data: {
@@ -710,7 +722,7 @@ async function processReport(
     for (const photo of reportData.photoMetadata) {
       if (photo.needsUpload && !photo._deleted) {
         try {
-          const photoKey = generatePhotoKey(reportData.id, photo.originalFilename);
+          const photoKey = photoKeyMap.get(photo.id)!;
           const uploadUrl = await getPresignedUploadUrl(photoKey, photo.mimeType);
 
           pendingPhotoUploads.push({
