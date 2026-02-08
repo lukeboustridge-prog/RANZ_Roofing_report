@@ -189,7 +189,7 @@ export function ReportSearch() {
         const res = await fetch("/api/admin/users?role=INSPECTOR&limit=100");
         if (res.ok) {
           const data = await res.json();
-          setInspectors(data.users?.map((u: any) => ({ id: u.id, name: u.name })) || []);
+          setInspectors(data.users?.map((u: { id: string; name: string }) => ({ id: u.id, name: u.name })) || []);
         }
       } catch {
         // Inspector filter won't show options for non-admin users
@@ -808,7 +808,7 @@ export function ReportSearch() {
       )}
 
       {/* Empty State */}
-      {!isLoading && reports.length === 0 && (
+      {!isLoading && !error && reports.length === 0 && (
         <Card>
           <CardContent className="py-12">
             <div className="text-center">
