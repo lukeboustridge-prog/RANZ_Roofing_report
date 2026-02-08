@@ -260,11 +260,12 @@ export async function GET(request: NextRequest) {
         order: validSortOrder,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching reports:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
+    const message = error instanceof Error ? error.message : String(error);
+    const name = error instanceof Error ? error.constructor.name : typeof error;
     return NextResponse.json(
-      { error: "Failed to fetch reports", detail: message },
+      { error: "Failed to fetch reports", detail: message, type: name },
       { status: 500 }
     );
   }

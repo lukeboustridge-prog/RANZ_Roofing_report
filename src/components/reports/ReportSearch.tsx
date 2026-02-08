@@ -227,8 +227,8 @@ export function ReportSearch() {
         const response = await fetch(`/api/reports?${params.toString()}`);
         if (!response.ok) {
           const body = await response.json().catch(() => null);
-          const serverMessage = body?.error || response.statusText;
-          throw new Error(`Failed to fetch reports: ${response.status} ${serverMessage}`);
+          const serverMessage = body?.detail || body?.error || response.statusText;
+          throw new Error(`${response.status}: ${serverMessage}`);
         }
         const data = await response.json();
         setReports(data.reports);
