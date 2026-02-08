@@ -262,8 +262,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching reports:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to fetch reports" },
+      { error: "Failed to fetch reports", detail: message },
       { status: 500 }
     );
   }

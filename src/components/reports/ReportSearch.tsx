@@ -226,12 +226,15 @@ export function ReportSearch() {
       try {
         const response = await fetch(`/api/reports?${params.toString()}`);
         if (!response.ok) {
-          throw new Error("Failed to fetch reports");
+          const body = await response.json().catch(() => null);
+          const serverMessage = body?.error || response.statusText;
+          throw new Error(`Failed to fetch reports: ${response.status} ${serverMessage}`);
         }
         const data = await response.json();
         setReports(data.reports);
         setPagination(data.pagination);
       } catch (err) {
+        console.error("[ReportSearch] Fetch error:", err);
         setError(err instanceof Error ? err.message : "Failed to fetch reports");
       } finally {
         setIsLoading(false);
