@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     // Get user with profile info
     const user = await prisma.user.findUnique({
-      where: getUserWhereClause(userId),
+      where: getUserWhereClause(userId, authUser.authSource),
       select: {
         id: true,
         clerkId: true,

@@ -37,7 +37,7 @@ export interface AuthUser {
   /** Associated company ID (if applicable) */
   companyId?: string;
   /** Which auth system provided this user */
-  authSource: 'custom' | 'clerk';
+  authSource: 'custom' | 'clerk' | 'bearer';
 }
 
 /**
@@ -61,18 +61,24 @@ export function getUserLookupField(): 'id' | 'clerkId' {
  * Handles the computed property name issue with Prisma's generated types.
  *
  * @param userId - The user ID from getAuthUser()
+ * @param authSource - Optional auth source from AuthUser. When 'bearer' (mobile),
+ *   the userId is always the internal DB ID regardless of AUTH_MODE.
  * @returns Object suitable for prisma.user.findUnique({ where: ... })
  *
  * @example
  * const authUser = await getAuthUser(request);
  * if (authUser) {
  *   const user = await prisma.user.findUnique({
- *     where: getUserWhereClause(authUser.userId)
+ *     where: getUserWhereClause(authUser.userId, authUser.authSource)
  *   });
  * }
  */
-export function getUserWhereClause(userId: string): { id: string } | { clerkId: string } {
-  if (AUTH_MODE === 'custom') {
+export function getUserWhereClause(
+  userId: string,
+  authSource?: AuthUser['authSource']
+): { id: string } | { clerkId: string } {
+  // Bearer tokens from mobile always use internal DB ID
+  if (authSource === 'bearer' || AUTH_MODE === 'custom') {
     return { id: userId };
   }
   return { clerkId: userId };
@@ -118,12 +124,57 @@ export function getAuthMode(): 'clerk' | 'custom' | 'oidc' {
  * }
  */
 export async function getAuthUser(request?: Request): Promise<AuthUser | null> {
+  // Always check for Bearer token first (mobile clients)
+  if (request) {
+    const bearerUser = await getAuthUserFromBearerToken(request);
+    if (bearerUser) {
+      return bearerUser;
+    }
+  }
+
   if (AUTH_MODE === 'custom') {
     return getAuthUserFromCustomAuth(request);
   }
 
   // Default to Clerk mode
   return getAuthUserFromClerk();
+}
+
+/**
+ * Get authenticated user from Authorization: Bearer <token> header.
+ * Used by mobile clients that send JWTs in the Authorization header.
+ */
+async function getAuthUserFromBearerToken(request: Request): Promise<AuthUser | null> {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return null;
+    }
+
+    const token = authHeader.slice(7);
+    if (!token) {
+      return null;
+    }
+
+    const payload = await verifyTokenStateless(token);
+    if (!payload) {
+      return null;
+    }
+
+    if (payload.type !== 'access') {
+      return null;
+    }
+
+    return {
+      ...mapPayloadToAuthUser(payload),
+      authSource: 'bearer' as const,
+    };
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[getAuthUser] Bearer token auth error:', error);
+    }
+    return null;
+  }
 }
 
 /**

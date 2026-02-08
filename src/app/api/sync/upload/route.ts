@@ -297,7 +297,7 @@ export async function POST(request: NextRequest) {
 
     // Get user from database
     const user = await prisma.user.findUnique({
-      where: getUserWhereClause(userId),
+      where: getUserWhereClause(userId, authUser.authSource),
     });
 
     if (!user) {

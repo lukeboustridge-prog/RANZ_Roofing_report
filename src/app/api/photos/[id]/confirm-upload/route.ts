@@ -38,7 +38,7 @@ export async function POST(
     }
 
     const user = await prisma.user.findUnique({
-      where: getUserWhereClause(userId),
+      where: getUserWhereClause(userId, authUser.authSource),
     });
 
     if (!user) {
