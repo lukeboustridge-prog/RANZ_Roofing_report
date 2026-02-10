@@ -15,6 +15,7 @@ import {
   BarChart3,
   ClipboardList,
   ClipboardCheck,
+  HelpCircle,
 } from "lucide-react";
 
 const navigation = [
@@ -32,6 +33,7 @@ const adminNavigation = [
 ];
 
 const secondaryNavigation = [
+  { name: "Help", href: "/help", icon: HelpCircle },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

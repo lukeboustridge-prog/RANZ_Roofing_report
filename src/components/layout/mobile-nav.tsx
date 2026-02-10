@@ -13,6 +13,7 @@ import {
   UserCircle,
   BarChart3,
   ClipboardList,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -23,6 +24,7 @@ const navigation = [
   { name: "Assignments", href: "/assignments", icon: ClipboardList },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Profile", href: "/profile", icon: UserCircle },
+  { name: "Help", href: "/help", icon: HelpCircle },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
