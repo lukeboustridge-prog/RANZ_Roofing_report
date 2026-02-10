@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Look up user in local database for role info
-    const dbUser = await prisma.user.findUnique({
+    let dbUser = await prisma.user.findUnique({
       where: { clerkId: clerkUser.id },
       select: {
         id: true,
@@ -137,14 +137,41 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Determine role and user info
-    const userName = dbUser?.name
+    // Auto-create Prisma User if missing (Clerk webhook may have failed)
+    // This ensures the JWT sub always contains the internal DB ID
+    if (!dbUser) {
+      console.log(`[API /auth/login] User not found in DB for clerkId=${clerkUser.id}, creating...`);
+      const clerkName = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Unknown';
+      const clerkRole = (clerkUser.publicMetadata?.role as string | undefined);
+      const newUser = await prisma.user.create({
+        data: {
+          clerkId: clerkUser.id,
+          email: email.toLowerCase(),
+          name: clerkName,
+          role: clerkRole === 'admin' || clerkRole === 'ranz_admin' ? 'SUPER_ADMIN'
+            : clerkRole === 'inspector' || clerkRole === 'ranz_inspector' ? 'APPOINTED_INSPECTOR'
+            : 'MEMBER',
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          company: true,
+          status: true,
+        },
+      });
+      dbUser = newUser;
+      console.log(`[API /auth/login] Created user ${newUser.id} for clerkId=${clerkUser.id}`);
+    }
+
+    // Determine role and user info — dbUser is always non-null now
+    const userName = dbUser.name
       || `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim()
       || 'Unknown';
-    const userRole = dbUser
-      ? mapPrismaRole(dbUser.role)
-      : mapClerkRole(clerkUser.publicMetadata?.role as string | undefined);
-    const userId = dbUser?.id || clerkUser.id;
+    const userRole = mapPrismaRole(dbUser.role);
+    const userId = dbUser.id;
 
     // Check if user is active
     if (dbUser?.status && dbUser.status !== 'ACTIVE') {
