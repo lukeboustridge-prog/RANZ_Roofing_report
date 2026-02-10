@@ -96,23 +96,22 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Bootstrap] Report query: role=${user.role}, lastSyncAt=${lastSyncAt || 'null'}, where=${JSON.stringify(reportWhere)}`);
 
-    // Fetch recent reports (last 20, or only updated ones for incremental sync)
+    // Fetch recent reports with full related data for mobile sync
     const reports = await prisma.report.findMany({
       where: reportWhere,
       orderBy: { updatedAt: "desc" },
       take: 20,
-      select: {
-        id: true,
-        reportNumber: true,
-        propertyAddress: true,
-        propertyCity: true,
-        inspectionType: true,
-        status: true,
-        inspectorId: true,
-        submittedAt: true,
-        approvedAt: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
+        photos: {
+          orderBy: { sortOrder: "asc" },
+        },
+        defects: {
+          orderBy: { defectNumber: "asc" },
+        },
+        roofElements: {
+          orderBy: { createdAt: "asc" },
+        },
+        complianceAssessment: true,
         _count: {
           select: {
             photos: true,
@@ -124,10 +123,10 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Bootstrap] User ${user.id} (${user.email}): found ${reports.length} reports`);
     if (reports.length > 0) {
-      console.log(`[Bootstrap] Reports: ${reports.map(r => `${r.reportNumber}(inspectorId=${r.inspectorId})`).join(', ')}`);
+      console.log(`[Bootstrap] Reports: ${reports.map(r => `${r.reportNumber}(inspectorId=${r.inspectorId}, photos=${r._count.photos}, defects=${r._count.defects})`).join(', ')}`);
     }
 
-    // Transform reports to summary format
+    // Transform reports with full nested data for mobile sync
     const recentReports = reports.map((report) => ({
       id: report.id,
       reportNumber: report.reportNumber,
@@ -142,6 +141,79 @@ export async function GET(request: NextRequest) {
       updatedAt: report.updatedAt.toISOString(),
       photoCount: report._count.photos,
       defectCount: report._count.defects,
+      // Full related data for mobile down-sync
+      photos: report.photos.map((p) => ({
+        id: p.id,
+        reportId: p.reportId,
+        defectId: p.defectId,
+        roofElementId: p.roofElementId,
+        filename: p.filename,
+        originalFilename: p.originalFilename,
+        mimeType: p.mimeType,
+        fileSize: p.fileSize,
+        url: p.url,
+        thumbnailUrl: p.thumbnailUrl,
+        photoType: p.photoType,
+        capturedAt: p.capturedAt?.toISOString() ?? null,
+        gpsLat: p.gpsLat,
+        gpsLng: p.gpsLng,
+        gpsAltitude: p.gpsAltitude,
+        cameraMake: p.cameraMake,
+        cameraModel: p.cameraModel,
+        exposureTime: p.exposureTime,
+        fNumber: p.fNumber,
+        iso: p.iso,
+        focalLength: p.focalLength,
+        originalHash: p.originalHash,
+        caption: p.caption,
+        annotations: p.annotations,
+        annotatedUrl: p.annotatedUrl,
+        sortOrder: p.sortOrder,
+        createdAt: p.createdAt.toISOString(),
+      })),
+      defects: report.defects.map((d) => ({
+        id: d.id,
+        reportId: d.reportId,
+        roofElementId: d.roofElementId,
+        defectNumber: d.defectNumber,
+        title: d.title,
+        description: d.description,
+        location: d.location,
+        classification: d.classification,
+        severity: d.severity,
+        observation: d.observation,
+        analysis: d.analysis,
+        opinion: d.opinion,
+        codeReference: d.codeReference,
+        copReference: d.copReference,
+        recommendation: d.recommendation,
+        priorityLevel: d.priorityLevel,
+        createdAt: d.createdAt.toISOString(),
+        updatedAt: d.updatedAt.toISOString(),
+      })),
+      roofElements: report.roofElements.map((e) => ({
+        id: e.id,
+        reportId: e.reportId,
+        elementType: e.elementType,
+        location: e.location,
+        claddingType: e.claddingType,
+        material: e.material,
+        manufacturer: e.manufacturer,
+        pitch: e.pitch,
+        area: e.area,
+        conditionRating: e.conditionRating,
+        conditionNotes: e.conditionNotes,
+        createdAt: e.createdAt.toISOString(),
+        updatedAt: e.updatedAt.toISOString(),
+      })),
+      complianceAssessment: report.complianceAssessment ? {
+        id: report.complianceAssessment.id,
+        reportId: report.complianceAssessment.reportId,
+        checklistResults: report.complianceAssessment.checklistResults,
+        nonComplianceSummary: report.complianceAssessment.nonComplianceSummary,
+        createdAt: report.complianceAssessment.createdAt.toISOString(),
+        updatedAt: report.complianceAssessment.updatedAt.toISOString(),
+      } : null,
     }));
 
     // Current sync timestamp
