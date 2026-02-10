@@ -94,6 +94,8 @@ export async function GET(request: NextRequest) {
       reportWhere.inspectorId = user.id;
     }
 
+    console.log(`[Bootstrap] Report query: role=${user.role}, lastSyncAt=${lastSyncAt || 'null'}, where=${JSON.stringify(reportWhere)}`);
+
     // Fetch recent reports (last 20, or only updated ones for incremental sync)
     const reports = await prisma.report.findMany({
       where: reportWhere,
@@ -121,6 +123,9 @@ export async function GET(request: NextRequest) {
     });
 
     console.log(`[Bootstrap] User ${user.id} (${user.email}): found ${reports.length} reports`);
+    if (reports.length > 0) {
+      console.log(`[Bootstrap] Reports: ${reports.map(r => `${r.reportNumber}(inspectorId=${r.inspectorId})`).join(', ')}`);
+    }
 
     // Transform reports to summary format
     const recentReports = reports.map((report) => ({
