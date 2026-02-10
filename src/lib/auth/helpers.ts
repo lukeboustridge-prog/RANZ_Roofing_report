@@ -158,10 +158,12 @@ async function getAuthUserFromBearerToken(request: Request): Promise<AuthUser | 
 
     const payload = await verifyTokenStateless(token);
     if (!payload) {
+      console.warn('[getAuthUser] Bearer token verification failed — invalid or expired token');
       return null;
     }
 
     if (payload.type !== 'access') {
+      console.warn(`[getAuthUser] Bearer token rejected — type="${payload.type}", expected "access"`);
       return null;
     }
 
@@ -170,9 +172,7 @@ async function getAuthUserFromBearerToken(request: Request): Promise<AuthUser | 
       authSource: 'bearer' as const,
     };
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[getAuthUser] Bearer token auth error:', error);
-    }
+    console.error('[getAuthUser] Bearer token auth error:', error);
     return null;
   }
 }

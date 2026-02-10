@@ -64,10 +64,7 @@ export async function verifyTokenStateless(token: string): Promise<JWTPayload | 
 
     return result.payload as unknown as JWTPayload;
   } catch (error) {
-    // Log for debugging in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[Satellite] JWT verification failed:', error);
-    }
+    console.warn('[Satellite] JWT verification failed:', error instanceof Error ? error.message : error);
     return null;
   }
 }
