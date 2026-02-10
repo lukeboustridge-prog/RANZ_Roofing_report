@@ -85,11 +85,14 @@ export async function GET(request: NextRequest) {
       updatedAt: template.updatedAt.toISOString(),
     }));
 
-    // Build report query - either all or only updated since lastSyncAt
-    const reportWhere = {
-      inspectorId: user.id,
+    // Build report query - role-based visibility matching GET /api/reports
+    const reportWhere: Record<string, unknown> = {
       ...(lastSyncDate ? { updatedAt: { gt: lastSyncDate } } : {}),
     };
+    if (!["ADMIN", "SUPER_ADMIN", "REVIEWER"].includes(user.role)) {
+      // Regular users only see their own reports
+      reportWhere.inspectorId = user.id;
+    }
 
     // Fetch recent reports (last 20, or only updated ones for incremental sync)
     const reports = await prisma.report.findMany({

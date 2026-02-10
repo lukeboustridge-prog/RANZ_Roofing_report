@@ -149,8 +149,8 @@ export async function POST(request: NextRequest) {
           email: email.toLowerCase(),
           name: clerkName,
           role: clerkRole === 'admin' || clerkRole === 'ranz_admin' ? 'SUPER_ADMIN'
-            : clerkRole === 'inspector' || clerkRole === 'ranz_inspector' ? 'APPOINTED_INSPECTOR'
-            : 'MEMBER',
+            : clerkRole === 'inspector' || clerkRole === 'ranz_inspector' ? 'INSPECTOR'
+            : 'INSPECTOR',
           status: 'ACTIVE',
         },
         select: {
