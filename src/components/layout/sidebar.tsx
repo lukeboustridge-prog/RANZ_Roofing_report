@@ -15,6 +15,7 @@ import {
   BarChart3,
   ClipboardList,
   ClipboardCheck,
+  HelpCircle,
 } from "lucide-react";
 
 const navigation = [
@@ -24,12 +25,16 @@ const navigation = [
   { name: "Assignments", href: "/assignments", icon: ClipboardList },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Profile", href: "/profile", icon: UserCircle },
-  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 const adminNavigation = [
   { name: "Review Queue", href: "/review", icon: ClipboardCheck },
   { name: "Admin Portal", href: "/admin", icon: Shield },
+];
+
+const secondaryNavigation = [
+  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Help", href: "/help", icon: HelpCircle },
 ];
 
 export function Sidebar() {
@@ -145,6 +150,37 @@ export function Sidebar() {
                 </ul>
               </li>
             )}
+
+            <li className="mt-auto">
+              <ul role="list" className="-mx-2 space-y-1">
+                {secondaryNavigation.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <li key={item.name}>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "group flex gap-x-3 rounded-md p-2.5 text-sm font-medium leading-6 transition-all duration-150",
+                          isActive
+                            ? "bg-[var(--ranz-charcoal-dark)] text-white border-l-2 border-[var(--ranz-yellow)]"
+                            : "text-[var(--ranz-silver)] hover:bg-[var(--ranz-charcoal-dark)] hover:text-white"
+                        )}
+                      >
+                        <item.icon
+                          className={cn(
+                            "h-5 w-5 shrink-0",
+                            isActive
+                              ? "text-[var(--ranz-yellow)]"
+                              : "text-[var(--ranz-silver)] group-hover:text-white"
+                          )}
+                        />
+                        {item.name}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
           </ul>
         </nav>
       </div>

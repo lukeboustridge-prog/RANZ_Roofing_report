@@ -69,7 +69,7 @@ export function AppHeader({ appName, onMenuClick }: AppHeaderProps) {
           onClick={onMenuClick}
         >
           <span className="sr-only">Open sidebar</span>
-          <Menu className="h-6 w-6" aria-hidden="true" />
+          <Menu className="h-5 w-5" aria-hidden="true" />
         </Button>
       )}
 

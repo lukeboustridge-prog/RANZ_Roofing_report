@@ -37,7 +37,7 @@ export default function DashboardLayout({
             <SyncStatusBar className="mb-4" />
           </div>
 
-          <main id="main-content" className="py-4" tabIndex={-1}>
+          <main id="main-content" className="py-6" tabIndex={-1}>
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               {children}
             </div>
