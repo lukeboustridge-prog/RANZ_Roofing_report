@@ -136,8 +136,8 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 motion-safe:animate-[fadeIn_0.3s_ease-out]">
+        <Card className="transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
@@ -147,7 +147,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Drafts</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -157,7 +157,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">In Progress</CardTitle>
             <AlertCircle className="h-4 w-4 text-[var(--ranz-orange-500)]" />
@@ -167,7 +167,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completed</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -179,7 +179,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Recent reports */}
-      <Card>
+      <Card className="motion-safe:animate-[fadeIn_0.3s_ease-out]">
         <CardHeader>
           <CardTitle>Recent Reports</CardTitle>
         </CardHeader>
@@ -204,7 +204,7 @@ export default async function DashboardPage() {
                 <Link
                   key={report.id}
                   href={`/reports/${report.id}`}
-                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-secondary/50 transition-colors"
+                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-secondary/50 hover:shadow-sm transition-colors"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
