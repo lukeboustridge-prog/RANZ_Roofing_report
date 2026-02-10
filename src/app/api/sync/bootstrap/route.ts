@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
     const authUser = await getAuthUser(request);
     const userId = authUser?.userId;
 
+    console.log(`[Bootstrap] Auth result: userId=${userId}, authSource=${authUser?.authSource}`);
+
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -101,6 +103,9 @@ export async function GET(request: NextRequest) {
         propertyCity: true,
         inspectionType: true,
         status: true,
+        inspectorId: true,
+        submittedAt: true,
+        approvedAt: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -112,6 +117,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    console.log(`[Bootstrap] User ${user.id} (${user.email}): found ${reports.length} reports`);
+
     // Transform reports to summary format
     const recentReports = reports.map((report) => ({
       id: report.id,
@@ -120,6 +127,9 @@ export async function GET(request: NextRequest) {
       propertyCity: report.propertyCity,
       inspectionType: report.inspectionType,
       status: report.status,
+      inspectorId: report.inspectorId,
+      submittedAt: report.submittedAt?.toISOString() ?? null,
+      approvedAt: report.approvedAt?.toISOString() ?? null,
       createdAt: report.createdAt.toISOString(),
       updatedAt: report.updatedAt.toISOString(),
       photoCount: report._count.photos,
