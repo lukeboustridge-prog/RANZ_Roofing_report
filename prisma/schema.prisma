@@ -187,6 +187,7 @@ model Report {
 
   photos               Photo[]
   videos               Video[]
+  voiceNotes           VoiceNote[]
   documents            Document[]
   defects              Defect[]
   roofElements         RoofElement[]
@@ -492,6 +493,34 @@ model Video {
   @@index([reportId])
 }
 
+model VoiceNote {
+  id       String @id @default(cuid())
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  // File Info
+  filename         String
+  originalFilename String
+  mimeType         String
+  fileSize         Int
+  duration         Int?       // Duration in milliseconds
+
+  url String
+
+  // Metadata
+  recordedAt DateTime?
+
+  // Evidence Integrity
+  originalHash String
+
+  // Transcription (optional - may be populated later)
+  transcription String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+}
+
 model Document {
   id       String @id @default(cuid())
   reportId String
@@ -548,6 +577,7 @@ enum AuditAction {
   PHOTO_ADDED
   PHOTO_DELETED
   VIDEO_ADDED
+  VOICE_NOTE_ADDED
   DEFECT_ADDED
   DEFECT_UPDATED
   STATUS_CHANGED

@@ -1,9 +1,11 @@
 import { getAuthUser, getUserWhereClause } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { uploadToR2, generateAnnotatedKey } from "@/lib/r2";
 
 // POST /api/photos/[id]/annotate - Save annotations for a photo
+// Accepts either JSON body (legacy) or FormData (preferred for large images)
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -24,8 +26,38 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const body = await request.json();
-    const { annotations, dataUrl } = body;
+    let annotations: Prisma.InputJsonValue | undefined;
+    let imageBuffer: Buffer | null = null;
+    let imageContentType = "image/png";
+
+    const contentType = request.headers.get("content-type") || "";
+
+    if (contentType.includes("multipart/form-data")) {
+      // FormData approach (preferred — avoids body size limits)
+      const formData = await request.formData();
+      const annotationsStr = formData.get("annotations") as string;
+      annotations = annotationsStr ? JSON.parse(annotationsStr) : [];
+
+      const imageFile = formData.get("annotatedImage") as File | null;
+      if (imageFile) {
+        const arrayBuffer = await imageFile.arrayBuffer();
+        imageBuffer = Buffer.from(arrayBuffer);
+        imageContentType = imageFile.type || "image/png";
+      }
+    } else {
+      // JSON body (legacy — may fail for large images)
+      const body = await request.json();
+      annotations = body.annotations;
+      const dataUrl = body.dataUrl as string | undefined;
+
+      if (dataUrl && dataUrl.startsWith("data:image/")) {
+        const matches = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+        if (matches) {
+          imageContentType = matches[1];
+          imageBuffer = Buffer.from(matches[2], "base64");
+        }
+      }
+    }
 
     // Find the photo
     const photo = await prisma.photo.findUnique({
@@ -48,22 +80,11 @@ export async function POST(
 
     let annotatedUrl = photo.annotatedUrl;
 
-    // Upload the annotated image if dataUrl is provided
-    if (dataUrl && dataUrl.startsWith("data:image/")) {
+    // Upload the annotated image if provided
+    if (imageBuffer) {
       try {
-        // Extract base64 data and content type
-        const matches = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-        if (matches) {
-          const contentType = matches[1];
-          const base64Data = matches[2];
-          const buffer = Buffer.from(base64Data, "base64");
-
-          // Generate key for annotated image
-          const annotatedKey = generateAnnotatedKey(photo.filename);
-
-          // Upload to R2
-          annotatedUrl = await uploadToR2(buffer, annotatedKey, contentType);
-        }
+        const annotatedKey = generateAnnotatedKey(photo.filename);
+        annotatedUrl = await uploadToR2(imageBuffer, annotatedKey, imageContentType);
       } catch (uploadError) {
         console.error("Error uploading annotated image:", uploadError);
         // Continue without saving annotated image URL

@@ -30,12 +30,27 @@ export default function AnnotateContent() {
     fetchPhoto();
   }, [photoId]);
 
+  const parseErrorResponse = async (response: Response): Promise<string> => {
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      try {
+        const data = await response.json();
+        return data.error || `Request failed (${response.status})`;
+      } catch {
+        return `Request failed (${response.status})`;
+      }
+    }
+    // Non-JSON response (e.g. "Request Entity Too Large")
+    const text = await response.text();
+    return text || `Request failed (${response.status})`;
+  };
+
   const fetchPhoto = async () => {
     try {
       const response = await fetch(`/api/photos/${photoId}/annotate`);
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to fetch photo");
+        const errorMsg = await parseErrorResponse(response);
+        throw new Error(errorMsg);
       }
       const data = await response.json();
       setPhoto(data);
@@ -51,15 +66,25 @@ export default function AnnotateContent() {
     setError("");
 
     try {
-      const response = await fetch(`/api/photos/${photoId}/annotate`, {
+      // Use FormData to avoid JSON body size limits for large annotated images
+      const formData = new FormData();
+      formData.append("annotations", JSON.stringify(annotations));
+
+      // Convert data URL to Blob for multipart upload
+      if (dataUrl && dataUrl.startsWith("data:image/")) {
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        formData.append("annotatedImage", blob, "annotated.png");
+      }
+
+      const saveResponse = await fetch(`/api/photos/${photoId}/annotate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ annotations, dataUrl }),
+        body: formData,
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to save annotations");
+      if (!saveResponse.ok) {
+        const errorMsg = await parseErrorResponse(saveResponse);
+        throw new Error(errorMsg);
       }
 
       // Navigate back to photos page

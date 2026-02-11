@@ -58,6 +58,9 @@ function mapActionToAuditAction(action: string, entityType: string): AuditAction
   if (entityType === "video" && action === "captured") {
     return "VIDEO_ADDED";
   }
+  if (entityType === "voiceNote" && (action === "captured" || action === "added")) {
+    return "VOICE_NOTE_ADDED";
+  }
 
   // Default fallback
   return "UPDATED";
@@ -112,9 +115,12 @@ export async function POST(request: NextRequest) {
     const videoIds = events
       .filter((e) => e.entityType === "video")
       .map((e) => e.entityId);
+    const voiceNoteIds = events
+      .filter((e) => e.entityType === "voiceNote")
+      .map((e) => e.entityId);
 
     // Batch fetch entities to get reportIds
-    const [photos, videos] = await Promise.all([
+    const [photos, videos, voiceNotes] = await Promise.all([
       photoIds.length > 0
         ? prisma.photo.findMany({
             where: { id: { in: photoIds } },
@@ -127,11 +133,18 @@ export async function POST(request: NextRequest) {
             select: { id: true, reportId: true },
           })
         : [],
+      voiceNoteIds.length > 0
+        ? prisma.voiceNote.findMany({
+            where: { id: { in: voiceNoteIds } },
+            select: { id: true, reportId: true },
+          })
+        : [],
     ]);
 
     // Build lookup maps
     const photoReportMap = new Map(photos.map((p) => [p.id, p.reportId]));
     const videoReportMap = new Map(videos.map((v) => [v.id, v.reportId]));
+    const voiceNoteReportMap = new Map(voiceNotes.map((vn) => [vn.id, vn.reportId]));
 
     // Resolve reportId for each event
     function getReportId(event: CustodyEvent): string | null {
@@ -141,8 +154,7 @@ export async function POST(request: NextRequest) {
         case "video":
           return videoReportMap.get(event.entityId) || null;
         case "voiceNote":
-          // Voice notes might not have a model yet - skip for now
-          return null;
+          return voiceNoteReportMap.get(event.entityId) || null;
         default:
           return null;
       }
