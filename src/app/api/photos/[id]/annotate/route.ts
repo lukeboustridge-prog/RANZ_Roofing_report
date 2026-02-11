@@ -15,14 +15,18 @@ export async function POST(
     const userId = authUser?.userId;
     const { id: photoId } = await params;
 
+    console.log("[annotate POST] Request:", { photoId, userId: userId?.slice(0, 8), authSource: authUser?.authSource });
+
     if (!userId) {
+      console.warn("[annotate POST] Unauthorized - no userId");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const user = await prisma.user.findUnique({
-      where: getUserWhereClause(userId),
+      where: getUserWhereClause(userId, authUser?.authSource),
     });
 
     if (!user) {
+      console.warn("[annotate POST] User not found:", { userId: userId.slice(0, 8), authSource: authUser?.authSource });
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -43,6 +47,7 @@ export async function POST(
         const arrayBuffer = await imageFile.arrayBuffer();
         imageBuffer = Buffer.from(arrayBuffer);
         imageContentType = imageFile.type || "image/png";
+        console.log("[annotate POST] FormData image:", { size: imageBuffer.length, type: imageContentType });
       }
     } else {
       // JSON body (legacy — may fail for large images)
@@ -55,6 +60,7 @@ export async function POST(
         if (matches) {
           imageContentType = matches[1];
           imageBuffer = Buffer.from(matches[2], "base64");
+          console.log("[annotate POST] JSON body image:", { size: imageBuffer.length, type: imageContentType });
         }
       }
     }
@@ -70,11 +76,13 @@ export async function POST(
     });
 
     if (!photo) {
+      console.warn("[annotate POST] Photo not found:", photoId);
       return NextResponse.json({ error: "Photo not found" }, { status: 404 });
     }
 
     // Verify ownership
     if (photo.report.inspectorId !== user.id) {
+      console.warn("[annotate POST] Forbidden - user does not own report:", { userId: user.id, inspectorId: photo.report.inspectorId });
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -84,9 +92,11 @@ export async function POST(
     if (imageBuffer) {
       try {
         const annotatedKey = generateAnnotatedKey(photo.filename);
+        console.log("[annotate POST] Uploading annotated image to R2:", { key: annotatedKey, size: imageBuffer.length });
         annotatedUrl = await uploadToR2(imageBuffer, annotatedKey, imageContentType);
+        console.log("[annotate POST] Upload successful:", annotatedUrl);
       } catch (uploadError) {
-        console.error("Error uploading annotated image:", uploadError);
+        console.error("[annotate POST] R2 upload failed:", uploadError);
         // Continue without saving annotated image URL
       }
     }
@@ -102,9 +112,10 @@ export async function POST(
       },
     });
 
+    console.log("[annotate POST] Photo updated successfully:", { photoId, hasAnnotatedUrl: !!annotatedUrl });
     return NextResponse.json(updatedPhoto);
   } catch (error) {
-    console.error("Error saving annotations:", error);
+    console.error("[annotate POST] Unhandled error:", error);
     return NextResponse.json(
       { error: "Failed to save annotations" },
       { status: 500 }
@@ -122,14 +133,18 @@ export async function GET(
     const userId = authUser?.userId;
     const { id: photoId } = await params;
 
+    console.log("[annotate GET] Request:", { photoId, userId: userId?.slice(0, 8), authSource: authUser?.authSource });
+
     if (!userId) {
+      console.warn("[annotate GET] Unauthorized - no userId");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const user = await prisma.user.findUnique({
-      where: getUserWhereClause(userId),
+      where: getUserWhereClause(userId, authUser?.authSource),
     });
 
     if (!user) {
+      console.warn("[annotate GET] User not found:", { userId: userId.slice(0, 8), authSource: authUser?.authSource });
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -147,14 +162,17 @@ export async function GET(
     });
 
     if (!photo) {
+      console.warn("[annotate GET] Photo not found:", photoId);
       return NextResponse.json({ error: "Photo not found" }, { status: 404 });
     }
 
     // Verify ownership
     if (photo.report.inspectorId !== user.id) {
+      console.warn("[annotate GET] Forbidden - user does not own report:", { userId: user.id, inspectorId: photo.report.inspectorId });
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    console.log("[annotate GET] Returning photo:", { photoId, hasAnnotations: !!photo.annotations });
     return NextResponse.json({
       id: photo.id,
       url: photo.url,
@@ -162,7 +180,7 @@ export async function GET(
       isEdited: photo.isEdited,
     });
   } catch (error) {
-    console.error("Error fetching annotations:", error);
+    console.error("[annotate GET] Unhandled error:", error);
     return NextResponse.json(
       { error: "Failed to fetch annotations" },
       { status: 500 }

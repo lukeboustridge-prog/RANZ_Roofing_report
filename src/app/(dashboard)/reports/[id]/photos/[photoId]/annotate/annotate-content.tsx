@@ -46,51 +46,130 @@ export default function AnnotateContent() {
   };
 
   const fetchPhoto = async () => {
+    const url = `/api/photos/${photoId}/annotate`;
+    console.log("[Annotate] Fetching photo data:", { photoId, url });
+
     try {
-      const response = await fetch(`/api/photos/${photoId}/annotate`);
+      const response = await fetch(url);
+      console.log("[Annotate] Fetch response:", {
+        status: response.status,
+        statusText: response.statusText,
+        contentType: response.headers.get("content-type"),
+      });
+
       if (!response.ok) {
         const errorMsg = await parseErrorResponse(response);
+        console.error("[Annotate] API error:", { status: response.status, errorMsg });
         throw new Error(errorMsg);
       }
       const data = await response.json();
+      console.log("[Annotate] Photo loaded:", { id: data.id, hasAnnotations: Array.isArray(data.annotations) && data.annotations.length > 0 });
       setPhoto(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const message = err instanceof Error ? err.message : "An error occurred";
+      console.error("[Annotate] fetchPhoto failed:", {
+        error: err,
+        message,
+        photoId,
+        url,
+      });
+
+      // Provide more specific error messages
+      if (message === "Failed to fetch") {
+        setError("Could not connect to the server. Check your network connection and try refreshing the page.");
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  /**
+   * Convert a data URL to a Blob without using fetch().
+   * fetch(dataUrl) can fail on very large images in some browsers.
+   */
+  const dataUrlToBlob = (dataUrl: string): Blob => {
+    const [header, base64Data] = dataUrl.split(",");
+    const mimeMatch = header.match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : "image/png";
+    const binaryStr = atob(base64Data);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: mime });
   };
 
   const handleSave = async (annotations: unknown[], dataUrl: string) => {
     setSaving(true);
     setError("");
 
+    console.log("[Annotate] Saving annotations:", {
+      photoId,
+      annotationCount: Array.isArray(annotations) ? annotations.length : 0,
+      hasDataUrl: !!dataUrl,
+      dataUrlLength: dataUrl?.length ?? 0,
+    });
+
     try {
-      // Use FormData to avoid JSON body size limits for large annotated images
       const formData = new FormData();
       formData.append("annotations", JSON.stringify(annotations));
 
       // Convert data URL to Blob for multipart upload
       if (dataUrl && dataUrl.startsWith("data:image/")) {
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        formData.append("annotatedImage", blob, "annotated.png");
+        try {
+          const blob = dataUrlToBlob(dataUrl);
+          console.log("[Annotate] Converted image to blob:", {
+            size: blob.size,
+            type: blob.type,
+            sizeMB: (blob.size / (1024 * 1024)).toFixed(2) + " MB",
+          });
+          formData.append("annotatedImage", blob, "annotated.png");
+        } catch (conversionErr) {
+          console.error("[Annotate] Failed to convert data URL to blob:", conversionErr);
+          setError("Failed to process the annotated image. The image may be too large.");
+          setSaving(false);
+          return;
+        }
       }
 
-      const saveResponse = await fetch(`/api/photos/${photoId}/annotate`, {
+      const url = `/api/photos/${photoId}/annotate`;
+      console.log("[Annotate] POSTing to:", url);
+
+      const saveResponse = await fetch(url, {
         method: "POST",
         body: formData,
       });
 
+      console.log("[Annotate] Save response:", {
+        status: saveResponse.status,
+        statusText: saveResponse.statusText,
+        contentType: saveResponse.headers.get("content-type"),
+      });
+
       if (!saveResponse.ok) {
         const errorMsg = await parseErrorResponse(saveResponse);
+        console.error("[Annotate] Save API error:", { status: saveResponse.status, errorMsg });
         throw new Error(errorMsg);
       }
 
-      // Navigate back to photos page
+      console.log("[Annotate] Save successful, navigating back");
       router.push(`/reports/${reportId}/photos`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save");
+      const message = err instanceof Error ? err.message : "Failed to save";
+      console.error("[Annotate] handleSave failed:", {
+        error: err,
+        message,
+        photoId,
+      });
+
+      // Provide more specific error messages
+      if (message === "Failed to fetch") {
+        setError("Could not save annotations. The image may be too large or the server is not responding. Try reducing the image size or refreshing the page.");
+      } else {
+        setError(message);
+      }
     } finally {
       setSaving(false);
     }
