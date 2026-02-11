@@ -24,6 +24,7 @@ import {
   Plus,
   ChevronRight,
   Video,
+  Mic,
   FolderOpen,
   ClipboardList,
   History,
@@ -90,6 +91,7 @@ async function getReport(reportId: string, userId: string) {
           photos: true,
           defects: true,
           videos: true,
+          voiceNotes: true,
           documents: true,
         },
       },
@@ -395,6 +397,18 @@ export default async function ReportDetailPage({
               <span>Videos</span>
               <span className="text-xs text-muted-foreground">
                 {report._count.videos} uploaded
+              </span>
+            </div>
+          </Link>
+        </Button>
+
+        <Button variant="outline" asChild className="h-auto py-4">
+          <Link href={`/reports/${report.id}/voice-notes`}>
+            <div className="flex flex-col items-center gap-2">
+              <Mic className="h-6 w-6" />
+              <span>Voice Notes</span>
+              <span className="text-xs text-muted-foreground">
+                {report._count.voiceNotes} uploaded
               </span>
             </div>
           </Link>
