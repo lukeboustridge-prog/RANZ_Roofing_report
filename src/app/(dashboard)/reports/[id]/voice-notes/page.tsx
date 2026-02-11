@@ -33,6 +33,19 @@ interface VoiceNote {
   createdAt: string;
 }
 
+/** Convert R2 public URL to proxy URL for reliable media playback */
+function getMediaUrl(url: string): string {
+  try {
+    if (url.startsWith("https://") && url.includes(".r2.dev/")) {
+      const key = url.split(".r2.dev/")[1];
+      return `/api/media/${key}`;
+    }
+  } catch {
+    // fall through
+  }
+  return url;
+}
+
 export default function VoiceNotesPage() {
   const params = useParams();
   const reportId = params.id as string;
@@ -131,7 +144,7 @@ export default function VoiceNotesPage() {
       if (audioRef.current) {
         audioRef.current.pause();
       }
-      const audio = new Audio(note.url);
+      const audio = new Audio(getMediaUrl(note.url));
       audio.onended = () => setPlayingId(null);
       audio.play();
       audioRef.current = audio;
@@ -358,7 +371,7 @@ export default function VoiceNotesPage() {
                 {/* Audio player */}
                 <div className="rounded-lg overflow-hidden bg-muted p-4">
                   <audio
-                    src={selectedNote.url}
+                    src={getMediaUrl(selectedNote.url)}
                     controls
                     className="w-full"
                     preload="metadata"

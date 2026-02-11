@@ -39,6 +39,19 @@ interface Video {
   createdAt: string;
 }
 
+/** Convert R2 public URL to proxy URL for reliable media playback */
+function getMediaUrl(url: string): string {
+  try {
+    if (url.startsWith("https://") && url.includes(".r2.dev/")) {
+      const key = url.split(".r2.dev/")[1];
+      return `/api/media/${key}`;
+    }
+  } catch {
+    // fall through
+  }
+  return url;
+}
+
 export default function VideosPage() {
   const params = useParams();
   const reportId = params.id as string;
@@ -294,7 +307,7 @@ export default function VideosPage() {
                 >
                   {video.thumbnailUrl ? (
                     <video
-                      src={video.url}
+                      src={getMediaUrl(video.url)}
                       className="w-full h-full object-cover"
                       preload="metadata"
                     />
@@ -339,7 +352,7 @@ export default function VideosPage() {
                 {/* Preview */}
                 <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
                   <video
-                    src={selectedVideo.url}
+                    src={getMediaUrl(selectedVideo.url)}
                     controls
                     className="w-full h-full"
                     preload="metadata"
