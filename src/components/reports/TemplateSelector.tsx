@@ -32,6 +32,10 @@ export function TemplateSelector({ selectedTemplateId, onSelect }: TemplateSelec
         const response = await fetch("/api/templates");
 
         if (!response.ok) {
+          if (response.status === 401) {
+            console.error("Template fetch returned 401 — auth session may not be established yet");
+            throw new Error("Authentication required. Please refresh the page or sign in again.");
+          }
           throw new Error("Failed to fetch templates");
         }
 

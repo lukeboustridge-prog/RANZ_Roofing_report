@@ -125,6 +125,9 @@ export default function NewReportPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Your session has expired. Please refresh the page or sign in again.");
+        }
         throw new Error(data.error || "Failed to create report");
       }
 

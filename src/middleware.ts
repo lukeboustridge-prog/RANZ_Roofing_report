@@ -37,7 +37,7 @@ const isPublicRoute = createRouteMatcher([
 // API routes - handle their own auth
 const isApiRoute = createRouteMatcher(["/api(.*)"]);
 
-export default async function middleware(req: NextRequest) {
+export default function middleware(req: NextRequest, event: NextFetchEvent) {
   // For custom auth mode, handle authentication ourselves
   if (AUTH_MODE === 'custom') {
     // Public routes: allow without auth
@@ -53,7 +53,7 @@ export default async function middleware(req: NextRequest) {
 
   // For Clerk mode, ALWAYS run Clerk middleware (it handles public routes internally)
   // This is required because auth() in Server Components needs the middleware context
-  return clerkMiddlewareHandler(req);
+  return clerkMiddlewareHandler(req, event);
 }
 
 async function customAuthMiddleware(req: NextRequest): Promise<NextResponse> {
@@ -108,12 +108,27 @@ async function customAuthMiddleware(req: NextRequest): Promise<NextResponse> {
   return response;
 }
 
+// Build Clerk middleware options - only include satellite config when enabled
+function getClerkOptions() {
+  const isSatellite = process.env.NEXT_PUBLIC_CLERK_IS_SATELLITE === "true";
+  if (isSatellite && process.env.NEXT_PUBLIC_CLERK_DOMAIN) {
+    return {
+      isSatellite: true as const,
+      domain: process.env.NEXT_PUBLIC_CLERK_DOMAIN,
+      signInUrl: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL,
+    };
+  }
+  return {};
+}
+
 // Clerk middleware handler (existing functionality)
-function clerkMiddlewareHandler(req: NextRequest) {
+function clerkMiddlewareHandler(req: NextRequest, event: NextFetchEvent) {
   return clerkMiddleware(async (auth, request) => {
     const url = request.nextUrl.clone();
 
     // Public routes and API routes: allow without protection
+    // Note: clerkMiddleware still processes the session and sets up auth context
+    // for API routes, so auth() works in route handlers even though we skip protect()
     if (isPublicRoute(request) || isApiRoute(request)) {
       return NextResponse.next();
     }
@@ -150,11 +165,7 @@ function clerkMiddlewareHandler(req: NextRequest) {
     }
 
     return NextResponse.next();
-  }, {
-    domain: process.env.NEXT_PUBLIC_CLERK_DOMAIN,
-    isSatellite: process.env.NEXT_PUBLIC_CLERK_IS_SATELLITE === "true",
-    signInUrl: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL,
-  })(req, {} as NextFetchEvent);
+  }, getClerkOptions())(req, event);
 }
 
 export const config = {

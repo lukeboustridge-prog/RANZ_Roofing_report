@@ -239,14 +239,17 @@ async function getAuthUserFromClerk(): Promise<AuthUser | null> {
     // Dynamic import to avoid bundling Clerk when not needed
     const { auth, currentUser } = await import('@clerk/nextjs/server');
 
-    const { userId } = await auth();
+    const authResult = await auth();
+    const { userId } = authResult;
     if (!userId) {
+      console.warn('[getAuthUser] Clerk auth() returned no userId — user is not authenticated or middleware did not set up auth context');
       return null;
     }
 
     // Get full user details from Clerk
     const clerkUser = await currentUser();
     if (!clerkUser) {
+      console.warn(`[getAuthUser] Clerk currentUser() returned null for userId=${userId} — session may have expired`);
       return null;
     }
 
@@ -261,10 +264,8 @@ async function getAuthUserFromClerk(): Promise<AuthUser | null> {
       authSource: 'clerk',
     };
   } catch (error) {
-    // Log for debugging in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[getAuthUser] Clerk auth error:', error);
-    }
+    // Always log Clerk auth errors — silent failures make debugging impossible
+    console.error('[getAuthUser] Clerk auth error:', error instanceof Error ? error.message : error);
     return null;
   }
 }
