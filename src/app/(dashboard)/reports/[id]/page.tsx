@@ -28,9 +28,9 @@ import {
   FolderOpen,
   ClipboardList,
   History,
-  Copy,
 } from "lucide-react";
 import { DuplicateReportButton } from "@/components/reports/DuplicateReportButton";
+import { DeleteReportButton } from "@/components/reports/DeleteReportButton";
 import { ShareReportButton } from "@/components/reports/ShareReportButton";
 import { ExportEvidenceButton } from "@/components/reports/ExportEvidenceButton";
 import type { ReportStatus, DefectSeverity, DefectClass, ConditionRating } from "@prisma/client";
@@ -143,12 +143,18 @@ export default async function ReportDetailPage({
         </div>
         <div className="flex gap-2">
           {report.status !== "FINALISED" && (
-            <Button variant="outline" asChild>
-              <Link href={`/reports/${report.id}/edit`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </Link>
-            </Button>
+            <>
+              <Button variant="outline" asChild>
+                <Link href={`/reports/${report.id}/edit`}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </Link>
+              </Button>
+              <DeleteReportButton
+                reportId={report.id}
+                reportNumber={report.reportNumber}
+              />
+            </>
           )}
           <DuplicateReportButton
             reportId={report.id}
