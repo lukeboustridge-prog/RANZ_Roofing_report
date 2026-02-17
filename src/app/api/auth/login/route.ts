@@ -23,8 +23,8 @@ import type { AuthUserRole } from '@/lib/auth/types';
 
 const ALGORITHM = 'RS256';
 const TOKEN_LIFETIME = '8h';
-const JWT_ISSUER = 'https://portal.ranz.org.nz';
-const JWT_AUDIENCE = ['portal.ranz.org.nz', 'reports.ranz.org.nz'];
+const JWT_ISSUER = 'https://portal.ranz.co.nz';
+const JWT_AUDIENCE = ['portal.ranz.co.nz', 'reports.ranz.co.nz'];
 
 // Cache the private key
 let cachedPrivateKey: CryptoKey | null = null;

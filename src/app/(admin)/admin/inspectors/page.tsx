@@ -93,7 +93,7 @@ export default async function InspectorsPage() {
           <p className="text-sm text-blue-800">
             <strong>Note:</strong> Inspector accounts are managed in the{" "}
             <a
-              href="https://portal.ranz.org.nz/admin/users"
+              href="https://portal.ranz.co.nz/admin/users"
               target="_blank"
               rel="noopener noreferrer"
               className="underline hover:text-blue-600"

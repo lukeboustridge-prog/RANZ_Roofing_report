@@ -154,7 +154,7 @@ export async function POST(
       });
 
       // Send email notifications to reviewers (non-blocking)
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reports.ranzroofing.co.nz";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reports.ranz.co.nz";
       const reviewers = await prisma.user.findMany({
         where: {
           role: { in: ["REVIEWER", "ADMIN", "SUPER_ADMIN"] },

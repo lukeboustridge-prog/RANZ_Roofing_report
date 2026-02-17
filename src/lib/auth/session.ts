@@ -2,7 +2,7 @@
  * Session Cookie Utilities for Satellite App (Roofing Report)
  *
  * Parses the shared session cookie set by Quality Program.
- * The cookie Domain is .ranz.org.nz so it's readable across subdomains.
+ * The cookie Domain is .ranz.co.nz so it's readable across subdomains.
  */
 
 import { parse } from 'cookie';

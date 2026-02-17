@@ -70,7 +70,7 @@ export async function sendEmail(options: EmailOptions): Promise<SendResult> {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "RANZ Reports <noreply@ranzroofing.co.nz>",
+        from: "RANZ Reports <noreply@ranz.co.nz>",
         to: options.to,
         subject: options.subject,
         text: options.text,

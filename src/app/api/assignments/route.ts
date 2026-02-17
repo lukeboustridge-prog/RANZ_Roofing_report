@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
     });
 
     // 2. Email to inspector
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reports.ranz.org.nz";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reports.ranz.co.nz";
     sendInspectorAssignmentEmail(inspector.email, {
       inspectorName: inspector.name || "Inspector",
       clientName: data.clientName,

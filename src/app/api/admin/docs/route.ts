@@ -44,12 +44,12 @@ const openApiSpec = {
       "REST API for the RANZ Roofing Report platform. Manages ISO 17020-compliant roofing inspection reports, evidence chains, PDF generation, and admin operations. All endpoints require Clerk JWT authentication.",
     contact: {
       name: "RANZ Technical Support",
-      email: "support@ranz.org.nz",
+      email: "support@ranz.co.nz",
     },
   },
   servers: [
     {
-      url: "https://reports.ranz.org.nz",
+      url: "https://reports.ranz.co.nz",
       description: "Production",
     },
     {

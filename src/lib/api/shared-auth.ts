@@ -5,7 +5,7 @@
  * Used by Roofing Report admin panel to display inspector information.
  */
 
-const QUALITY_PROGRAM_API_URL = process.env.QUALITY_PROGRAM_API_URL || 'https://portal.ranz.org.nz';
+const QUALITY_PROGRAM_API_URL = process.env.QUALITY_PROGRAM_API_URL || 'https://portal.ranz.co.nz';
 const QUALITY_PROGRAM_API_KEY = process.env.QUALITY_PROGRAM_API_KEY;
 
 /**

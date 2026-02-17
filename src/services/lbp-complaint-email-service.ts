@@ -186,7 +186,7 @@ export class LBPComplaintEmailService {
           Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: `RANZ Complaints <${RANZ_DETAILS.adminEmail || "complaints@ranzroofing.co.nz"}>`,
+          from: `RANZ Complaints <${RANZ_DETAILS.adminEmail || "complaints@ranz.co.nz"}>`,
           to: BPB_DETAILS.complaintsEmail,
           cc: [admin.email, RANZ_DETAILS.adminEmail].filter(Boolean),
           subject: EMAIL_SUBJECTS.SUBMISSION(
@@ -441,7 +441,7 @@ CONFIDENTIAL: This email and any attachments are intended solely for the Buildin
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: `RANZ Reports <noreply@ranzroofing.co.nz>`,
+        from: `RANZ Reports <noreply@ranz.co.nz>`,
         to: complaint.preparedByEmail,
         cc: RANZ_DETAILS.adminEmail,
         subject: EMAIL_SUBJECTS.ACKNOWLEDGMENT(complaint.complaintNumber),

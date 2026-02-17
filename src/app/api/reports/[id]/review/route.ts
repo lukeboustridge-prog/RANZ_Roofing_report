@@ -380,7 +380,7 @@ export async function PATCH(
     }
 
     // --- Notify inspector of review decision ---
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reports.ranz.org.nz";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reports.ranz.co.nz";
 
     if (report.inspector?.id) {
       // 1. In-app + push notification (for all decisions)

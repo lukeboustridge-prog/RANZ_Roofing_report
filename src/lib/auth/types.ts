@@ -32,9 +32,9 @@ export type AuthUserRole =
 
 // Auth configuration for satellite app
 export const AUTH_CONFIG = {
-  jwtIssuer: 'https://portal.ranz.org.nz',
-  jwtAudience: ['portal.ranz.org.nz', 'reports.ranz.org.nz'],
+  jwtIssuer: 'https://portal.ranz.co.nz',
+  jwtAudience: ['portal.ranz.co.nz', 'reports.ranz.co.nz'],
   sessionCookieName: 'ranz_session',
   // Satellite apps redirect to primary for sign-in
-  signInUrl: 'https://portal.ranz.org.nz/sign-in',
+  signInUrl: 'https://portal.ranz.co.nz/sign-in',
 } as const;

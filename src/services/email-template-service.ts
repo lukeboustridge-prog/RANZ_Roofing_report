@@ -423,7 +423,7 @@ class EmailTemplateService {
       inspectorName: "John Smith",
       inspectorEmail: "john.smith@example.com",
       reviewerName: "Jane Doe",
-      reportUrl: "https://reports.ranz.org.nz/reports/example-id",
+      reportUrl: "https://reports.ranz.co.nz/reports/example-id",
       reason: "Insufficient photographic evidence of roof penetration defects.",
       criticalCount: "2",
       issueCount: "3",
@@ -437,7 +437,7 @@ class EmailTemplateService {
       scheduledDate: "15 March 2025",
       notes: "Access via side gate. Dog in backyard.",
       assignmentUrl:
-        "https://reports.ranz.org.nz/assignments/example-id",
+        "https://reports.ranz.co.nz/assignments/example-id",
       commentCount: "3",
     };
 
